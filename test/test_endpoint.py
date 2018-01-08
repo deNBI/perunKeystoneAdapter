@@ -28,7 +28,6 @@ class TestEndpoint(unittest.TestCase):
         self.endpoint = Endpoint(keystone=self.keystone,mode="scim")
 
     def _test_user(self, denbiuser, perun_id, elixir_id,email, enabled):
-        # denbi_user = {id: string, elixir_id: string, perun_id: string, email: string, enabled: boolean}
         self.assertEquals(denbiuser['perun_id'],perun_id)
         self.assertEquals(denbiuser['elixir_id'], elixir_id)
         if email != None:
@@ -38,8 +37,6 @@ class TestEndpoint(unittest.TestCase):
     def _test_project(self,denbiproject, perun_id, members):
         self.assertEquals(denbiproject['perun_id'],perun_id)
         self.assertSetEqual(set(denbiproject['members']),set(members))
-
-
 
     def test_import_scim(self):
         before_import_users = self.keystone.users_map()

@@ -42,6 +42,10 @@ class Endpoint:
         if self.mode == "scim":
             self.__import_scim_userdata__(import_json(users_path))
             self.__import_scim_projectdata__(import_json(groups_path))
+        elif self.mode == "denbi_portal_compute_center":
+            raise NotImplementedError("de.NBI_portal_compute_center is not implemented!")
+        else:
+            raise ValueError("Unknown/Unsupported mode!")
 
     def __import_scim_userdata__(self,json_obj):
         '''
