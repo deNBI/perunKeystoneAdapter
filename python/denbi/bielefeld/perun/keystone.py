@@ -31,7 +31,7 @@ class KeyStone:
         :param environ : local environ used instead of system environment
         :param default_role : default role used for all users (default is "_member_")
         :param create_default_role: create a default role if it not exists (default is False)
-        :param flag : name of the key used to mark users/projects
+        :param flag : value used to mark users/projects
 
         """
 
