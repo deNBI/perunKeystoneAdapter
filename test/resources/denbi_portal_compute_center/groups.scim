@@ -1,0 +1,50 @@
+[
+   {
+      "denbiProjectInstitute" : null,
+      "denbiProjectObjectStorage" : null,
+      "denbiProjectStatus" : null,
+      "name" : "testgroup",
+      "denbiProjectRamPerVm" : 25,
+      "description" : "---",
+      "denbiDirectAccess" : null,
+      "parentGroupId" : null,
+      "denbiProjectNumberOfVms" : 85,
+      "denbiProjectDiskSpace" : null,
+      "denbiProjectNumberOfCpus" : 23,
+      "id" : 9845,
+      "denbiProjectLifetime" : null,
+      "denbiProjectSpecialPurposeHardware" : null
+   },
+   {
+      "denbiProjectInstitute" : null,
+      "denbiProjectObjectStorage" : null,
+      "denbiProjectStatus" : null,
+      "name" : "members",
+      "denbiProjectRamPerVm" : null,
+      "description" : "Group containing VO members for VO denbi-dev",
+      "denbiDirectAccess" : null,
+      "parentGroupId" : null,
+      "denbiProjectNumberOfVms" : null,
+      "denbiProjectDiskSpace" : null,
+      "denbiProjectNumberOfCpus" : null,
+      "id" : 9843,
+      "denbiProjectLifetime" : null,
+      "denbiProjectSpecialPurposeHardware" : null
+   },
+   {
+      "denbiProjectInstitute" : null,
+      "denbiProjectObjectStorage" : null,
+      "denbiProjectStatus" : null,
+      "name" : "Sample Project",
+      "denbiProjectRamPerVm" : null,
+      "description" : "The sample project for test purposes. The user is only a member of this project.",
+      "denbiDirectAccess" : null,
+      "parentGroupId" : null,
+      "denbiProjectNumberOfVms" : null,
+      "denbiProjectDiskSpace" : null,
+      "denbiProjectNumberOfCpus" : null,
+      "id" : 9874,
+      "denbiProjectLifetime" : null,
+      "denbiProjectSpecialPurposeHardware" : null
+   }
+]

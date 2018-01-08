@@ -1,0 +1,28 @@
+[
+   {
+      "members" : [
+         {
+            "userId" : "1"
+         },
+         {
+            "userId" : "2"
+         },
+         {
+            "userId" : "3"
+         }
+      ],
+      "name" : "Test Project",
+      "id" : "9845",
+      "parentGroupId" : null
+   },
+   {
+      "members" : [
+         {
+            "userId" : "3"
+         }
+      ],
+      "name" : "Sample Project",
+      "id" : "9874",
+      "parentGroupId" : null
+   }
+]
