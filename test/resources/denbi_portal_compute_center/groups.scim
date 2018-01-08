@@ -1,50 +1,62 @@
 [
-   {
-      "denbiProjectInstitute" : null,
-      "denbiProjectObjectStorage" : null,
-      "denbiProjectStatus" : null,
-      "name" : "testgroup",
-      "denbiProjectRamPerVm" : 25,
-      "description" : "---",
-      "denbiDirectAccess" : null,
-      "parentGroupId" : null,
-      "denbiProjectNumberOfVms" : 85,
-      "denbiProjectDiskSpace" : null,
-      "denbiProjectNumberOfCpus" : 23,
-      "id" : 9845,
-      "denbiProjectLifetime" : null,
-      "denbiProjectSpecialPurposeHardware" : null
-   },
-   {
-      "denbiProjectInstitute" : null,
-      "denbiProjectObjectStorage" : null,
-      "denbiProjectStatus" : null,
-      "name" : "members",
-      "denbiProjectRamPerVm" : null,
-      "description" : "Group containing VO members for VO denbi-dev",
-      "denbiDirectAccess" : null,
-      "parentGroupId" : null,
-      "denbiProjectNumberOfVms" : null,
-      "denbiProjectDiskSpace" : null,
-      "denbiProjectNumberOfCpus" : null,
-      "id" : 9843,
-      "denbiProjectLifetime" : null,
-      "denbiProjectSpecialPurposeHardware" : null
-   },
-   {
-      "denbiProjectInstitute" : null,
-      "denbiProjectObjectStorage" : null,
-      "denbiProjectStatus" : null,
-      "name" : "Sample Project",
-      "denbiProjectRamPerVm" : null,
-      "description" : "The sample project for test purposes. The user is only a member of this project.",
-      "denbiDirectAccess" : null,
-      "parentGroupId" : null,
-      "denbiProjectNumberOfVms" : null,
-      "denbiProjectDiskSpace" : null,
-      "denbiProjectNumberOfCpus" : null,
-      "id" : 9874,
-      "denbiProjectLifetime" : null,
-      "denbiProjectSpecialPurposeHardware" : null
-   }
+     {
+          "denbiProjectInstitute" : null,
+          "denbiProjectObjectStorage" : null,
+          "denbiProjectStatus" : null,
+          "name" : "Test Projekt",
+          "denbiProjectRamPerVm" : 8,
+          "description" : "---",
+          "denbiDirectAccess" : null,
+          "denbiProjectMembers" : [
+             {
+                "login-namespace:elixir" : "user1",
+                "login-namespace:elixir-persistent" : "d877b2f6-3b90-4483-89ce-91eab1bdba99@elixir-europe.org",
+                "id" : 50000,
+                "preferredMail" : "user1@donot.use"
+             },
+             {
+                "login-namespace:elixir" : "user2",
+                "login-namespace:elixir-persistent" : "b3d216a7-8696-451a-9cbf-b8d5e17a6ec2@elixir-europe.org",
+                "id" : 50001,
+                "preferredMail" : "user2@donot.use"
+             },
+             {
+                "login-namespace:elixir" : "user3",
+                "login-namespace:elixir-persistent" : "bb01cabe-eae7-4e46-955f-b35db6e3d552@elixir-europe.org",
+                "id" : 50002,
+                "preferredMail" : "user3@donot.use"
+             }
+          ],
+          "parentGroupId" : null,
+          "denbiProjectNumberOfVms" : 10,
+          "denbiProjectDiskSpace" : null,
+          "denbiProjectNumberOfCpus" : 80,
+          "id" : 9999,
+          "denbiProjectLifetime" : null,
+          "denbiProjectSpecialPurposeHardware" : null
+     },
+     {
+           "denbiProjectInstitute" : null,
+           "denbiProjectObjectStorage" : null,
+           "denbiProjectStatus" : null,
+           "name" : "Test Projekt 2",
+           "denbiProjectRamPerVm" : 512,
+           "description" : "---",
+           "denbiDirectAccess" : null,
+           "denbiProjectMembers" : [
+              {
+                 "login-namespace:elixir" : "user4",
+                 "login-namespace:elixir-persistent" : "ce317030-288f-4712-9e5c-922539777c62@elixir-europe.org",
+                 "id" : 50003,
+                 "preferredMail" : "user4@donot.use"
+              },
+           ],
+           "parentGroupId" : null,
+           "denbiProjectNumberOfVms" : 2,
+           "denbiProjectDiskSpace" : null,
+           "denbiProjectNumberOfCpus" : 96,
+           "id" : 10000,
+           "denbiProjectLifetime" : null,
+           "denbiProjectSpecialPurposeHardware" : null
+     }
 ]

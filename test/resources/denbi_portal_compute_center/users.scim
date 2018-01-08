@@ -2,19 +2,19 @@
    {
       "blacklisted" : null,
       "status" : "VALID",
-      "login-namespace:elixir-persistent" : "59099e6b78ecc9e5aca4302caa6660207687e905@elixir-europe.org",
+      "login-namespace:elixir-persistent" : "d877b2f6-3b90-4483-89ce-91eab1bdba99@elixir-europe.org",
       "denbiVmsRunning" : null,
-      "id" : 46138,
-      "preferredMail" : "denbi.role.ccr@gmail.com",
+      "id" : 50000,
+      "preferredMail" : "user1@donot.use",
       "sshPublicKey" : null
    },
    {
       "blacklisted" : null,
       "status" : "VALID",
-      "login-namespace:elixir-persistent" : "3a75e2d9565c511c178097176b75b56c10119487@elixir-europe.org",
+      "login-namespace:elixir-persistent" : "b3d216a7-8696-451a-9cbf-b8d5e17a6ec2@elixir-europe.org",
       "denbiVmsRunning" : null,
-      "id" : 46296,
-      "preferredMail" : "hxr@hx42.org",
+      "id" : 50001,
+      "preferredMail" : "user2@donot.use",
       "sshPublicKey" : [
          "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDAVHWAYM0dsLYsW9BRZYWHBgxlmWS1V58jaQLFpUOpS6lRajwoorLcSJu0HOEtNi0JV4K43Sq/zQQsYe49NBxNcwYxmO1mRtA2tuz+azB1AvPLtE4WQHz6W09wMpZeRA28Njjclm+2kuHKDYGr6miWwtyPRQtYMipVWVcE7w/TAevn05uwbvTW5IeekR6QD1DXHarRzfWwPiHY5QwN+6emKQqIeWENBitkWAAD3NLI5UP581kk3SlrJ8Rgx6OZ1BLOh3mt/l4dEjmjFKJLZITReLVDRnUd2EycKpwFRTnn9ToH5dYIn+e7kPHtW9uSpVL5dbsC323Iq/pfOj5zucPV/xhDMSS3HoQgaoAN0pySSuwvJMoRBwSBcjXZ0+0TwMSkLUoe3s6gfPpOsiJECa2w0ZsHALgvutzqkQ+vpcBWiZhrCPOQBa4sjvaucHxl3eU/MjwjJieRQMycvLjle10A7j1OoHWHxWAkYtrSVeB4Qiw4x/aw0DsjFPonOKYM/Q3kI9fAC4G5YcYtgilVg/CqHsPOUJr6OkdW2ERVU+Z8wblC6yqRyw4ZP5FFiJxwZu6PVwAJCcvT5AB/+V3Rx3db98N23C2fZLbKp87gAYbKNqtWJfzRAzS6ZJfXkb1u7a3kIY2gTA8lCAj6p/o66CgKqc5XnomOt+Hg1fFJOrvaHw== hxr@mk"
       ]
@@ -22,188 +22,30 @@
    {
       "blacklisted" : null,
       "status" : "VALID",
-      "login-namespace:elixir-persistent" : "845f5249bec2358a7cdca9760bc7d5224a6ce04f@elixir-europe.org",
+      "login-namespace:elixir-persistent" : "bb01cabe-eae7-4e46-955f-b35db6e3d552@elixir-europe.org",
       "denbiVmsRunning" : null,
-      "id" : 46124,
-      "preferredMail" : "maximilian.hanussek@uni-tuebingen.de",
+      "id" : 50002,
+      "preferredMail" : "user3@donotuse",
       "sshPublicKey" : null
    },
    {
-      "blacklisted" : null,
-      "status" : "VALID",
-      "login-namespace:elixir-persistent" : "49f1023dda17ef9a3892bccf6bff8c8bc424b87d@elixir-europe.org",
-      "denbiVmsRunning" : null,
-      "id" : 46130,
-      "preferredMail" : "bf@CeBiTec.Uni-Bielefeld.DE",
-      "sshPublicKey" : null
+     "blacklisted" : null,
+     "status" : "VALID",
+     "login-namespace:elixir-persistent" : "ce317030-288f-4712-9e5c-922539777c62@elixir-europe.org",
+     "denbiVmsRunning" : null,
+     "id" : 50003,
+     "preferredMail" : "user4@donotuse",
+     "sshPublicKey" : null
    },
    {
-      "blacklisted" : null,
-      "status" : "VALID",
-      "login-namespace:elixir-persistent" : "85d1b57ec1ab9460915c208faf02790d6cb38d45@elixir-europe.org",
-      "denbiVmsRunning" : null,
-      "id" : 46132,
-      "preferredMail" : "pajavyskocil@gmail.com",
-      "sshPublicKey" : null
-   },
-   {
-      "blacklisted" : null,
-      "status" : "VALID",
-      "login-namespace:elixir-persistent" : "62d23dcdc1938d8a12802939bcd53e176b3239ca@elixir-europe.org",
-      "denbiVmsRunning" : null,
-      "id" : 46526,
-      "preferredMail" : "davidave1994@gmail.com",
-      "sshPublicKey" : [
-         "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC8IdQpBghyG7a37VPW6BypeIxnl8jb8NPYOln/3htEOIVEm8xevTpEBG5K1fsWPB+jTzEEhUVspErKsEAEuZQNuWOYZ3W4839gfUWHA3w5BhpQTOS35W70MWpEVb2979JqxJm2OmyQ6onzp+mIpMAV2Z/7WTJn6QIVaWcIpINH2W/Ejv6DTLZkHGpKg7RB6EKimchu6P5+xt2B1cUofBbZZIk3jcLYFry7ZDeKPRV14adgismlio8kFTJp3N9o0ARA2MIrT7ICK02S+S6qnBxm1B574cTfvLj10AcnnJJEe/rbK/mDXkT290hYUywP9FI+dU77Dkl6mWEWWK9UV5vx root@david-Lenovo-IdeaPad-U530-Touch",
-         "er"
-      ]
-   },
-   {
-      "blacklisted" : null,
-      "status" : "VALID",
-      "login-namespace:elixir-persistent" : "baab13d39b7f53c314e6007b007e6436c14028f6@elixir-europe.org",
-      "denbiVmsRunning" : null,
-      "id" : 46125,
-      "preferredMail" : "alu@cebitec.uni-bielefeld.de",
-      "sshPublicKey" : null
-   },
-   {
-      "blacklisted" : null,
-      "status" : "VALID",
-      "login-namespace:elixir-persistent" : "773f26cbe0e935009e25ca66fabf6a5a6dfb1563@elixir-europe.org",
-      "denbiVmsRunning" : null,
-      "id" : 46094,
-      "preferredMail" : "martin.lang@dkfz-heidelberg.de",
-      "sshPublicKey" : null
-   },
-   {
-      "blacklisted" : null,
-      "status" : "VALID",
-      "login-namespace:elixir-persistent" : "b28e02af226b69b0148fc4f92e5c398f3ed8b9ad@elixir-europe.org",
-      "denbiVmsRunning" : null,
-      "id" : 46091,
-      "preferredMail" : "max.wiens@gmail.com",
-      "sshPublicKey" : null
-   },
-   {
-      "blacklisted" : null,
-      "status" : "VALID",
-      "login-namespace:elixir-persistent" : "b6c76410cc0b119d3f1f849c310e92ffdb258678@elixir-europe.org",
-      "denbiVmsRunning" : null,
-      "id" : 46475,
-      "preferredMail" : "soerengiller123@gmail.com",
-      "sshPublicKey" : null
-   },
-   {
-      "blacklisted" : null,
-      "status" : "VALID",
-      "login-namespace:elixir-persistent" : "f2aedbce9046be1e914d6567dae55cb32e67b6e3@elixir-europe.org",
-      "denbiVmsRunning" : null,
-      "id" : 46144,
-      "preferredMail" : "jueneman@cebitec.uni-bielefeld.de",
-      "sshPublicKey" : null
-   },
-   {
-      "blacklisted" : null,
-      "status" : "VALID",
-      "login-namespace:elixir-persistent" : "44f0c016db70f5230984475db54acb36ea54096b@elixir-europe.org",
-      "denbiVmsRunning" : null,
-      "id" : 46425,
-      "preferredMail" : "janni.krueger@googlemail.com",
-      "sshPublicKey" : null
-   },
-   {
-      "blacklisted" : null,
-      "status" : "VALID",
-      "login-namespace:elixir-persistent" : "b6b4e050870fa5f6d5b27effe2240be00a5c7a01@elixir-europe.org",
-      "denbiVmsRunning" : null,
-      "id" : 46515,
-      "preferredMail" : "peterbel555@gmail.com",
-      "sshPublicKey" : null
-   },
-   {
-      "blacklisted" : null,
-      "status" : "VALID",
-      "login-namespace:elixir-persistent" : "c64459084e29e2a1309217dc7a721e7389a9d8e9@elixir-europe.org",
-      "denbiVmsRunning" : null,
-      "id" : 46089,
-      "preferredMail" : "felix.bartusch@uni-tuebingen.de",
-      "sshPublicKey" : null
-   },
-   {
-      "blacklisted" : null,
-      "status" : "VALID",
-      "login-namespace:elixir-persistent" : "9579b8fe5b5a812e4ad328d56a9d3df38ec7e990@elixir-europe.org",
-      "denbiVmsRunning" : null,
-      "id" : 46325,
-      "preferredMail" : "jens.krueger@uni-tuebingen.de",
-      "sshPublicKey" : null
-   },
-   {
-      "blacklisted" : null,
-      "status" : "VALID",
-      "login-namespace:elixir-persistent" : "244dfe006ed864023275b6344a69ecbaa21758a8@elixir-europe.org",
-      "denbiVmsRunning" : null,
-      "id" : 46134,
-      "preferredMail" : "asczyrba@cebitec.uni-bielefeld.de",
-      "sshPublicKey" : null
-   },
-   {
-      "blacklisted" : null,
-      "status" : "VALID",
-      "login-namespace:elixir-persistent" : "51382dab6a6222df710dc71750f57beb9439fd35@elixir-europe.org",
-      "denbiVmsRunning" : null,
-      "id" : 46090,
-      "preferredMail" : "peterbelmann@googlemail.com",
-      "sshPublicKey" : null
-   },
-   {
-      "blacklisted" : null,
-      "status" : "VALID",
-      "login-namespace:elixir-persistent" : "da7c0a0f17fa2829e2662821bd62236e6c24dd18@elixir-europe.org",
-      "denbiVmsRunning" : null,
-      "id" : 46095,
-      "preferredMail" : "m.prinz@dkfz-heidelberg.de",
-      "sshPublicKey" : [
-         "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCptI+ofVZYcOGcn5Ep85V//ncSnp5gSM+C6Ky4XmoHF4pl8lchTZv+gxvvol3uy2ui4Fzq+TBRm7pEh0GWlEDMlDsSspzpgg+cT+BceB+GVlY4d6TrYV03lTBQaKhRhD1SpNr+LIMBNIPhqOn0Fl6b/Oh/N5lOBq0L8I5RR0Jb+vxKcd/4A85xsepAsP3WCO89tvLfuMwEfkL9ucHB2u+Jq1GKjQ8yQIgrWvJuZpc5ZSYaXbS5dFN0gFo6xml9cVvEg1y6aIAeK4XqWRl1HmafDIrrc36udaCLvX4UwtgSRvMg4EVMI9B8TM52wupQKMQxxMVQUv/WaVXtTxyltPEFNGDY7i9eCI4zTqKOpEuDPqrtpTy0wWCqi22r4qsKy6fuLEB6EHMPsuAlq2Sfm32LJvOP7Bu4WbReYayTb2lfkNcnlZTn0+rvil0TpWnC5UZXSBZI3K/qQFpuJ/V0ilcC5zxBqRlD0bsfeleExGFGxQPyrnoERHNCxj7XroaXZwsGoYyZB5VnP2QER5IfT100eRJ+vJF8qOco6nXFds9cs4NNeuEorP1vYqz2nEo4UMccj3C7+5/Q0b69wmYkb0iGVtPOkDyWhv/1QE59Oaf5uojZYy7v6s5B6/40ICQ0yV/gHe9b31MnGFce4fHF2ege47KLwP5TmUYuR5LYxinC9w=="
-      ]
-   },
-   {
-      "blacklisted" : null,
-      "status" : "VALID",
-      "login-namespace:elixir-persistent" : "9f124ed6d387eb0d97d7f001c9fd363d6c5c55fe@elixir-europe.org",
-      "denbiVmsRunning" : null,
-      "id" : 46317,
-      "preferredMail" : "mwiens@cebitec.uni-bielefeld.de",
-      "sshPublicKey" : null
-   },
-   {
-      "blacklisted" : null,
-      "status" : "VALID",
-      "login-namespace:elixir-persistent" : "986d6cf2aaab24944860646aa8030a39714af55e@elixir-europe.org",
-      "denbiVmsRunning" : null,
-      "id" : 46137,
-      "preferredMail" : "denbi.role.ao@gmail.com",
-      "sshPublicKey" : null
-   },
-   {
-      "blacklisted" : null,
-      "status" : "VALID",
-      "login-namespace:elixir-persistent" : "ecc41edb3dd5895b35681a91e4679c8c76ebff84@elixir-europe.org",
-      "denbiVmsRunning" : null,
-      "id" : 46143,
-      "preferredMail" : "volker.toelle@gmail.com",
-      "sshPublicKey" : [
-         "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAgEArV2ACaF3fDrMkNIiY/S733hR+lAAw5JWQAW0SCT1h/I6XbL9X+w1L8tOig/2YiAm/PcRYwvDIFiMg3jV563IIstzyMkV2SNQU/h26H1tYKwT1c3PG3bYe1lWSYj196U6KkyUWQmUqS7Sw0Sdvk0EZWzQ45Rq7WGimfCWhqzP5HUB9QQ2lCWdf0QTypRAUlOtAL9bV88vyl7jUj0/LxP4GF1qFI0tZd4r7THsc9A7FAYpMGD3iQ2vPxmo9jyXmbKegwL2VdndS3AVwynLG9lagOnrnmyOcnIfKeg5e7+wwt0OQaHacoAnFGTm9xsI/i4+Mirll2d52majKnZ7fZOaFdeWR2fUAB5atu1KnF3/beQUG3j0E4UNQeiRIyD63Uoi7+2gbSD26IzcOviI5aS2tZI4GGSgy2aHkE1a1qK+qVEo6NmTTvsLfD18sm1haCQ52sZK+J4zS1NAB1PopQ9aE/Pv02SltwJPVnkKHw9XsHQtpLjhpEAy6bwy9idcFOvFPrvdAe7tvPppmh9UcTGrU3Jm8yFNt8Q+rCBvs9NZoAV40wkdobb4rxUo8V0OHGQjS0Q2gtVkwPsfoYcpLMxvTgA+x6vILOk5lulpKwgcDxohZ7XuOto+hyrnv/spj83VM3Qd5wurBE/o+i7aMdbBuosebTVg0MUMhzZJiDpzRs0= vt@baloo"
-      ]
-   },
-   {
-      "blacklisted" : null,
-      "status" : "VALID",
-      "login-namespace:elixir-persistent" : "ae97a4ef99d22731b4397458e022aadd4a0a7f7d@elixir-europe.org",
-      "denbiVmsRunning" : null,
-      "id" : 46504,
-      "preferredMail" : "blinke76@gmail.com",
-      "sshPublicKey" : null
+     "blacklisted" : null,
+     "status" : "VALID",
+     "login-namespace:elixir-persistent" : "60420cf9-eb3e-45f4-8e1b-f8a2b317b042@elixir-europe.org",
+     "denbiVmsRunning" : null,
+     "id" : 50004,
+     "preferredMail" : "user5@donotuse",
+     "sshPublicKey" : null
    }
+
+
 ]

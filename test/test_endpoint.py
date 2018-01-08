@@ -39,8 +39,6 @@ class TestEndpoint(unittest.TestCase):
         self.assertSetEqual(set(denbiproject['members']),set(members))
 
     def test_import_scim(self):
-        before_import_users = self.keystone.users_map()
-        before_import_projects = self.keystone.projects_map()
 
         # import 1st test data set
         self.endpoint.import_data('resources/scim/users.scim','resources/scim/groups.scim')
@@ -100,3 +98,33 @@ class TestEndpoint(unittest.TestCase):
         # group with perun_id == "9999" added
         self.assertTrue(after_import_projects_2.has_key("9999"))
         self._test_project(after_import_projects_2['9999'],'9999',['1','4'])
+
+
+    def import_denbi_portal_compute_center(self):
+
+        # import 1st test data set
+        self.endpoint.import_data('resources/denbi_portal_compute_center/users.scim','resources/denbi_portal_compute_center/groups.scim')
+
+        after_import_users = self.keystone.users_map()
+        after_import_projects = self.keystone.projects_map()
+
+
+        # user 1 - enabled
+        self.assertTrue(after_import_users.has_key('50000'))
+        self._test_user(after_import_users['50000'],'50000','d877b2f6-3b90-4483-89ce-91eab1bdba99@elixir-europe.org',None,True)
+        # user 2 - enabled
+        self.assertTrue(after_import_users.has_key('50001'))
+        self._test_user(after_import_users['50001'],'50001','b3d216a7-8696-451a-9cbf-b8d5e17a6ec2@elixir-europe.org',None,True)
+        # user 3 - enabled
+        self.assertTrue(after_import_users.has_key('50002'))
+        self._test_user(after_import_users['50002'],'50002','bb01cabe-eae7-4e46-955f-b35db6e3d552@elixir-europe.org',None,True)
+        # user 4 - enabled
+        self.assertTrue(after_import_users.has_key('50003'))
+        self._test_user(after_import_users['50003'],'50003','ce317030-288f-4712-9e5c-922539777c62@elixir-europe.org',None,True)
+        # user 5 - disabled
+        self.assertTrue(after_import_users.has_key('50004'))
+        self._test_user(after_import_users['50004'],'50004','60420cf9-eb3e-45f4-8e1b-f8a2b317b042@elixir-europe.org',None,False)
+
+        # project
+        self.assertTrue(after_import_projects.has_key("9845"))
+        self._test_project(after_import_projects['9845'],'9845',['1','2','3'])
