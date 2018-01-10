@@ -16,7 +16,7 @@ class KeyStone:
     denbi_project = {id: string, perun_id: string, enabled: boolean, members: [denbi_user]}
     """
 
-    def __init__(self,environ=None, default_role = "_member", create_default_role = False, flag = "perun_propagation"):
+    def __init__(self,environ=None, default_role = "_member", create_default_role = False, flag = "perun_propagation", support_quotas = True):
         """
         Create a new Openstack Keystone session using the system environment.
         The following variables are considered:
@@ -31,7 +31,8 @@ class KeyStone:
         :param environ : local environ used instead of system environment
         :param default_role : default role used for all users (default is "_member_")
         :param create_default_role: create a default role if it not exists (default is False)
-        :param flag : value used to mark users/projects
+        :param flag : value used to mark users/projects (default is perun_propagation)
+        :param support_quotas:
 
         """
 
@@ -80,6 +81,8 @@ class KeyStone:
 
         self.flag = flag
 
+        self.support_quotas = support_quotas
+
         # initialize user and project map
         self.denbi_user_map = {}
         self.__user_id2perun_id__ = {}
@@ -96,9 +99,9 @@ class KeyStone:
         :param enabled: status of the user (optional, default is None)
         :return: a denbi_user hash {id:string, elixir_id:string, perun_id:string, email:string, enabled: boolean}
         """
-        os_user = self.keystone.users.create(name=elixir_id,\
-                                             email=email,\
-                                             perun_id=perun_id,\
+        os_user = self.keystone.users.create(name=str(elixir_id),\
+                                             email=str(email),\
+                                             perun_id=str(perun_id),\
                                              enabled=enabled,\
                                              flag=self.flag)
         denbi_user= {'id': os_user.id,
@@ -149,7 +152,7 @@ class KeyStone:
         if self.denbi_user_map.has_key(perun_id):
             denbi_user = self.denbi_user_map[perun_id]
 
-            os_user = self.keystone.users.update(denbi_user['id'], name=elixir_id, email= email, enabled=enabled)
+            os_user = self.keystone.users.update(denbi_user['id'], name=str(elixir_id), email= str(email), enabled=enabled)
 
             denbi_user['elixir-id'] = os_user.name
             denbi_user['enabled'] = os_user.enabled
@@ -189,17 +192,23 @@ class KeyStone:
 
         return self.denbi_user_map;
 
-    def projects_create(self, perun_id, descr = None, members = None):
+    def projects_create(self, perun_id, name = None, description = None, members = None):
         """
         Create a new project in the admins user default domain.
         :param perun_id: perun_id of the project
-        :param descr: description of this project (optional)
+        :param name: name of the project (optional)
+        :param description: description of this project (optional)
         :param members: list of user id, which are members of this project
         :return: a denbi_project  {id: string, perun_id : string, enabled : boolean, members: [denbi_users]}
         """
-        os_project = self.keystone.projects.create(name=perun_id,domain=self.domain_id, description=descr, flag = self.flag)
+        os_project = self.keystone.projects.create(name=str(name),\
+                                                   perun_id=str(perun_id),\
+                                                   domain=self.domain_id,\
+                                                   description=str(description),\
+                                                   flag = self.flag)
         denbi_project= {'id':os_project.id,
-                        'perun_id': os_project.name,
+                        'name': os_project.name,
+                        'perun_id': os_project.perun_id,
                         'description' :os_project.description,
                         'enabled' : True,
                         'members' : [] }
@@ -213,30 +222,66 @@ class KeyStone:
 
         return denbi_project
 
-    def projects_update(self,perun_id,members):
+    def project_quota(self,\
+                      perun_id,\
+                      number_of_vms=None,\
+                      disk_space=None,\
+                      special_purpose_hardware=None,\
+                      ram_per_vm=None,\
+                      object_storage=None):
         """
-        Update the memberlist of a project
-        :param perun_id: perun_id of the project to be modfified
+        Set/Update quota for project
+        :param number_of_vms:
+        :param disk_space: in GB
+        :param special_purpose_hardware: supported values GPU, FPGA
+        :param ram_per_vm: in GB
+        :param object_storage: in GB
+        :return:
+        """
+        if self.support_quotas:
+            project = self.denbi_project_map[perun_id]
+            raise NotImplementedError
+
+
+    def projects_update(self,perun_id,members=None, name=None, description=None,enabled=None):
+        """
+        Update  a project
+        :param perun_id: perun_id of the project to be modified
         :param members: list of perun user id
+        :param name
+        :param description
+        :param enabled
         :return:
         """
         add = []
         rem = []
 
         project = self.denbi_project_map[perun_id]
-        # search for member to be removed or added
-        for m in set(members) ^ set(project["members"]):
-            # members to remove
-            if m in project["members"]:
-                rem.append(m)
-            else: # members to add
-                add.append(m)
 
-        for m in rem:
-            self.projects_remove_user(perun_id,m)
+        if (name or description or enabled):
+            if not(name):
+                name = project['name']
+            if not(description):
+                description = project['description']
+            if not(enabled):
+                enabled = project['enabled']
+            self.keystone.projects.update(project['id'],name=name,description=description,enabled=enabled)
 
-        for m in add:
-            self.projects_append_user(perun_id,m)
+        # update memberslist
+        if members:
+            # search for member to be removed or added
+            for m in set(members) ^ set(project["members"]):
+                # members to remove
+                if m in project["members"]:
+                    rem.append(m)
+                else: # members to add
+                    add.append(m)
+
+            for m in rem:
+                self.projects_remove_user(perun_id,m)
+
+            for m in add:
+                self.projects_append_user(perun_id,m)
 
 
 
@@ -269,20 +314,26 @@ class KeyStone:
         for os_project in self.keystone.projects.list(domain=self.domain_id):
             if hasattr(os_project,'flag') and os_project.flag == self.flag:
                 denbi_project = {'id': os_project.id,
-                                'perun_id' : os_project.name,
+                                'name' : os_project.name,
+                                'perun_id' : os_project.perun_id,
                                 'enabled' : os_project.enabled,
-                                'members' : [] }
+                                'members' : [],
+                                'quotas' : {} }
                 # create entry in maps
                 self.__project_id2perun_id__[denbi_project['id']] = denbi_project['perun_id']
                 self.denbi_project_map[denbi_project['perun_id']] = denbi_project
 
-        for role in self.keystone.role_assignments.list(): #ToDo : Check if this work as expected
+        for role in self.keystone.role_assignments.list():
             tpid =  role.scope['project']['id']
             tuid = role.user['id']
             
             if self.__project_id2perun_id__.has_key(tpid) and self.__user_id2perun_id__.has_key(tuid):
                 self.denbi_project_map[self.__project_id2perun_id__[tpid]]['members'].\
                     append(self.__user_id2perun_id__[tuid])
+
+        # Check for project specific quota
+        if self.support_quotas:
+            raise NotImplementedError
 
         return self.denbi_project_map
 
@@ -296,10 +347,10 @@ class KeyStone:
 
         #check if project/user exists
         if not(self.denbi_project_map.has_key(project_id)):
-            raise ValueError('A project with perun_id:'+project_id+' does not exists!')
+            raise ValueError('A project with perun_id:'+str(project_id)+' does not exists!')
 
         if not(self.denbi_user_map.has_key(user_id)):
-            raise ValueError('A user with perun_id: '+user_id+' does not exists!')
+            raise ValueError('A user with perun_id: '+str(user_id)+' does not exists!')
 
         # get keystone id for user and project
         pid = self.denbi_project_map[project_id]['id']

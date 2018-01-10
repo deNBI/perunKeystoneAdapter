@@ -8,6 +8,11 @@ class TestKeystone(unittest.TestCase):
     """
         Unit test for class Keystone
 
+        Attention: The unit test does currently not support project quotas test.
+        The used monasca/keystone container for test  purposes has only support
+        for keystone, but not for nova (compute resources), neutron (network resources)
+        or  glance (image resources)
+
     """
 
     def setUp(self):
@@ -17,7 +22,7 @@ class TestKeystone(unittest.TestCase):
                 'OS_USERNAME':'admin',
                 'OS_PASSWORD':'s3cr3t'}
 
-        self.ks = KeyStone(environ,default_role="user",create_default_role=True)
+        self.ks = KeyStone(environ,default_role="user",create_default_role=True,support_quotas=False)
 
 
     def __uuid(self):
