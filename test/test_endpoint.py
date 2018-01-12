@@ -27,16 +27,25 @@ class TestEndpoint(unittest.TestCase):
         self.keystone = KeyStone(environ,default_role="user",create_default_role=True, support_quotas= False)
 
 
-    def _test_user(self, denbiuser, perun_id, elixir_id,email, enabled):
+    def _test_user(self, denbiuser, perun_id, elixir_id,email, enabled, deleted = False):
         self.assertEquals(denbiuser['perun_id'],perun_id)
         self.assertEquals(denbiuser['elixir_id'], elixir_id)
         if email != None:
             self.assertEquals(denbiuser['email'],email)
-        self.assertEquals(denbiuser['enabled'],enabled)
+        if deleted:
+            self.assertEquals(denbiuser['enabled'],False)
+            self.assertEquals(denbiuser['deleted'],True)
+        else:
+            self.assertEquals(denbiuser['enabled'],enabled)
 
-    def _test_project(self,denbiproject, perun_id, members):
+    def _test_project(self,denbiproject, perun_id, members, enabled= True, deleted=False):
         self.assertEquals(denbiproject['perun_id'],perun_id)
         self.assertSetEqual(set(denbiproject['members']),set(members))
+        if deleted:
+            self.assertEquals(denbiproject['enabled'],False)
+            self.assertEquals(denbiproject['scratched'], True)
+        else:
+            self.assertEquals(denbiproject['enabled'],enabled)
 
     def test_import_scim(self):
 
@@ -80,8 +89,9 @@ class TestEndpoint(unittest.TestCase):
         self.assertTrue(after_import_users_2.has_key("1"))
         self._test_user(after_import_users_2['1'],'1','d877b2f6-3b90-4483-89ce-91eab1bdba99@elixir-europe.org','jens.mustermann@test.de',True)
 
-        # user with perun_id == "2" deleted
-        self.assertFalse(after_import_users_2.has_key("2"))
+        # user with perun_id == "2" tagged as deleted
+        self.assertTrue(after_import_users_2.has_key("2"))
+        self._test_user(after_import_users_2['2'],'2','afec0f6d-acd4-4dff-939d-208bfc272512@elixir-europe.org','thomas@mueller.de',False,deleted=True)
 
         # user with perun_id == "3" disabled
         self.assertTrue(after_import_users_2.has_key("3"))
@@ -95,12 +105,25 @@ class TestEndpoint(unittest.TestCase):
         self.assertTrue(after_import_projects_2.has_key("9845"))
         self._test_project(after_import_projects_2['9845'],'9845',['1','3'])
 
-        # group with perun_id == "9874" deleted
-        self.assertFalse(after_import_projects_2.has_key("9874"))
+        # group with perun_id == "9874" tagged as deleted
+        self.assertTrue(after_import_projects_2.has_key("9874"))
+        self._test_project(after_import_projects_2['9874'],'9874',['3'],deleted=True)
 
         # group with perun_id == "9999" added
         self.assertTrue(after_import_projects_2.has_key("9999"))
         self._test_project(after_import_projects_2['9999'],'9999',['1','4'])
+
+
+        # clean up everything
+        ids = set(self.keystone.users_map())
+        for perun_id in ids:
+            self.keystone.users_delete(perun_id)
+            self.keystone.users_terminate(perun_id)
+
+        ids = set(self.keystone.projects_map())
+        for perun_id in ids:
+            self.keystone.projects_delete(perun_id)
+            self.keystone.projects_terminate(perun_id)
 
 
     def test_import_denbi_portal_compute_center(self):
@@ -138,3 +161,49 @@ class TestEndpoint(unittest.TestCase):
         # project 2
         self.assertTrue(after_import_projects.has_key("10000"))
         self._test_project(after_import_projects['10000'],'10000',['50003'])
+
+        # import 2nd test data set
+        self.endpoint.import_data('resources/denbi_portal_compute_center/users_2nd.scim','resources/denbi_portal_compute_center/groups_2nd.scim')
+
+        after_import_users = self.keystone.users_map()
+        after_import_projects = self.keystone.projects_map()
+
+        # user 1 - enabled
+        self.assertTrue(after_import_users.has_key('50000'))
+        self._test_user(after_import_users['50000'],'50000','d877b2f6-3b90-4483-89ce-91eab1bdba99__@elixir-europe.org',None,True)
+        # user 2 - deleted
+        self.assertTrue(after_import_users.has_key('50001'))
+        self._test_user(after_import_users['50001'],'50001','b3d216a7-8696-451a-9cbf-b8d5e17a6ec2__@elixir-europe.org',None,True,deleted=True)
+        # user 3 - enabled
+        self.assertTrue(after_import_users.has_key('50002'))
+        self._test_user(after_import_users['50002'],'50002','bb01cabe-eae7-4e46-955f-b35db6e3d552__@elixir-europe.org',None,True)
+        # user 4 - enabled
+        self.assertTrue(after_import_users.has_key('50003'))
+        self._test_user(after_import_users['50003'],'50003','ce317030-288f-4712-9e5c-922539777c62__@elixir-europe.org',None,True)
+        # user 5 - deleted
+        self.assertTrue(after_import_users.has_key('50004'))
+        self._test_user(after_import_users['50004'],'50004','60420cf9-eb3e-45f4-8e1b-f8a2b317b042__@elixir-europe.org',None,False,deleted=True)
+
+        # project 1
+        self.assertTrue(after_import_projects.has_key("9999"))
+        self._test_project(after_import_projects['9999'],'9999',['50000','50002'])
+
+        # project 2 - deleted
+        self.assertTrue(after_import_projects.has_key("10000"))
+        self._test_project(after_import_projects['10000'],'10000',['50003'],deleted=True)
+
+        # project 3
+        self.assertTrue(after_import_projects.has_key("10001"))
+        self._test_project(after_import_projects['10001'],'10001',['50003'])
+
+
+        # clean up everything
+        ids = set(self.keystone.users_map())
+        for perun_id in ids:
+            self.keystone.users_delete(perun_id)
+            self.keystone.users_terminate(perun_id)
+
+        ids = set(self.keystone.projects_map())
+        for perun_id in ids:
+            self.keystone.projects_delete(perun_id)
+            self.keystone.projects_terminate(perun_id)

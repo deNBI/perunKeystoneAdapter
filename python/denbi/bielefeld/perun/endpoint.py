@@ -83,7 +83,7 @@ class Endpoint:
                             user['email'] == email and \
                             user['enabled'] == enabled ):
                         # update user
-                        self.keystone.users_update(perun_id, elixir_id, email, enabled)
+                        self.keystone.users_update(perun_id, elixir_id = elixir_id, email = email, enabled=enabled)
 
                 else:
                     # register user in keystone

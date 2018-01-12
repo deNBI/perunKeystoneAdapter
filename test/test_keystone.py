@@ -52,13 +52,16 @@ class TestKeystone(unittest.TestCase):
         # user should also be provided to keystone
         self.assertTrue(denbi_user_map.has_key(perunid),"User with PerunId does not exists.")
 
-
-
         # delete previous created user
         self.ks.users_delete(denbi_user['perun_id'])
 
-        # delete same user a second time should
-        self.assertRaises(ValueError,self.ks.users_delete,denbi_user['perun_id'])
+        # user should still exists but marked as deleted
+        self.assertTrue(denbi_user_map.has_key(perunid),"User with PerunId does not exists.")
+        tmp = denbi_user_map[perunid]
+        self.assertTrue(tmp['deleted'],"User with PerunID '"+perunid+"' should marked as deleted.")
+
+        # terminate user
+        self.ks.users_terminate(denbi_user['perun_id'])
 
         # check internal user list
         denbi_user_map = self.ks.denbi_user_map
@@ -80,19 +83,29 @@ class TestKeystone(unittest.TestCase):
 
         denbi_project = self.ks.projects_create(perunid)
 
+
+
         # check internal project list
         denbi_project_map = self.ks.denbi_project_map
         self.assertTrue(denbi_project_map.has_key(perunid),"Project with PerunId '"+perunid+"' does not exists in local project map.")
+
+
 
         # check keystone project list
         denbi_project_map = self.ks.projects_map()
         self.assertTrue(denbi_project_map.has_key(perunid),"Project with PerunId '"+perunid+"' does not exists.")
 
-        # delete previous created project
-        self.ks.projects_delete(denbi_project['perun_id'])
 
-        # deleting it a second time should raise a ValueError
-        self.assertRaises(ValueError,self.ks.projects_delete,denbi_project['perun_id'])
+        # delete previous created project
+        self.ks.projects_delete(perunid)
+
+        # project should still exists but marked as deleted
+        self.assertTrue(denbi_project_map.has_key(perunid),"Project with PerunId '"+perunid+"' does not exists.")
+        tmp = denbi_project_map[perunid]
+        self.assertTrue(tmp['scratched'],"Project with PerunId '"+perunid+"' not marked as deleted (but should be).")
+
+        # terminate previous marked project
+        self.ks.projects_terminate(denbi_project['perun_id'])
 
 
         # check internal project list
@@ -184,28 +197,37 @@ class TestKeystone(unittest.TestCase):
         self.assertEqual(len(project_a['members']),0)
         self.assertEqual(len(project_b['members']),0)
 
-        # remove user a,b,c
+        # tag user a,b,c for deletion
         self.ks.users_delete(user_a['perun_id'])
         self.ks.users_delete(user_b['perun_id'])
         self.ks.users_delete(user_c['perun_id'])
+
+        # and terminate them
+        self.ks.users_terminate(user_a['perun_id'])
+        self.ks.users_terminate(user_b['perun_id'])
+        self.ks.users_terminate(user_c['perun_id'])
 
         # ask keystone for new user map
         user_map = self.ks.users_map()
 
         self.assertEquals(len(user_map.keys()),count_users,
-                          "Remove of users failed ... count "
+                          "Termination of users failed ... count "
                           +str(len(user_map.keys()))
                           +" but expect "+str(count_users)+"!")
 
-        # remove project a,b
+        # tag projects a,b for deletion
         self.ks.projects_delete(project_a['perun_id'])
         self.ks.projects_delete(project_b['perun_id'])
+
+        # and terminate them
+        self.ks.projects_terminate(project_a['perun_id'])
+        self.ks.projects_terminate(project_b['perun_id'])
 
         # ask keystone for new project_map
         project_map = self.ks.projects_map()
 
         self.assertEquals(len(project_map.keys()),count_projects,
-                          "Remove of projects failed ... count "
+                          "Termination of projects failed ... count "
                           +str(len(project_map.keys()))
                                +" but expect "+str(count_projects)+"!")
 

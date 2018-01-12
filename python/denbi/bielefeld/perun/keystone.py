@@ -36,7 +36,7 @@ class KeyStone:
 
         """
 
-        if environ == None : # use os environemt settings if no explicit environ is given
+        if environ == None : # use os enviroment settings if no explicit environ is given
             self.auth_url = os.environ['OS_AUTH_URL']
             self.username = os.environ['OS_USERNAME'],
             self.password = os.environ['OS_PASSWORD'],
@@ -103,11 +103,13 @@ class KeyStone:
                                              email=str(email),\
                                              perun_id=str(perun_id),\
                                              enabled=enabled,\
+                                             deleted=False,\
                                              flag=self.flag)
         denbi_user= {'id': os_user.id,
                      'elixir_id' : os_user.name,
                      'perun_id' : os_user.perun_id,
-                     'enabled' :os_user.enabled }
+                     'enabled' : os_user.enabled,
+                     'deleted' : False}
 
         if hasattr(os_user,'email'):
             denbi_user['email'] = os_user.email
@@ -122,24 +124,29 @@ class KeyStone:
 
     def users_delete(self, perun_id):
         """
-        Delete a user
-        :param id: id of user to be deleted (could be an openstack id or perunid
+        Disable the user and tag it as deleted. Since it is dangerous to delete a user completly, the delete function
+        just disable the user and tag it as deleted. To remove an user completely use the function terminate.
+        :param perun_id: perunid of user to be deleted
         :return:
         """
+        self.users_update(perun_id,enabled=False,deleted=True)
 
-        # get object from map
+    def users_terminate(self,perun_id):
+        """
+        Delete a user
+        :param perun_id: perunid of user to be deleted
+        :return:
+        """
         if self.denbi_user_map.has_key(perun_id):
             denbi_user = self.denbi_user_map[perun_id]
-
-            # delete user from keystone database
+            # delete user
             self.keystone.users.delete(denbi_user['id'])
-
-            # remove entry from user map
-            del(self.denbi_user_map[denbi_user['perun_id']])
+            # remove entry from map
+            del(self.denbi_user_map[perun_id])
         else:
-            raise ValueError('User with perun_id '+perun_id+' not found in user_map')
+            raise ValueError('User with perun_id '+id+' not found in user_map')
 
-    def users_update(self, perun_id, elixir_id, email, enabled):
+    def users_update(self, perun_id, elixir_id = None , email = None , enabled = None , deleted=False):
         """
         Update an existing user entry.
 
@@ -152,13 +159,25 @@ class KeyStone:
         if self.denbi_user_map.has_key(perun_id):
             denbi_user = self.denbi_user_map[perun_id]
 
-            os_user = self.keystone.users.update(denbi_user['id'], name=str(elixir_id), email= str(email), enabled=enabled)
+            if elixir_id == None:
+                elixir_id=denbi_user['elixir_id']
+            if email == None:
+                email=denbi_user['email']
+            if enabled == None:
+                enabled = denbi_user['enabled']
+
+            os_user = self.keystone.users.update(denbi_user['id'],\
+                                                 name=str(elixir_id),\
+                                                 email= str(email),\
+                                                 enabled=enabled,\
+                                                 deleted=deleted)
 
             denbi_user['elixir-id'] = os_user.name
             denbi_user['enabled'] = os_user.enabled
-            denbi_user['email'] = email
+            denbi_user['deleted'] = os_user.deleted
+            denbi_user['email'] = os_user.email
 
-            self.denbi_user_map[denbi_user['perun_id']] = denbi_user # not necessary ...
+            self.denbi_user_map[denbi_user['perun_id']] = denbi_user # @ToDo not necessary ...
 
             return denbi_user
         else:
@@ -179,7 +198,8 @@ class KeyStone:
                 denbi_user = {'id' : os_user.id,
                               'perun_id' : os_user.perun_id,
                               'elixir_id'  : os_user.name,
-                              'enabled' : os_user.enabled }
+                              'enabled' : os_user.enabled,
+                              'deleted' : os_user.deleted }
                 # check for optional attribute email
                 if hasattr(os_user,'email'):
                     denbi_user['email'] = os_user.email
@@ -192,25 +212,33 @@ class KeyStone:
 
         return self.denbi_user_map;
 
-    def projects_create(self, perun_id, name = None, description = None, members = None):
+    def projects_create(self, perun_id, name = None, description = None, members = None, enabled=True):
         """
         Create a new project in the admins user default domain.
         :param perun_id: perun_id of the project
-        :param name: name of the project (optional)
+        :param name: name of the project (optional, if not set the perun_id will be used)
         :param description: description of this project (optional)
         :param members: list of user id, which are members of this project
+        :param enabled : default True
         :return: a denbi_project  {id: string, perun_id : string, enabled : boolean, members: [denbi_users]}
         """
+
+        if name == None:
+            name = perun_id
+
         os_project = self.keystone.projects.create(name=str(name),\
                                                    perun_id=str(perun_id),\
                                                    domain=self.domain_id,\
                                                    description=str(description),\
-                                                   flag = self.flag)
+                                                   enabled=enabled,\
+                                                   scratched=False,\
+                                                   flag=self.flag)
         denbi_project= {'id':os_project.id,
                         'name': os_project.name,
                         'perun_id': os_project.perun_id,
                         'description' :os_project.description,
-                        'enabled' : True,
+                        'enabled' : os_project.enabled,
+                        'scratched' : os_project.scratched,
                         'members' : [] }
         self.denbi_project_map[denbi_project['perun_id']] = denbi_project
         self.__project_id2perun_id__[denbi_project['id']] = denbi_project['perun_id']
@@ -243,7 +271,7 @@ class KeyStone:
             raise NotImplementedError
 
 
-    def projects_update(self,perun_id,members=None, name=None, description=None,enabled=None):
+    def projects_update(self,perun_id,members=None, name=None, description=None,enabled=None, scratched = False):
         """
         Update  a project
         :param perun_id: perun_id of the project to be modified
@@ -251,6 +279,7 @@ class KeyStone:
         :param name
         :param description
         :param enabled
+        :param scratched - tagged for termination
         :return:
         """
         add = []
@@ -258,14 +287,24 @@ class KeyStone:
 
         project = self.denbi_project_map[perun_id]
 
-        if (name or description or enabled):
-            if not(name):
+        if (name != None or description != None or enabled != None or project['scratched'] != scratched ):
+            if name == None:
                 name = project['name']
-            if not(description):
+            if description == None:
                 description = project['description']
-            if not(enabled):
+            if enabled == None:
                 enabled = project['enabled']
-            self.keystone.projects.update(project['id'],name=name,description=description,enabled=enabled)
+            if scratched:
+                enabled = False
+            self.keystone.projects.update(project['id'],\
+                                          name=name,\
+                                          description=description,\
+                                          enabled=enabled, \
+                                          scratched=scratched)
+            project['name'] = name
+            project['description'] = description
+            project['enabled'] = enabled
+            project['scratched'] = scratched
 
         # update memberslist
         if members:
@@ -283,22 +322,33 @@ class KeyStone:
             for m in add:
                 self.projects_append_user(perun_id,m)
 
-
-
     def projects_delete(self, perun_id):
         """
-        Delete a project
-        :param perun_id: perun_id of project to be deleted (could be either an openstack or perun id)
+        Disable and tag project as deleted. Since it is dangerous to delete a project completly, the function just
+        disable the project and tag it as deleted. To remove a project from keystone use the function projects_terminate.
+        :param perun_id: perun_id of project to be deleted
         :return:
         """
+        self.projects_update(perun_id,scratched=True)
 
+    def projects_terminate(self, perun_id):
+        """
+        Terminate a tagged as deleted project. Raise an exception (ValueError) of invalid perun_id and termination
+        of an untagged project.
+        :param perun_id: perunid of project to be deleted
+        :return:
+        """
         if self.denbi_project_map.has_key(perun_id):
             # get project from map
             denbi_project = self.denbi_project_map[perun_id]
-            # delete project by id in keystone database
-            self.keystone.projects.delete(denbi_project['id'])
-            # delete project from project map
-            del(self.denbi_project_map[denbi_project['perun_id']])
+
+            if denbi_project['scratched']:
+                # delete project by id in keystone database
+                self.keystone.projects.delete(denbi_project['id'])
+                # delete project from project map
+                del(self.denbi_project_map[denbi_project['perun_id']])
+            else:
+                raise ValueError('Project with perun_id '+perun_id+' must be tagged as deleted before terminate!')
         else:
             raise ValueError('Project with perun_id '+perun_id+' not found in project_map!')
 
@@ -316,7 +366,9 @@ class KeyStone:
                 denbi_project = {'id': os_project.id,
                                 'name' : os_project.name,
                                 'perun_id' : os_project.perun_id,
+                                'description' : os_project.description,
                                 'enabled' : os_project.enabled,
+                                'scratched' : os_project.scratched,
                                 'members' : [],
                                 'quotas' : {} }
                 # create entry in maps
@@ -383,10 +435,10 @@ class KeyStone:
 
         self.denbi_project_map[project_id]['members'].remove(user_id)
 
-    def projects_memberlist(self,project_id):
+    def projects_memberlist(self,perun_id):
         """
         Return a list of members
-        :param project_id: perun id of an project
+        :param perun_id: perun id of an project
         :return: Return a list of members
         """
-        return self.denbi_project_map[project_id]['members']
+        return self.denbi_project_map[perun_id]['members']
