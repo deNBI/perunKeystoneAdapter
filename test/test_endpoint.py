@@ -12,7 +12,7 @@ class TestEndpoint(unittest.TestCase):
     Start the container:
     $ docker run -d -p 5000:5000 -p 35357:35357 monasca/keystone
 
-    see test/keystone/README.md for a more detailed
+    see test/keystone/README.md for a more detailed documentation
 
     """
 
