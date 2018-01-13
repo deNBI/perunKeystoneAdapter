@@ -1,0 +1,29 @@
+[
+   {
+      "blacklisted" : null,
+      "status" : "VALID",
+      "login-namespace:elixir-persistent" : "d877b2f6-3b90-4483-89ce-91eab1bdba99__@elixir-europe.org",
+      "denbiVmsRunning" : null,
+      "id" : 50000,
+      "preferredMail" : "user1@donot.use",
+      "sshPublicKey" : null
+   },
+   {
+      "blacklisted" : null,
+      "status" : "VALID",
+      "login-namespace:elixir-persistent" : "bb01cabe-eae7-4e46-955f-b35db6e3d552__@elixir-europe.org",
+      "denbiVmsRunning" : null,
+      "id" : 50002,
+      "preferredMail" : "user3@donotuse",
+      "sshPublicKey" : null
+   },
+   {
+     "blacklisted" : null,
+     "status" : "VALID",
+     "login-namespace:elixir-persistent" : "ce317030-288f-4712-9e5c-922539777c62__@elixir-europe.org",
+     "denbiVmsRunning" : null,
+     "id" : 50003,
+     "preferredMail" : "user4@donotuse",
+     "sshPublicKey" : null
+   }
+]

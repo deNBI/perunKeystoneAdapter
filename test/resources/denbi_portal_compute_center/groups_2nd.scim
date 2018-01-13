@@ -15,12 +15,6 @@
                 "preferredMail" : "user1@donot.use"
              },
              {
-                "login-namespace:elixir" : "user2",
-                "login-namespace:elixir-persistent" : "b3d216a7-8696-451a-9cbf-b8d5e17a6ec2__@elixir-europe.org",
-                "id" : 50001,
-                "preferredMail" : "user2@donot.use"
-             },
-             {
                 "login-namespace:elixir" : "user3",
                 "login-namespace:elixir-persistent" : "bb01cabe-eae7-4e46-955f-b35db6e3d552__@elixir-europe.org",
                 "id" : 50002,
@@ -39,7 +33,7 @@
            "denbiProjectInstitute" : null,
            "denbiProjectObjectStorage" : null,
            "denbiProjectStatus" : null,
-           "name" : "Test Projekt 2",
+           "name" : "Test Projekt 3",
            "denbiProjectRamPerVm" : 512,
            "description" : "---",
            "denbiDirectAccess" : null,
@@ -55,7 +49,7 @@
            "denbiProjectNumberOfVms" : 2,
            "denbiProjectDiskSpace" : null,
            "denbiProjectNumberOfCpus" : 96,
-           "id" : 10000,
+           "id" : 10001,
            "denbiProjectLifetime" : null,
            "denbiProjectSpecialPurposeHardware" : null
      }
