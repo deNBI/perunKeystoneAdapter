@@ -65,16 +65,16 @@ class Endpoint:
         for scim_user in json_obj:
 
             # check for mandantory fields (id, login, status)
-            if scim_user.has_key('id') and scim_user.has_key('login') and scim_user.has_key('status'):
+            if 'id' in scim_user and 'login' in scim_user and 'status' in scim_user:
                 perun_id = str(scim_user['id'])
                 elixir_id = str(scim_user['login'])
                 enabled = scim_user['status'] == 'VALID'
                 email = None
-                if self.store_email and  scim_user.has_key('mail'):
+                if self.store_email and  'mail' in scim_user:
                     email = str(scim_user['mail'])
 
                 # user already registered in keystone
-                if user_map.has_key(perun_id):
+                if perun_id in user_map:
                     # check if user data changed
                     user = user_map[perun_id]
                     if not (\
@@ -114,7 +114,7 @@ class Endpoint:
         # convert scim json to keystone compatible hash
         for scim_project in json_obj:
 
-            if scim_project.has_key('id') and scim_project.has_key('members'):
+            if 'id' in scim_project and 'members' in scim_project:
                 perun_id = str(scim_project['id'])
                 name = str(scim_project['name'])
                 members =  []
@@ -122,7 +122,7 @@ class Endpoint:
                     members.append(m['userId'])
 
                 # if project already registered in keystone
-                if project_map.has_key(perun_id):
+                if perun_id in project_map:
                     # check if project data changed
                     project = project_map[perun_id]
 
@@ -153,16 +153,16 @@ class Endpoint:
         # convert denbi_portal_compute_center json to keystone compatible hash
         for dpcc_user in json_obj:
             # check for mandantory fields (id, login, status)
-            if dpcc_user.has_key('id') and dpcc_user.has_key('login-namespace:elixir-persistent') and dpcc_user.has_key('status'):
+            if 'id' in dpcc_user and 'login-namespace:elixir-persistent' in dpcc_user and 'status' in dpcc_user:
                 perun_id = str(dpcc_user['id'])
                 elixir_id = str(dpcc_user['login-namespace:elixir-persistent'])
                 enabled = dpcc_user['status'] == 'VALID'
                 email = None
-                if self.store_email and  dpcc_user.has_key('preferredMail'):
+                if self.store_email and  'preferredMail' in dpcc_user:
                     email = str(dpcc_user['preferredMail'])
 
                 # user already registered in keystone
-                if user_map.has_key(perun_id):
+                if perun_id in user_map:
                     # check if user data changed
                     user = user_map[perun_id]
                     if not ( \
@@ -200,7 +200,7 @@ class Endpoint:
         # convert scim json to keystone compatible hash
         for dpcc_project in json_obj:
 
-            if dpcc_project.has_key('id') and dpcc_project.has_key('denbiProjectMembers'):
+            if 'id' in dpcc_project and 'denbiProjectMembers' in dpcc_project:
                 perun_id = str(dpcc_project['id'])
                 name = str(dpcc_project['name'])
                 description = str(dpcc_project['description'])
@@ -217,23 +217,23 @@ class Endpoint:
                 object_storage = dpcc_project ['denbiProjectObjectStorage'] # in GB ?
 
                 # if project already registered in keystone
-                if project_map.has_key(perun_id):
+                if perun_id in project_map:
                     # check if project data changed
                     project = project_map[perun_id]
 
                     if set(project['members']) !=  set(members) or \
                             project['name'] != name or \
-                            project.has_key('description') and project['description'] != description :
+                            'description' in project and project['description'] != description :
                         self.keystone.projects_update(perun_id,members)
 
                     # check for quotas and update it if possible
                     if self.support_quotas:
                         quotas = project['quotas']
-                        if (quotas.hasKey('number_of_vms') and quotas['number_of_vms']  != number_of_vms) or\
-                            (quotas.hasKey('disk_space') and quotas['disk_space']  != disk_space) or \
-                            (quotas.hasKey('special_purpose_hardware') and quotas['special_purpose_hardware']  != special_purpose_hardware) or \
-                            (quotas.hasKey('ram_per_vm') and quotas['ram_per_vm']  != ram_per_vm) or \
-                            (quotas.hasKey('object_storage') and quotas['object_storage']  != object_storage):
+                        if ('number_of_vms' in quotas and quotas['number_of_vms']  != number_of_vms) or\
+                            ('disk_space' in quotas and quotas['disk_space']  != disk_space) or \
+                            ('special_purpose_hardware' in quotas and quotas['special_purpose_hardware']  != special_purpose_hardware) or \
+                            ('ram_per_vm' in quotas and quotas['ram_per_vm']  != ram_per_vm) or \
+                            ('object_storage' in quotas and quotas['object_storage']  != object_storage):
                             self.keystone.project_quota(number_of_vms=number_of_vms,\
                                                     disk_space=disk_space,\
                                                     special_purpose_hardware=special_purpose_hardware,\

@@ -137,7 +137,7 @@ class KeyStone:
         :param perun_id: perunid of user to be deleted
         :return:
         """
-        if self.denbi_user_map.has_key(perun_id):
+        if perun_id in self.denbi_user_map:
             denbi_user = self.denbi_user_map[perun_id]
             # delete user
             self.keystone.users.delete(denbi_user['id'])
@@ -156,7 +156,7 @@ class KeyStone:
         :param enabled: status
         :return: the modified denbi_user hash
         """
-        if self.denbi_user_map.has_key(perun_id):
+        if perun_id in self.denbi_user_map:
             denbi_user = self.denbi_user_map[perun_id]
 
             if elixir_id == None:
@@ -338,7 +338,7 @@ class KeyStone:
         :param perun_id: perunid of project to be deleted
         :return:
         """
-        if self.denbi_project_map.has_key(perun_id):
+        if perun_id in self.denbi_project_map:
             # get project from map
             denbi_project = self.denbi_project_map[perun_id]
 
@@ -379,7 +379,7 @@ class KeyStone:
             tpid =  role.scope['project']['id']
             tuid = role.user['id']
             
-            if self.__project_id2perun_id__.has_key(tpid) and self.__user_id2perun_id__.has_key(tuid):
+            if tpid in self.__project_id2perun_id__ and tuid in self.__user_id2perun_id__ :
                 self.denbi_project_map[self.__project_id2perun_id__[tpid]]['members'].\
                     append(self.__user_id2perun_id__[tuid])
 
@@ -398,10 +398,10 @@ class KeyStone:
         """
 
         #check if project/user exists
-        if not(self.denbi_project_map.has_key(project_id)):
+        if not(project_id in self.denbi_project_map):
             raise ValueError('A project with perun_id:'+str(project_id)+' does not exists!')
 
-        if not(self.denbi_user_map.has_key(user_id)):
+        if not(user_id in self.denbi_user_map):
             raise ValueError('A user with perun_id: '+str(user_id)+' does not exists!')
 
         # get keystone id for user and project
@@ -421,10 +421,10 @@ class KeyStone:
         """
 
         #check if project/user exists
-        if not(self.denbi_project_map.has_key(project_id)):
+        if not(project_id in self.denbi_project_map):
             raise ValueError('A project with perun_id:'+project_id+' does not exists!')
 
-        if not(self.denbi_user_map.has_key(user_id)):
+        if not(user_id in self.denbi_user_map):
             raise ValueError('A user with perun_id: '+user_id+' does not exists!')
 
         # get keystone id for user and project
