@@ -22,7 +22,7 @@ class TestKeystone(unittest.TestCase):
                 'OS_USERNAME':'admin',
                 'OS_PASSWORD':'s3cr3t'}
 
-        self.ks = KeyStone(environ,default_role="user",create_default_role=True,support_quotas=False)
+        self.ks = KeyStone(environ,default_role="user",create_default_role=True,support_quotas=False,target_domain_name='elixir')
 
 
     def __uuid(self):

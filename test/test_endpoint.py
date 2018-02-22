@@ -24,7 +24,7 @@ class TestEndpoint(unittest.TestCase):
                    'OS_USERNAME':'admin',
                    'OS_PASSWORD':'s3cr3t'}
 
-        self.keystone = KeyStone(environ,default_role="user",create_default_role=True, support_quotas= False)
+        self.keystone = KeyStone(environ,default_role="user",create_default_role=True, support_quotas= False, target_domain_name='elixir')
 
 
     def _test_user(self, denbiuser, perun_id, elixir_id,email, enabled, deleted = False):
@@ -47,7 +47,7 @@ class TestEndpoint(unittest.TestCase):
         else:
             self.assertEqual(denbiproject['enabled'],enabled)
 
-    def __test_import_scim(self):
+    def test_import_scim(self):
 
         #initialize endpoint  with 'scim' mode
         self.endpoint = Endpoint(keystone=self.keystone,mode="scim",support_quotas=False)
