@@ -387,7 +387,7 @@ class KeyStone:
                 self.__project_id2perun_id__[denbi_project['id']] = denbi_project['perun_id']
                 self.denbi_project_map[denbi_project['perun_id']] = denbi_project
 
-        for role in self.keystone.role_assignments.list():
+        for role in self.keystone.role_assignments.list(domain=self.target_domain_id):
             if 'project' in role.scope: # consider only if project is assigned, otherwise ignore
                 tpid =  role.scope['project']['id']
                 tuid = role.user['id']
