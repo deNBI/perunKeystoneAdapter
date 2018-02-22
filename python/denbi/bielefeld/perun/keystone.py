@@ -388,12 +388,14 @@ class KeyStone:
                 self.denbi_project_map[denbi_project['perun_id']] = denbi_project
 
         for role in self.keystone.role_assignments.list():
-            tpid =  role.scope['project']['id']
-            tuid = role.user['id']
+            if 'project' in role.scope: # consider only if project is assigned, otherwise ignore
+                tpid =  role.scope['project']['id']
+                tuid = role.user['id']
             
-            if tpid in self.__project_id2perun_id__ and tuid in self.__user_id2perun_id__ :
-                self.denbi_project_map[self.__project_id2perun_id__[tpid]]['members'].\
-                    append(self.__user_id2perun_id__[tuid])
+                if tpid in self.__project_id2perun_id__ and tuid in self.__user_id2perun_id__ :
+                    self.denbi_project_map[self.__project_id2perun_id__[tpid]]['members'].\
+                        append(self.__user_id2perun_id__[tuid])
+
 
         # Check for project specific quota
         if self.support_quotas:
