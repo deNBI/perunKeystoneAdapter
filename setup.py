@@ -13,7 +13,7 @@ with open('requirements.txt') as f:
 setup(
     name='perunKeystoneAdapter',
     version='0.1',
-    packages=find_packages(),
+    packages=find_packages('python'),
     include_package_data=True,
     license='Apache License 2.0', 
     description='The Perun Keystone Adapter is a library written in Python that parses data propagated by Perun and modifies a connected Openstack Keystone.',
