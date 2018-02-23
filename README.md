@@ -2,15 +2,23 @@
 
 The *Perun Keystone Adapter* is a library written in Python that parses data propagated by [Perun](https://perun.elixir-czech.cz) and modifies a connected [Openstack](https://www.openstack.org) [Keystone](https://docs.openstack.org/keystone/latest/).
 
+## Install
+
+You can install the latest version with pip:
+
+~~~BASH
+pip install git+https://github.com/deNBI/perunKeystoneAdapter@master
+~~~
+
 ## Properties
  -  abstract keystone to simplify often used tasks (create/delete/update/list users and projects) 
  -  parse SCIM or de.NBI portal compute center propagation data for users and projects
  -  modify Keystone according the propagated data: 
-  - creates items (users or projects) in Keystone if they not exists but propagated
-  - modify items properties if they changed
-  - mark items as deleted and disable them in Keystone if they are not propagated any more
-  - deleting (marked and disabled) items functionality is available but not integrated in the normal workflow.
--  set/modify project quotas (**alpha state**, needs a full openstack  installation like [DevStack](https://docs.openstack.org/devstack/latest/) for testing)
+ -  creates items (users or projects) in Keystone if they not exists but propagated
+ -  modify items properties if they changed
+ -  mark items as deleted and disable them in Keystone if they are not propagated any more
+ -  deleting (marked and disabled) items functionality is available but not integrated in the normal workflow.
+ -  set/modify project quotas (**alpha state**, needs a full openstack  installation like [DevStack](https://docs.openstack.org/devstack/latest/) for testing)
    
 
 ## Unit tests
