@@ -19,6 +19,7 @@ pip install git+https://github.com/deNBI/perunKeystoneAdapter@master
  -  mark items as deleted and disable them in Keystone if they are not propagated any more
  -  deleting (marked and disabled) items functionality is available but not integrated in the normal workflow.
  -  set/modify project quotas (**alpha state**, needs a full openstack  installation like [DevStack](https://docs.openstack.org/devstack/latest/) for testing)
+ -  compatible with python 2.7.x and python 3
    
 
 ## Unit tests
