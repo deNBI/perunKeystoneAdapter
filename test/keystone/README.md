@@ -14,9 +14,14 @@ There are several inoffical container available at docker hub that provides a lo
 | password     | s3crt     |
 | region       | RegionOne |
 
-You can use the keystone-openrc.sh file to set your shell environment to access to docker keystone container.
+You can use the [keystone-openrc.sh](keystone-openrc.sh) file to set your shell environment to access the docker keystone container.
 
 ```$ source keystone-openrc.sh ```
+
+### Clean up keystone
+It could be sometimes usefull to clean up your keystone test setup. A [small script](clean_keystone.sh) do the job perfectly.
+
+```$ clean_keystone.sh```
 
 ### Example
 

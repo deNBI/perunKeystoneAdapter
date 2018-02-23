@@ -20,8 +20,10 @@ There currently **no** tests for setting/modify project quotas.
 
 ## Example usage
 
+### Commandline client
+
 The perun propagation service transfers a zipped tar file containing a users and groups file in scim format.
-The following script unzip and untar the propagated information and  add it to the keystone database. Keystone is addressed by environment variables (sourcing the openstack rc file) or  directly by passing an environemt map (not used in the example). The Openstack user needs at least permission to modify the user 
+The following script unzip and untar the propagated information and  add it to the keystone database. Keystone is addressed by environment variables (sourcing the openstack rc file) or  directly by passing an environemt map (not used in the example). The Openstack user needs at least permission to modifies Keystone
 
 ```
 import sys
@@ -31,11 +33,11 @@ import os
 from denbi.bielefeld.perun.endpoint import Endpoint
 from denbi.bielefeld.perun.keystone import KeyStone
 
-if len (sys.ARGV) != 2:
-	print("usage: "+sys.ARGV[0]+" [perun_upload.tar.gz]")
-	sys.exit(1)
+if len (sys.argv) != 2:
+    print("usage: "+sys.argv[0]+" [perun_upload.tar.gz]")
+    sys.exit(1)
 
-fname = sys.ARGV[1]
+fname = sys.argv[1]
 
 cwd = os.getcwd()
 
@@ -49,3 +51,21 @@ keystone = KeyStone(default_role="user",create_default_role=True, support_quotas
 endpoint = Endpoint(keystone=keystone,mode="denbi_portal_compute_center",support_quotas=False)
 endpoint.import_data(cwd+'/users.scim',cwd+'/groups.scim')
 ```
+
+### WSGI script
+
+The [example directory](python/example) also contains an [example](python/example/perun_propagation_service.py) for using the Perun Keystone Adapter library in a Python wsgi script. The script uses [flask](http://flask.pocoo.org/) to provide an upload function and run library functions in a separate thread. It can be simply tested starting the flask built-in webserver ...
+
+```
+$ python3 service.py
+ * Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)
+127.0.0.1 - - [23/Feb/2018 09:54:16] "PUT /upload HTTP/1.1" 200 -
+...
+```
+... and using curl to upload sample propagation data.
+
+```
+$ curl -T file http://127.0.0.1:5000/upload
+```
+
+_However, the script is a proof of concept and it is **not recommend** using it as it is._
