@@ -39,9 +39,9 @@ class KeyStone:
 
         if environ == None : # use os enviroment settings if no explicit environ is given
             self.auth_url = os.environ['OS_AUTH_URL']
-            self.username = os.environ['OS_USERNAME'],
-            self.password = os.environ['OS_PASSWORD'],
-            self.project_name = os.environ['OS_PROJECT_NAME'],
+            self.username = os.environ['OS_USERNAME']
+            self.password = os.environ['OS_PASSWORD']
+            self.project_name = os.environ['OS_PROJECT_NAME']
             self.domain_name = os.environ['OS_USER_DOMAIN_NAME']
         else :
             self.auth_url = environ['OS_AUTH_URL']
