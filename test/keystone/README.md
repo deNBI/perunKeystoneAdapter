@@ -1,7 +1,7 @@
 # Test environment
 
 ## Start and configure keystone from a docker container
-There are several inoffical container available at docker hub that provides a local keystone in a container. After some short investigations I decided to use the [monasca/keystone](https://hub.docker.com/r/monasca/keystone/) container. At the time of writing the container is based on Ubuntu 16.04 with the Mitaka keystone release installed. Starting of the container with a default setup is quite simple, just run the container a background process and expose the keystone specific network ports to the docker host.
+There are several inoffical container available at docker hub that provides a local keystone in a container. After some short investigations I decided to use the [monasca/keystone](https://hub.docker.com/r/monasca/keystone/) container. At the time of writing the container is based on Ubuntu 16.04 with the Mitaka keystone release installed. Starting of the container with a default setup is quite simple, just run the container as background process and expose the keystone specific network ports to the docker host.
 
 ```docker run -d -p 5000:5000 -p 35357:35357 monasca/keystone```
 
