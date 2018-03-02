@@ -8,13 +8,13 @@ def import_json(path):
 
 class Endpoint:
     """
-    Perun endpoint. Import and data from perun propagtion push service.
+    Perun endpoint. Import and data from perun propagation push service.
 
     Support JSON data in SCIM format and "deNBI Portal Compute Center" format.
 
     """
 
-    def __init__(self,keystone = None,mode = "scim", store_email = True, support_quotas = True):
+    def __init__(self, keystone = None, mode = "scim", store_email = True, support_quotas = True):
         '''
 
         :param keystone: initialized keystone object
@@ -28,9 +28,9 @@ class Endpoint:
         else:
             self.keystone = KeyStone()
 
-        self.mode = mode
-        self.store_email = store_email
-        self.support_quotas = support_quotas
+        self.mode = str(mode)
+        self.store_email = bool(store_email)
+        self.support_quotas = bool(support_quotas)
 
     def import_data(self, users_path, groups_path):
         '''
@@ -68,7 +68,7 @@ class Endpoint:
             if 'id' in scim_user and 'login' in scim_user and 'status' in scim_user:
                 perun_id = str(scim_user['id'])
                 elixir_id = str(scim_user['login'])
-                enabled = scim_user['status'] == 'VALID'
+                enabled = str(scim_user['status']) == 'VALID'
                 email = None
                 if self.store_email and  'mail' in scim_user:
                     email = str(scim_user['mail'])
@@ -156,7 +156,7 @@ class Endpoint:
             if 'id' in dpcc_user and 'login-namespace:elixir-persistent' in dpcc_user and 'status' in dpcc_user:
                 perun_id = str(dpcc_user['id'])
                 elixir_id = str(dpcc_user['login-namespace:elixir-persistent'])
-                enabled = dpcc_user['status'] == 'VALID'
+                enabled = str(dpcc_user['status']) == 'VALID'
                 email = None
                 if self.store_email and  'preferredMail' in dpcc_user:
                     email = str(dpcc_user['preferredMail'])
@@ -211,10 +211,10 @@ class Endpoint:
 
                 # retrieve project quota
                 number_of_vms = dpcc_project['denbiProjectNumberOfVms']
-                disk_space = dpcc_project['denbiProjectDiskSpace'] # in GB ?
+                disk_space = dpcc_project['denbiProjectDiskSpace'] # in GB
                 special_purpose_hardware = dpcc_project ['denbiProjectSpecialPurposeHardware'] # values ?
-                ram_per_vm = dpcc_project ['denbiProjectRamPerVm'] # in GB ?
-                object_storage = dpcc_project ['denbiProjectObjectStorage'] # in GB ?
+                ram_per_vm = dpcc_project ['denbiProjectRamPerVm'] # in GB
+                object_storage = dpcc_project ['denbiProjectObjectStorage'] # in GB
 
                 # if project already registered in keystone
                 if perun_id in project_map:

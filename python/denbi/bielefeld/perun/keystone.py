@@ -60,33 +60,33 @@ class KeyStone:
         sess = session.Session(auth=auth)
         self.keystone = client.Client(session=sess)
 
-        self.target_domain_name = target_domain_name
+        self.target_domain_name = str(target_domain_name)
 
         # If target_domain_name not set
         if not(self.target_domain_name):
-            self.target_domain_name = self.domain_name
+            self.target_domain_name = str(self.domain_name)
 
         try :
-            self.target_domain_id = self.keystone.domains.list(name=self.target_domain_name)[0].id
+            self.target_domain_id = str(self.keystone.domains.list(name=self.target_domain_name)[0].id)
         except IndexError:
             # target_domain_name does not exist
-            self.target_domain_id = self.keystone.domains.create(name=self.target_domain_name,description="Created by perun_endpoint ...").id
+            self.target_domain_id = str(self.keystone.domains.create(name=self.target_domain_name,description="Created by perun_endpoint ...").id)
 
 
 
         # Check if role exists ...
-        self.default_role = default_role
+        self.default_role = str(default_role)
         self.default_role_id = None
         for role  in self.keystone.roles.list():
-            if role.name == self.default_role:
-                self.default_role_id = role.id
+            if str(role.name) == self.default_role:
+                self.default_role_id = str(role.id)
                 break
 
         # create it if wished
         if not(self.default_role_id):
             if create_default_role:
                 role = self.keystone.roles.create(self.default_role)
-                self.default_role_id = role.id
+                self.default_role_id = str(role.id)
             else:
                 raise Exception("Default role "+default_role+" does not exists and should not be created!")
 
@@ -110,26 +110,26 @@ class KeyStone:
         :param enabled: status of the user (optional, default is None)
         :return: a denbi_user hash {id:string, elixir_id:string, perun_id:string, email:string, enabled: boolean}
         """
-        os_user = self.keystone.users.create(name=str(elixir_id),\
-                                             domain=str(self.target_domain_id),\
-                                             email=str(email),\
-                                             perun_id=str(perun_id),\
-                                             enabled=enabled,\
-                                             deleted=False,\
-                                             flag=self.flag)
-        denbi_user= {'id': os_user.id,
-                     'elixir_id' : os_user.name,
-                     'perun_id' : os_user.perun_id,
-                     'enabled' : os_user.enabled,
+        os_user = self.keystone.users.create(name=str(elixir_id),                  # str
+                                             domain=str(self.target_domain_id),    # str
+                                             email=str(email),                     # str
+                                             perun_id=str(perun_id),               # str
+                                             enabled=enabled,                      # bool
+                                             deleted=False,                        # bool
+                                             flag=self.flag)                       # str
+        denbi_user= {'id': str(os_user.id),
+                     'elixir_id' : str(os_user.name),
+                     'perun_id' : str(os_user.perun_id),
+                     'enabled' : bool(os_user.enabled),
                      'deleted' : False}
 
         if hasattr(os_user,'email'):
-            denbi_user['email'] = os_user.email
+            denbi_user['email'] = str(os_user.email)
         else:
-            denbi_user['email'] = None
+            denbi_user['email'] = str(None)
 
 
-        self.__user_id2perun_id__[os_user.id] = os_user.perun_id
+        self.__user_id2perun_id__[denbi_user['id']] = denbi_user['perun_id']
         self.denbi_user_map[denbi_user['perun_id']] = denbi_user
 
         return denbi_user;
@@ -149,6 +149,7 @@ class KeyStone:
         :param perun_id: perunid of user to be deleted
         :return:
         """
+        perun_id = str(perun_id)
         if perun_id in self.denbi_user_map:
             denbi_user = self.denbi_user_map[perun_id]
             # delete user
@@ -156,7 +157,7 @@ class KeyStone:
             # remove entry from map
             del(self.denbi_user_map[perun_id])
         else:
-            raise ValueError('User with perun_id '+id+' not found in user_map')
+            raise ValueError('User with perun_id '+perun_id+' not found in user_map')
 
     def users_update(self, perun_id, elixir_id = None , email = None , enabled = None , deleted=False):
         """
@@ -168,6 +169,7 @@ class KeyStone:
         :param enabled: status
         :return: the modified denbi_user hash
         """
+        perun_id = str(perun_id)
         if perun_id in self.denbi_user_map:
             denbi_user = self.denbi_user_map[perun_id]
 
@@ -178,22 +180,22 @@ class KeyStone:
             if enabled == None:
                 enabled = denbi_user['enabled']
 
-            os_user = self.keystone.users.update(denbi_user['id'],\
-                                                 name=str(elixir_id),\
-                                                 email= str(email),\
-                                                 enabled=enabled,\
-                                                 deleted=deleted)
+            os_user = self.keystone.users.update(denbi_user['id'],      # str
+                                                 name=str(elixir_id),   # str
+                                                 email= str(email),     # str
+                                                 enabled=bool(enabled), # bool
+                                                 deleted=bool(deleted)) # bool
 
-            denbi_user['elixir-id'] = os_user.name
-            denbi_user['enabled'] = os_user.enabled
-            denbi_user['deleted'] = os_user.deleted
-            denbi_user['email'] = os_user.email
+            denbi_user['elixir-id'] = str(os_user.name)
+            denbi_user['enabled'] = bool(os_user.enabled)
+            denbi_user['deleted'] = bool(os_user.deleted)
+            denbi_user['email'] = str(os_user.email)
 
-            self.denbi_user_map[denbi_user['perun_id']] = denbi_user # @ToDo not necessary ...
+            self.denbi_user_map[denbi_user['perun_id']] = denbi_user
 
             return denbi_user
         else:
-            raise ValueError('User with perun_id '+id+' not found in user_map')
+            raise ValueError('User with perun_id '+perun_id+' not found in user_map')
 
     def users_map(self):
         """
@@ -205,22 +207,22 @@ class KeyStone:
         for os_user in self.keystone.users.list(domain=self.target_domain_id):
             # consider only correct flagged user
             # any other checks (like for name or perun_id are then not neccessary ...
-            if hasattr(os_user,"flag") and os_user.flag == self.flag:
+            if hasattr(os_user,"flag") and str(os_user.flag) == self.flag:
 
-                denbi_user = {'id' : os_user.id,
-                              'perun_id' : os_user.perun_id,
-                              'elixir_id'  : os_user.name,
-                              'enabled' : os_user.enabled,
-                              'deleted' : os_user.deleted }
+                denbi_user = {'id' : str(os_user.id),               # str
+                              'perun_id' : str(os_user.perun_id),   # str
+                              'elixir_id'  : str(os_user.name),     # str
+                              'enabled' : bool(os_user.enabled),    # boolean
+                              'deleted' : bool(os_user.deleted) }   # boolean
                 # check for optional attribute email
                 if hasattr(os_user,'email'):
-                    denbi_user['email'] = os_user.email
+                    denbi_user['email'] = str(os_user.email)        # str
                 else:
-                    denbi_user['email'] = None
+                    denbi_user['email'] = str(None)                 # str
 
                 # create entry in maps
-                self.denbi_user_map[os_user.perun_id] = denbi_user
-                self.__user_id2perun_id__[os_user.id] = os_user.perun_id
+                self.denbi_user_map[denbi_user['perun_id']] = denbi_user
+                self.__user_id2perun_id__[denbi_user['id']] = denbi_user['perun_id']
 
         return self.denbi_user_map;
 
@@ -235,22 +237,23 @@ class KeyStone:
         :return: a denbi_project  {id: string, perun_id : string, enabled : boolean, members: [denbi_users]}
         """
 
+        perun_id = str(perun_id)
         if name == None:
             name = perun_id
 
         os_project = self.keystone.projects.create(name=str(name),\
-                                                   perun_id=str(perun_id),\
+                                                   perun_id=perun_id,\
                                                    domain=self.target_domain_id,\
-                                                   description=str(description),\
-                                                   enabled=enabled,\
+                                                   description=description,\
+                                                   enabled=bool(enabled),\
                                                    scratched=False,\
                                                    flag=self.flag)
-        denbi_project= {'id':os_project.id,
-                        'name': os_project.name,
-                        'perun_id': os_project.perun_id,
-                        'description' :os_project.description,
-                        'enabled' : os_project.enabled,
-                        'scratched' : os_project.scratched,
+        denbi_project= {'id':str(os_project.id),
+                        'name': str(os_project.name),
+                        'perun_id': str(os_project.perun_id),
+                        'description' : os_project.description,
+                        'enabled' : bool(os_project.enabled),
+                        'scratched' : bool(os_project.scratched),
                         'members' : [] }
         self.denbi_project_map[denbi_project['perun_id']] = denbi_project
         self.__project_id2perun_id__[denbi_project['id']] = denbi_project['perun_id']
@@ -278,6 +281,7 @@ class KeyStone:
         :param object_storage: in GB
         :return:
         """
+        perun_id = str(perun_id)
         if self.support_quotas:
             project = self.denbi_project_map[perun_id]
             raise NotImplementedError
@@ -294,6 +298,7 @@ class KeyStone:
         :param scratched - tagged for termination
         :return:
         """
+        perun_id = str(perun_id)
         add = []
         rem = []
 
@@ -309,14 +314,14 @@ class KeyStone:
             if scratched:
                 enabled = False
             self.keystone.projects.update(project['id'],\
-                                          name=name,\
+                                          name=str(name),\
                                           description=description,\
-                                          enabled=enabled, \
-                                          scratched=scratched)
-            project['name'] = name
+                                          enabled=bool(enabled), \
+                                          scratched=bool(scratched))
+            project['name'] = str(name)
             project['description'] = description
-            project['enabled'] = enabled
-            project['scratched'] = scratched
+            project['enabled'] = bool(enabled)
+            project['scratched'] = bool(scratched)
 
         # update memberslist
         if members:
@@ -350,6 +355,7 @@ class KeyStone:
         :param perun_id: perunid of project to be deleted
         :return:
         """
+        perun_id = str(perun_id)
         if perun_id in self.denbi_project_map:
             # get project from map
             denbi_project = self.denbi_project_map[perun_id]
@@ -375,12 +381,12 @@ class KeyStone:
 
         for os_project in self.keystone.projects.list(domain=self.target_domain_id):
             if hasattr(os_project,'flag') and os_project.flag == self.flag:
-                denbi_project = {'id': os_project.id,
-                                'name' : os_project.name,
-                                'perun_id' : os_project.perun_id,
-                                'description' : os_project.description,
-                                'enabled' : os_project.enabled,
-                                'scratched' : os_project.scratched,
+                denbi_project = {'id': str(os_project.id),                  # str
+                                'name' : str(os_project.name),              # str
+                                'perun_id' : str(os_project.perun_id),      # str
+                                'description' : os_project.description,     #
+                                'enabled' : bool(os_project.enabled),       # bool
+                                'scratched' : bool(os_project.scratched),   # bool
                                 'members' : [],
                                 'quotas' : {} }
                 # create entry in maps
@@ -388,9 +394,9 @@ class KeyStone:
                 self.denbi_project_map[denbi_project['perun_id']] = denbi_project
 
         for role in self.keystone.role_assignments.list():
-            if 'project' in role.scope: # consider only if project is assigned, otherwise ignore
-                tpid =  role.scope['project']['id']
-                tuid = role.user['id']
+            if 'project' in role.scope and hasattr(role,'user') : # consider only if project and user is assigned, otherwise ignore
+                tpid =  str(role.scope['project']['id'])
+                tuid = str(role.user['id'])
             
                 if tpid in self.__project_id2perun_id__ and tuid in self.__user_id2perun_id__ :
                     self.denbi_project_map[self.__project_id2perun_id__[tpid]]['members'].\
@@ -410,6 +416,9 @@ class KeyStone:
         :param user_id: perun id of an user
         :return:
         """
+
+        project_id = str(project_id)
+        user_id = str(user_id)
 
         #check if project/user exists
         if not(project_id in self.denbi_project_map):
@@ -434,6 +443,8 @@ class KeyStone:
         :return:
         """
 
+        project_id = str(project_id)
+        user_id = str(user_id)
         #check if project/user exists
         if not(project_id in self.denbi_project_map):
             raise ValueError('A project with perun_id:'+project_id+' does not exists!')
