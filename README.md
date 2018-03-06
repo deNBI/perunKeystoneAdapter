@@ -4,10 +4,12 @@ The *Perun Keystone Adapter* is a library written in Python that parses data pro
 
 ## Install
 
-You can install the latest version with pip:
+Install a specific version of this library by providing a tag of the [releases page](https://github.com/deNBI/perunKeystoneAdapter/releases):
+
+E.g: for version **0.1.0**:
 
 ~~~BASH
-pip install git+https://github.com/deNBI/perunKeystoneAdapter@master
+pip install git+https://github.com/deNBI/perunKeystoneAdapter@0.1.0
 ~~~
 
 ## Properties
