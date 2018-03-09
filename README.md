@@ -6,11 +6,15 @@ The *Perun Keystone Adapter* is a library written in Python that parses data pro
 
 Install a specific version of this library by providing a tag of the [releases page](https://github.com/deNBI/perunKeystoneAdapter/releases):
 
-E.g: for version **0.1.0**:
+E.g: for version **0.1.1**:
 
 ~~~BASH
-pip install git+https://github.com/deNBI/perunKeystoneAdapter@0.1.0
+pip install git+https://github.com/deNBI/perunKeystoneAdapter@0.1.1
 ~~~
+
+## Caveats
+Before installing Perun Keystone Adapter you must be sure that used openstack domain for propagation is empty *or*  all existing projects and users that also exists in perun must be tagged to avoid naming conflicts.
+Per default everything created by the library is tagged as *perun_propagation*. This can be overwritten in libraries KeyStone constructor.
 
 ## Properties
  -  abstract keystone to simplify often used tasks (create/delete/update/list users and projects) 
