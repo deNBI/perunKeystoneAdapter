@@ -13,8 +13,9 @@ pip install git+https://github.com/deNBI/perunKeystoneAdapter@0.1.1
 ~~~
 
 ## Caveats
-Before installing Perun Keystone Adapter you must be sure that used openstack domain for propagation is empty *or*  all existing projects and users that also exists in perun must be tagged to avoid naming conflicts.
-Per default everything created by the library is tagged as *perun_propagation*. This can be overwritten in libraries KeyStone constructor.
+Before installing Perun Keystone Adapter you must be sure that used openstack domain for propagation is empty *or*  all existing projects and users that also exists in perun must be tagged to avoid naming conflicts and the project names must
+have the same names as the groups in perun.
+Per default everything created by the library is tagged as *perun_propagation*. This can be overwritten in the constructor of the KeyStone class.
 
 ## Properties
  -  abstract keystone to simplify often used tasks (create/delete/update/list users and projects) 
