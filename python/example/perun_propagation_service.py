@@ -12,7 +12,7 @@ from threading import Thread
 app = Flask(__name__)
 
 
-BASEDIR = '/usr/share/perun/upload/'
+BASEDIR = '/tmp/perun/upload/'
 
 
 @app.route("/upload", methods=['PUT'])

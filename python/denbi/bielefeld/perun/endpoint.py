@@ -201,13 +201,13 @@ class Endpoint:
         for dpcc_project in json_obj:
 
             if 'id' in dpcc_project and 'denbiProjectMembers' in dpcc_project:
-                perun_id = str(dpcc_project['id'])
-                name = str(dpcc_project['name'])
-                description = str(dpcc_project['description'])
+                perun_id = str(dpcc_project['id'])  # as ascii str
+                name = str(dpcc_project['name']) # as ascii str
+                description = dpcc_project['description'] # as unicode str
                 status = str(dpcc_project['denbiProjectStatus']) # values ?
                 members =  []
                 for m in dpcc_project['denbiProjectMembers']:
-                    members.append(str(m['id']))
+                    members.append(str(m['id'])) # as ascii str
 
                 # retrieve project quota
                 number_of_vms = dpcc_project['denbiProjectNumberOfVms']
