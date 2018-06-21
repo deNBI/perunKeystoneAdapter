@@ -35,13 +35,13 @@ source env.rc
 3. Run the python script
 
 ~~~BASH
-python set_project_flag.py  user_id flag_name
+python set_project_flag.py  project_id flag_name
 ~~~
 
 or
 
 ~~~BASH
-python set_user_flag.py  project_id flag_name
+python set_user_flag.py  user_id flag_name
 ~~~
 
 where
