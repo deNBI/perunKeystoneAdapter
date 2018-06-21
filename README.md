@@ -2,21 +2,6 @@
 
 The *Perun Keystone Adapter* is a library written in Python that parses data propagated by [Perun](https://perun.elixir-czech.cz) and modifies a connected [Openstack](https://www.openstack.org) [Keystone](https://docs.openstack.org/keystone/latest/).
 
-## Install
-
-Install a specific version of this library by providing a tag of the [releases page](https://github.com/deNBI/perunKeystoneAdapter/releases):
-
-E.g: for version **0.1.1**:
-
-~~~BASH
-pip install git+https://github.com/deNBI/perunKeystoneAdapter@0.1.1
-~~~
-
-## Caveats
-Before installing Perun Keystone Adapter you must be sure that used openstack domain for propagation is empty *or*  all existing projects and users that also exists in perun must be tagged to avoid naming conflicts and the project names must
-have the same names as the groups in perun.
-Per default everything created by the library is tagged as *perun_propagation*. This can be overwritten in the constructor of the KeyStone class.
-
 ## Properties
  -  abstract keystone to simplify often used tasks (create/delete/update/list users and projects) 
  -  parse SCIM or de.NBI portal compute center propagation data for users and projects
@@ -27,12 +12,53 @@ Per default everything created by the library is tagged as *perun_propagation*. 
  -  deleting (marked and disabled) items functionality is available but not integrated in the normal workflow.
  -  set/modify project quotas (**alpha state**, needs a full openstack  installation like [DevStack](https://docs.openstack.org/devstack/latest/) for testing)
  -  compatible with python 2.7.x and python 3
-   
 
-## Unit tests
-The library comes with a set of unit tests - a running keystone instance is required to perfom the test. However, I suggest __not__ using a keystone that is used in a production enviroment. See [test/keystone/](/test/keystone) to retain a ready to-use docker container solution for this task.
+## Preparation
 
-There currently **no** tests for setting/modify project quotas.
+Before installing Perun Keystone Adapter you must be sure that used openstack domain for propagation is empty *or*  all existing projects and users that also exists in perun must be tagged to avoid naming conflicts and the project names must
+have the same names as the groups in perun.
+Per default everything created by the library is tagged as *perun_propagation*. This can be overwritten in the constructor of the KeyStone class.
+
+As a help there are two scripts included in the assets directory of this repository that set a flag of your choice for a user and for a project.
+
+1. First install all necessary dependencies (maybe in your virtual environment) by running
+
+~~~BASH
+pip install -r requirements.txt
+~~~
+
+2. The scripts expect that you sourced your OpenStack rc file:
+~~~BASH
+source env.rc
+~~~
+
+3. Run the python script
+
+~~~BASH
+python set_project_flag.py  project_id flag_name
+~~~
+
+or
+
+~~~BASH
+python set_user_flag.py  user_id flag_name
+~~~
+
+where
+
+  * user_id is or project_id the OpenStack specific id
+
+  * flag_name can be any value which is set for the `flag` attribute. If you do not modify the perunKeystoneAdapter, it exptects `perun_propagation` as the falue.
+
+## Install
+
+Install a specific version of this library by providing a tag of the [releases page](https://github.com/deNBI/perunKeystoneAdapter/releases):
+
+E.g: for version **0.1.1**:
+
+~~~BASH
+pip install git+https://github.com/deNBI/perunKeystoneAdapter@0.1.1
+~~~
 
 ## Example usage
 
@@ -85,3 +111,11 @@ $ curl -T file http://127.0.0.1:5000/upload
 ```
 
 _However, the script is a proof of concept and it is **not recommend** using it as it is._
+
+## Development
+
+## Unit tests
+
+The library comes with a set of unit tests - a running keystone instance is required to perfom the test. However, I suggest __not__ using a keystone that is used in a production enviroment. See [test/keystone/](/test/keystone) to retain a ready to-use docker container solution for this task.
+
+There currently **no** tests for setting/modify project quotas.
