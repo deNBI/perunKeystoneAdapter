@@ -15,5 +15,6 @@ def main():
     # Update the user
     keystone.users.update(args.user_id, flag=args.flag)
 
+
 if __name__ == '__main__':
     main()

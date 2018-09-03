@@ -46,7 +46,7 @@ def upload():
     file.close()
 
     # parse propagated data in separate thread
-    t = Thread(target=_perun_propagation,args=(file,))
+    t = Thread(target=_perun_propagation, args=(file,))
     t.start()
 
     # return immediately
