@@ -1,5 +1,9 @@
 import json
+import logging
+
 from denbi.bielefeld.perun.keystone import KeyStone
+
+log = logging.getLogger(__name__)
 
 
 def import_json(path):
@@ -16,7 +20,7 @@ class Endpoint:
 
     """
 
-    def __init__(self, keystone=None, mode="scim", store_email=True, support_quotas=True):
+    def __init__(self, keystone=None, mode="scim", store_email=True, support_quotas=True, read_only=False):
         '''
 
         :param keystone: initialized keystone object
@@ -26,9 +30,11 @@ class Endpoint:
         '''
 
         if keystone:
+            if read_only and not isinstance(keystone, KeyStone):
+                raise Exception("Read-only flag is only functional with internal keystone library")
             self.keystone = keystone
         else:
-            self.keystone = KeyStone()
+            self.keystone = KeyStone(read_only=read_only)
 
         self.mode = str(mode)
         self.store_email = bool(store_email)
@@ -43,6 +49,7 @@ class Endpoint:
         :return:
         '''
 
+        log.info("Importing data mode=%s users_path=%s groups_path=%s", self.mode, users_path, groups_path)
         if self.mode == "scim":
             self.__import_scim_userdata__(import_json(users_path))
             self.__import_scim_projectdata__(import_json(groups_path))
@@ -84,10 +91,12 @@ class Endpoint:
                             user['email'] == email and
                             user['enabled'] == enabled):
                         # update user
+                        log.info("Updating user %s elixir_id=%s email=%s enabled=%s", perun_id, elixir_id, email, enabled)
                         self.keystone.users_update(perun_id, elixir_id=elixir_id, email=email, enabled=enabled)
 
                 else:
                     # register user in keystone
+                    log.info("Creating user %s elixir_id=%s email=%s, enabled=%s", perun_id, elixir_id, email, enabled)
                     self.keystone.users_create(elixir_id, perun_id, email=email, enabled=enabled)
 
                 # add perun_id to temporary list
@@ -101,6 +110,7 @@ class Endpoint:
         del_users = set(user_ids) ^ set(user_map.keys())
 
         for id in del_users:
+            log.info("Deleting user %s", id)
             self.keystone.users_delete(id)
 
     def __import_scim_projectdata__(self, json_obj):
@@ -125,8 +135,10 @@ class Endpoint:
                     project = project_map[perun_id]
 
                     if set(project['members']) != set(members):
+                        log.info("Updating project %s with {%s}", perun_id, ','.join(members))
                         self.keystone.projects_update(perun_id, members)
                 else:
+                    log.info("Creating project %s with name=%s members={%s}", perun_id, name, ','.join(members))
                     self.keystone.projects_create(perun_id, name=name, members=members)
 
                 project_ids.append(perun_id)
@@ -138,6 +150,7 @@ class Endpoint:
         del_projects = set(project_ids) ^ set(project_map.keys())
 
         for id in del_projects:
+            log.info("Deleting project %s", id)
             self.keystone.projects_delete(id)
 
     def __import_dpcc_userdata__(self, json_obj):
@@ -166,9 +179,11 @@ class Endpoint:
                             user['email'] == email and
                             user['enabled'] == enabled):
                         # update user
+                        log.info("Updating user %s elixir_id=%s email=%s enabled=%s", perun_id, elixir_id, email, enabled)
                         self.keystone.users_update(perun_id, elixir_id, email, enabled)
                 else:
                     # register user in keystone
+                    log.info("Creating user %s elixir_id=%s email=%s, enabled=%s", perun_id, elixir_id, email, enabled)
                     self.keystone.users_create(elixir_id, perun_id, email=email, enabled=enabled)
 
                 # add perun_id to temporary list
@@ -181,6 +196,7 @@ class Endpoint:
         del_users = set(user_ids) ^ set(user_map.keys())
 
         for id in del_users:
+            log.info("Deleting user %s", id)
             self.keystone.users_delete(id)
 
     def __import_dpcc_projectdata__(self, json_obj):
@@ -215,6 +231,7 @@ class Endpoint:
                     if set(project['members']) != set(members) or \
                             project['name'] != name or \
                             'description' in project and project['description'] != description:
+                        log.info("Updating project %s with {%s}", perun_id, ','.join(members))
                         self.keystone.projects_update(perun_id, members)
 
                     # check for quotas and update it if possible
@@ -229,15 +246,20 @@ class Endpoint:
                         )
 
                         if any(modified):
+                            log.info("Updating quota vms=%s disk=%s hardware=%s ram=%s os=%s", number_of_vms, disk_space, special_purpose_hardware, ram_per_vm, object_storage)
                             self.keystone.project_quota(number_of_vms=number_of_vms,
                                                         disk_space=disk_space,
                                                         special_purpose_hardware=special_purpose_hardware,
                                                         ram_per_vm=ram_per_vm,
                                                         object_storage=object_storage)
+                        else:
+                            log.debug("Quota unchanged")
 
                 else:
+                    log.info("Creating project %s with name=%s members={%s}", perun_id, name, ','.join(members))
                     self.keystone.projects_create(perun_id, name=name, description=description, members=members)
                     if self.support_quotas:
+                        log.info("Setting quota vms=%s disk=%s hardware=%s ram=%s os=%s", number_of_vms, disk_space, special_purpose_hardware, ram_per_vm, object_storage)
                         self.keystone.project_quota(number_of_vms=number_of_vms,
                                                     disk_space=disk_space,
                                                     special_purpose_hardware=special_purpose_hardware,
@@ -252,4 +274,5 @@ class Endpoint:
         del_projects = set(project_ids) ^ set(project_map.keys())
 
         for id in del_projects:
+            log.info("Deleting project %s", id)
             self.keystone.projects_delete(id)

@@ -1,7 +1,11 @@
 import unittest
 import uuid
+import logging  # NOQA
 
 from denbi.bielefeld.perun.keystone import KeyStone
+
+# If you want detailed logs of what is going on, uncomment this.
+# logging.basicConfig(level=logging.INFO)
 
 
 class TestKeystone(unittest.TestCase):

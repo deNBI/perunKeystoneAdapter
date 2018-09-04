@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import os
 import tarfile
 import tempfile
 
@@ -9,24 +10,25 @@ from denbi.bielefeld.perun.keystone import KeyStone
 from threading import Thread
 
 app = Flask(__name__)
+app.config['keystone_read_only'] = os.environ.get('KEYSTONE_READ_ONLY', 'False').lower() == 'true'
 
 
-def process_tarball(tarball_path):
+def process_tarball(tarball_path, read_only=False):
     # TODO(hxr): deduplicate
     directory = tempfile.TemporaryDirectory()
     app.logging.info("Processing data uploaded by Perun: %s", tarball_path)
 
     # extract tar file
     tar = tarfile.open(tarball_path, "r:gz")
-    tar.extractall(path=directory)
+    tar.extractall(path=directory.name)
     tar.close()
 
     # import into keystone
     keystone = KeyStone(default_role="user", create_default_role=True,
-                        support_quotas=False, target_domain_name='elixir')
+                        support_quotas=False, target_domain_name='elixir', read_only=read_only)
     endpoint = Endpoint(keystone=keystone, mode="denbi_portal_compute_center",
                         support_quotas=False)
-    endpoint.import_data(directory + '/users.scim', directory + '/groups.scim')
+    endpoint.import_data(directory.name + '/users.scim', directory.name + '/groups.scim')
     app.logging.info("Finished processing %s", tarball_path)
 
     # Cleanup
@@ -46,15 +48,15 @@ def upload():
     file.close()
 
     # parse propagated data in separate thread
-    t = Thread(target=_perun_propagation, args=(file,))
+    t = Thread(target=_perun_propagation, args=(file.name,), kwargs={'read_only': app.config.get('keystone_read_only', False)})
     t.start()
 
     # return immediately
     return ""
 
 
-def _perun_propagation(file):
-    process_tarball(file)
+def _perun_propagation(file, read_only=False):
+    process_tarball(file, read_only=read_only)
     # TODO: cleanup uploaded tarballs?
 
 
