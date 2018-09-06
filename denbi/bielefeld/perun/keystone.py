@@ -137,6 +137,7 @@ class KeyStone:
             # Read-only
             denbi_user = {'id': 'read-only',
                           'elixir_id': 'read-only@elixir-europe.org',
+                          'perun_id': perun_id,
                           'enabled': enabled,
                           'email': str(email),
                           'deleted': False}
@@ -227,12 +228,16 @@ class KeyStone:
             # consider only correct flagged user
             # any other checks (like for name or perun_id are then not neccessary ...
             if hasattr(os_user, "flag") and str(os_user.flag) == self.flag:
+                if not hasattr(os_user, 'perun_id'):
+                    raise Exception("User ID %s should have perun_id" % (os_user.id, ))
+
 
                 denbi_user = {'id': str(os_user.id),  # str
                               'perun_id': str(os_user.perun_id),  # str
                               'elixir_id': str(os_user.name),  # str
                               'enabled': bool(os_user.enabled),  # boolean
-                              'deleted': bool(os_user.deleted)}  # boolean
+                              # TODO(hxr): prod did not have os_user.deleted, why?
+                              'deleted': bool(getattr(os_user, 'deleted', False))}  # boolean
                 # check for optional attribute email
                 if hasattr(os_user, 'email'):
                     denbi_user['email'] = str(os_user.email)  # str
@@ -332,6 +337,7 @@ class KeyStone:
 
         project = self.denbi_project_map[perun_id]
 
+        # TODO(hxr): removed enabled is none due to update having blank enabled
         if (name is not None or description is not None or enabled is not None or project['scratched'] != scratched):
             if name is None:
                 name = project['name']
@@ -378,6 +384,9 @@ class KeyStone:
         :return:
         """
         self.projects_update(perun_id, scratched=True)
+        # TODO(hxr): implement real-delete mode?
+        #project = self.denbi_project_map[perun_id]
+        #print('deleting', project['id'])
 
     def projects_terminate(self, perun_id):
         """

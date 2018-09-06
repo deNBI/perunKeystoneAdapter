@@ -228,6 +228,7 @@ class Endpoint:
                     # check if project data changed
                     project = project_map[perun_id]
 
+                    # TODO(hxr) prod, this was not working so I set to `True`
                     if set(project['members']) != set(members) or \
                             project['name'] != name or \
                             'description' in project and project['description'] != description:
@@ -237,6 +238,7 @@ class Endpoint:
                     # check for quotas and update it if possible
                     if self.support_quotas:
                         quotas = project['quotas']
+                        # TODO(hxr): makes assumption that some quota vals are set. they're not.
                         modified = (
                             ('number_of_vms' in quotas and quotas['number_of_vms'] != number_of_vms),
                             ('disk_space' in quotas and quotas['disk_space'] != disk_space),
@@ -245,6 +247,7 @@ class Endpoint:
                             ('object_storage' in quotas and quotas['object_storage'] != object_storage)
                         )
 
+                        # TODO(hxr): prod had none of these values on the quotas object, so none were attempted to be set.
                         if any(modified):
                             log.info("Updating quota vms=%s disk=%s hardware=%s ram=%s os=%s", number_of_vms, disk_space, special_purpose_hardware, ram_per_vm, object_storage)
                             self.keystone.project_quota(number_of_vms=number_of_vms,

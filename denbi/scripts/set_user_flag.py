@@ -13,6 +13,7 @@ def main():
     keystone = scripts.obtain_keystone()
 
     # Update the user
+    # TODO(hxr): support setting perun_id as well
     keystone.users.update(args.user_id, flag=args.flag)
 
 

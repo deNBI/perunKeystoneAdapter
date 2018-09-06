@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import argparse
 import logging
+import shutil
 import tarfile
 import tempfile
 
@@ -11,11 +12,11 @@ logging.basicConfig(level=logging.WARN)
 
 
 def process_tarball(tarball_path, read_only=False):
-    directory = tempfile.TemporaryDirectory()
+    directory = tempfile.mkdtemp()
 
     # extract tar file
     tar = tarfile.open(tarball_path, "r:gz")
-    tar.extractall(path=directory.name)
+    tar.extractall(path=directory)
     tar.close()
 
     # import into keystone
@@ -23,10 +24,10 @@ def process_tarball(tarball_path, read_only=False):
                         support_quotas=False, target_domain_name='elixir', read_only=read_only)
     endpoint = Endpoint(keystone=keystone, mode="denbi_portal_compute_center",
                         support_quotas=False)
-    endpoint.import_data(directory.name + '/users.scim', directory.name + '/groups.scim')
+    endpoint.import_data(directory + '/users.scim', directory + '/groups.scim')
 
     # Cleanup
-    directory.cleanup()
+    shutil.rmtree(directory)
 
 
 def main():
