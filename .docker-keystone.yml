@@ -1,7 +1,0 @@
-version: '2'
-services:
-  keystone:
-    image: monasca/keystone
-    ports:
-      - 5000:5000
-      - 35357:35357
