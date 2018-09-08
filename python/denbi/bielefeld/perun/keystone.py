@@ -3,6 +3,7 @@ import os
 from keystoneauth1.identity import v3
 from keystoneauth1 import session
 from keystoneclient.v3 import client
+from novaclient import client as novaClient
 
 
 class KeyStone:
@@ -59,6 +60,10 @@ class KeyStone:
                            project_domain_name=self.domain_name)
         sess = session.Session(auth=auth)
         self.keystone = client.Client(session=sess)
+
+        # If support_quotas create instance of nova client
+        if support_quotas:
+            self.nova = novaClient.Client(2, session=sess, endpoint_type="public")
 
         self.target_domain_name = str(target_domain_name)
 
@@ -283,9 +288,16 @@ class KeyStone:
         """
         perun_id = str(perun_id)
         if self.support_quotas:
-            project = self.denbi_project_map[perun_id]
-            raise NotImplementedError
+            if perun_id in self.denbi_project_map:
+                # get project from map
+                project = self.denbi_project_map[perun_id]
 
+                self.nova.quotas.update(tenant_id=project['id'], instances=number_of_vms, cores=None, ram=ram_per_vm,
+                                        metadata_items=None, key_pairs=None, server_groups=None, server_group_members=None)
+                # TODO: include missing quotas
+
+            else:
+                raise ValueError('Project with perun_id ' + perun_id + ' not found in project_map!')
 
     def projects_update(self,perun_id,members=None, name=None, description=None,enabled=None, scratched = False):
         """
@@ -405,7 +417,10 @@ class KeyStone:
 
         # Check for project specific quota
         if self.support_quotas:
-            raise NotImplementedError
+            for perun_id in self.denbi_project_map:
+                project_id = self.denbi_project_map[perun_id]['id']
+                self.denbi_project_map[perun_id]['quotas'] = self.nova.quotas.get(tenant_id=project_id, user_id=None, detail=False)
+                # TODO: include missing quotas
 
         return self.denbi_project_map
 
