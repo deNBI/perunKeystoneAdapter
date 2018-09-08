@@ -26,7 +26,7 @@ class TestKeystone(unittest.TestCase):
                    'OS_USERNAME': 'admin',
                    'OS_PASSWORD': 's3cr3t'}
 
-        self.ks = KeyStone(environ, default_role="user", create_default_role=True, support_quotas=False, target_domain_name='elixir')
+        self.ks = KeyStone(environ,default_role="user",create_default_role=True,support_quotas=True,target_domain_name='elixir')
 
     def __uuid(self):
         return str(uuid.uuid4())
@@ -110,6 +110,76 @@ class TestKeystone(unittest.TestCase):
         # check keystone project list
         denbi_project_map = self.ks.projects_map()
         self.assertFalse(perunid in denbi_project_map, "Project with PerunId '" + perunid + "' does exists.")
+
+    def test_project_set_and_get_quotas(self):
+        '''
+        Test setting project quotas using the method project_quota and get results to compare quotas with method
+        projects_map from KeyStone object.
+        :return:
+        '''
+        # TODO: test to be included quotas
+
+        print("Run 'test_project_quota'")
+
+        perunid = self.__uuid()
+
+        denbi_project = self.ks.projects_create(perunid)
+
+        # TODO: test ValueError if the project is not found in project_map
+
+        # TODO: test if the value matches the expected type
+
+        # receiving project quotas
+        project_map_original = self.ks.projects_map()
+
+        # call method project_quota without setting any quota
+        self.ks.project_quota(perunid, number_of_vms=None, \
+                              disk_space=None, \
+                              special_purpose_hardware=None, \
+                              ram_per_vm=None, \
+                              object_storage=None)
+
+        # receiving project quotas
+        project_map = self.ks.projects_map()
+
+        # project quota should not have changed
+        self.assertEqual(project_map_original[perunid]['quotas'], project_map[perunid]['quotas'], "Message")
+
+        # call method project_quota with negative values
+        # TODO: test all quotas with negative values
+        self.ks.project_quota(perunid, number_of_vms=-1, \
+                              disk_space=None, \
+                              special_purpose_hardware=None, \
+                              ram_per_vm=None, \
+                              object_storage=None)
+
+        # receiving project quotas
+        project_map = self.ks.projects_map()
+
+        # project quota should not have changed
+        self.assertEqual(project_map_original[perunid]['quotas'], project_map[perunid]['quotas'], "Message")
+
+        NUMBER_OF_VMS = project_map_original[perunid]['quotas'].instances + 1
+
+        # call method project_quota with predefined values
+        # TODO: test all quotas with predefined values
+        self.ks.project_quota(perunid, number_of_vms=NUMBER_OF_VMS, \
+                      disk_space=None, \
+                      special_purpose_hardware=None, \
+                      ram_per_vm=None, \
+                      object_storage=None)
+
+        # receiving project quotas
+        project_map = self.ks.projects_map()
+
+        # project quotas should match the predefined values
+        self.assertEqual(NUMBER_OF_VMS, project_map[perunid]['quotas'].instances, "number_of_vms falsch")
+
+        # delete previous created project
+        self.ks.projects_delete(perunid)
+
+        # terminate previous marked project
+        self.ks.projects_terminate(denbi_project['perun_id'])
 
     def test_all(self):
         '''
