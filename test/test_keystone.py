@@ -122,6 +122,7 @@ class TestKeystone(unittest.TestCase):
         projects_map from KeyStone object.
         :return:
         '''
+        # TODO: write error messages
         # TODO: test to be included quotas
 
         print("Run 'test_project_quota'")
@@ -142,43 +143,54 @@ class TestKeystone(unittest.TestCase):
                               disk_space=None, \
                               special_purpose_hardware=None, \
                               ram_per_vm=None, \
-                              object_storage=None)
+                              object_storage=None,
+                              number_of_cpus=None)
 
         # receiving project quotas
         project_map = self.ks.projects_map()
 
         # project quota should not have changed
-        self.assertEqual(project_map_original[perunid]['quotas'], project_map[perunid]['quotas'], "Message")
+        self.assertEqual(project_map_original[perunid]['quotas']['nova'].instances,
+                         project_map[perunid]['quotas']['nova'].instances, "Message")
 
         # call method project_quota with negative values
         # TODO: test all quotas with negative values
         self.ks.project_quota(perunid, number_of_vms=-1, \
-                              disk_space=None, \
+                              disk_space=-1, \
                               special_purpose_hardware=None, \
-                              ram_per_vm=None, \
-                              object_storage=None)
+                              ram_per_vm=-1, \
+                              object_storage=None,
+                              number_of_cpus=-1)
 
         # receiving project quotas
         project_map = self.ks.projects_map()
 
         # project quota should not have changed
-        self.assertEqual(project_map_original[perunid]['quotas'], project_map[perunid]['quotas'], "Message")
+        self.assertEqual(project_map_original[perunid]['quotas']['nova'].instances,
+                         project_map[perunid]['quotas']['nova'].instances, "Message")
 
-        NUMBER_OF_VMS = project_map_original[perunid]['quotas'].instances + 1
+        NUMBER_OF_VMS = project_map_original[perunid]['quotas']['nova'].instances + 1
+        RAM_PER_VM = project_map_original[perunid]['quotas']['nova'].ram + 1
+        NUMBER_OF_CPUS = project_map_original[perunid]['quotas']['nova'].cores + 1
+        DISK_SPACE = project_map_original[perunid]['quotas']['cinder'].gigabytes + 1
 
         # call method project_quota with predefined values
         # TODO: test all quotas with predefined values
         self.ks.project_quota(perunid, number_of_vms=NUMBER_OF_VMS, \
-                      disk_space=None, \
+                      disk_space=DISK_SPACE, \
                       special_purpose_hardware=None, \
-                      ram_per_vm=None, \
-                      object_storage=None)
+                      ram_per_vm=RAM_PER_VM, \
+                      object_storage=None,
+                      number_of_cpus=NUMBER_OF_CPUS)
 
         # receiving project quotas
         project_map = self.ks.projects_map()
 
         # project quotas should match the predefined values
-        self.assertEqual(NUMBER_OF_VMS, project_map[perunid]['quotas'].instances, "number_of_vms falsch")
+        self.assertEqual(NUMBER_OF_VMS, project_map[perunid]['quotas']['nova'].instances, "Message")
+        self.assertEqual(DISK_SPACE, project_map[perunid]['quotas']['cinder'].gigabytes, "Message")
+        self.assertEqual(RAM_PER_VM, project_map[perunid]['quotas']['nova'].ram, "Message")
+        self.assertEqual(NUMBER_OF_CPUS, project_map[perunid]['quotas']['nova'].cores, "Message")
 
         # delete previous created project
         self.ks.projects_delete(perunid)

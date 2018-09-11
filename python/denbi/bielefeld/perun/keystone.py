@@ -4,6 +4,7 @@ from keystoneauth1.identity import v3
 from keystoneauth1 import session
 from keystoneclient.v3 import client
 from novaclient import client as novaClient
+from cinderclient import client as cinderClient
 
 
 class KeyStone:
@@ -64,6 +65,7 @@ class KeyStone:
         # If support_quotas create instance of nova client
         if support_quotas:
             self.nova = novaClient.Client(2, session=sess, endpoint_type="public")
+            self.cinder =  cinderClient.Client(2, session=sess, endpoint_type="public")
 
         self.target_domain_name = str(target_domain_name)
 
@@ -276,7 +278,8 @@ class KeyStone:
                       disk_space=None,\
                       special_purpose_hardware=None,\
                       ram_per_vm=None,\
-                      object_storage=None):
+                      object_storage=None,
+                      number_of_cpus=None):
         """
         Set/Update quota for project
         :param number_of_vms:
@@ -284,6 +287,7 @@ class KeyStone:
         :param special_purpose_hardware: supported values GPU, FPGA
         :param ram_per_vm: in GB
         :param object_storage: in GB
+        :param number_of_cpus:
         :return:
         """
         perun_id = str(perun_id)
@@ -291,9 +295,28 @@ class KeyStone:
             if perun_id in self.denbi_project_map:
                 # get project from map
                 project = self.denbi_project_map[perun_id]
+                if number_of_vms is not None and number_of_vms> 0:
+                    self.nova.quotas.update(tenant_id=project['id'], instances=number_of_vms)
+                if number_of_cpus is not None and number_of_cpus > 0:
+                    self.nova.quotas.update(tenant_id=project['id'], cores=number_of_cpus)
+                if ram_per_vm is not None and ram_per_vm > 0:
+                    self.nova.quotas.update(tenant_id=project['id'], ram=ram_per_vm)
 
-                self.nova.quotas.update(tenant_id=project['id'], instances=number_of_vms, cores=None, ram=ram_per_vm,
-                                        metadata_items=None, key_pairs=None, server_groups=None, server_group_members=None)
+                '''
+                if metadata_items > 0:
+                    self.nova.quotas.update(tenant_id=project['id'], metadata_items=None)
+                if key_pairs > 0:
+                    self.nova.quotas.update(tenant_id=project['id'], key_pairs=None)
+                if server_groups:
+                    self.nova.quotas.update(tenant_id=project['id'], server_groups=None)
+                if server_group_members > 0:
+                    self.nova.quotas.update(tenant_id=project['id'], server_group_members=None)
+                '''
+
+                if disk_space != None:
+                    self.cinder.quotas.update(tenant_id=project['id'], gigabytes=disk_space)
+                # , snapshots=None, volumes=None)
+
                 # TODO: include missing quotas
 
             else:
@@ -419,7 +442,8 @@ class KeyStone:
         if self.support_quotas:
             for perun_id in self.denbi_project_map:
                 project_id = self.denbi_project_map[perun_id]['id']
-                self.denbi_project_map[perun_id]['quotas'] = self.nova.quotas.get(tenant_id=project_id, user_id=None, detail=False)
+                self.denbi_project_map[perun_id]['quotas']['nova'] = self.nova.quotas.get(tenant_id=project_id, user_id=None, detail=False)
+                self.denbi_project_map[perun_id]['quotas']['cinder'] = self.cinder.quotas.get(tenant_id=project_id)
                 # TODO: include missing quotas
 
         return self.denbi_project_map
