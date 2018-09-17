@@ -144,7 +144,10 @@ class TestKeystone(unittest.TestCase):
                               special_purpose_hardware=None, \
                               ram_per_vm=None, \
                               object_storage=None,
-                              number_of_cpus=None)
+                              number_of_cpus=None,
+                              number_of_networks=None,
+                              number_of_subnets=None,
+                              number_of_ports=None)
 
         # receiving project quotas
         project_map = self.ks.projects_map()
@@ -152,6 +155,18 @@ class TestKeystone(unittest.TestCase):
         # project quota should not have changed
         self.assertEqual(project_map_original[perunid]['quotas']['nova'].instances,
                          project_map[perunid]['quotas']['nova'].instances, "Message")
+        self.assertEqual(project_map_original[perunid]['quotas']['nova'].cores,
+                         project_map[perunid]['quotas']['nova'].cores, "Message")
+        self.assertEqual(project_map_original[perunid]['quotas']['nova'].ram,
+                         project_map[perunid]['quotas']['nova'].ram, "Message")
+        self.assertEqual(project_map_original[perunid]['quotas']['cinder'].gigabytes,
+                         project_map[perunid]['quotas']['cinder'].gigabytes, "Message")
+        self.assertEqual(project_map_original[perunid]['quotas']['neutron']['quota']['network'],
+                         project_map[perunid]['quotas']['neutron']['quota']['network'], "Message")
+        self.assertEqual(project_map_original[perunid]['quotas']['neutron']['quota']['subnet'],
+                         project_map[perunid]['quotas']['neutron']['quota']['subnet'], "Message")
+        self.assertEqual(project_map_original[perunid]['quotas']['neutron']['quota']['port'],
+                         project_map[perunid]['quotas']['neutron']['quota']['port'], "Message")
 
         # call method project_quota with negative values
         # TODO: test all quotas with negative values
@@ -160,7 +175,10 @@ class TestKeystone(unittest.TestCase):
                               special_purpose_hardware=None, \
                               ram_per_vm=-1, \
                               object_storage=None,
-                              number_of_cpus=-1)
+                              number_of_cpus=-1,
+                              number_of_networks=-1,
+                              number_of_subnets=-1,
+                              number_of_ports=-1)
 
         # receiving project quotas
         project_map = self.ks.projects_map()
@@ -168,11 +186,26 @@ class TestKeystone(unittest.TestCase):
         # project quota should not have changed
         self.assertEqual(project_map_original[perunid]['quotas']['nova'].instances,
                          project_map[perunid]['quotas']['nova'].instances, "Message")
+        self.assertEqual(project_map_original[perunid]['quotas']['nova'].cores,
+                         project_map[perunid]['quotas']['nova'].cores, "Message")
+        self.assertEqual(project_map_original[perunid]['quotas']['nova'].ram,
+                         project_map[perunid]['quotas']['nova'].ram, "Message")
+        self.assertEqual(project_map_original[perunid]['quotas']['cinder'].gigabytes,
+                         project_map[perunid]['quotas']['cinder'].gigabytes, "Message")
+        self.assertEqual(project_map_original[perunid]['quotas']['neutron']['quota']['network'],
+                         project_map[perunid]['quotas']['neutron']['quota']['network'], "Message")
+        self.assertEqual(project_map_original[perunid]['quotas']['neutron']['quota']['subnet'],
+                         project_map[perunid]['quotas']['neutron']['quota']['subnet'], "Message")
+        self.assertEqual(project_map_original[perunid]['quotas']['neutron']['quota']['port'],
+                         project_map[perunid]['quotas']['neutron']['quota']['port'], "Message")
 
         NUMBER_OF_VMS = project_map_original[perunid]['quotas']['nova'].instances + 1
         RAM_PER_VM = project_map_original[perunid]['quotas']['nova'].ram + 1
         NUMBER_OF_CPUS = project_map_original[perunid]['quotas']['nova'].cores + 1
         DISK_SPACE = project_map_original[perunid]['quotas']['cinder'].gigabytes + 1
+        NUMBER_OF_NETWORKS = project_map_original[perunid]['quotas']['neutron']['quota']['network'] + 1
+        NUMBER_OF_SUBNETS = project_map_original[perunid]['quotas']['neutron']['quota']['subnet'] + 1
+        NUMBER_OF_PORTS = project_map_original[perunid]['quotas']['neutron']['quota']['port'] + 1
 
         # call method project_quota with predefined values
         # TODO: test all quotas with predefined values
@@ -181,16 +214,22 @@ class TestKeystone(unittest.TestCase):
                       special_purpose_hardware=None, \
                       ram_per_vm=RAM_PER_VM, \
                       object_storage=None,
-                      number_of_cpus=NUMBER_OF_CPUS)
+                      number_of_cpus=NUMBER_OF_CPUS,
+                      number_of_networks=NUMBER_OF_NETWORKS,
+                      number_of_subnets=NUMBER_OF_SUBNETS,
+                      number_of_ports=NUMBER_OF_PORTS)
 
         # receiving project quotas
         project_map = self.ks.projects_map()
 
         # project quotas should match the predefined values
         self.assertEqual(NUMBER_OF_VMS, project_map[perunid]['quotas']['nova'].instances, "Message")
-        self.assertEqual(DISK_SPACE, project_map[perunid]['quotas']['cinder'].gigabytes, "Message")
         self.assertEqual(RAM_PER_VM, project_map[perunid]['quotas']['nova'].ram, "Message")
         self.assertEqual(NUMBER_OF_CPUS, project_map[perunid]['quotas']['nova'].cores, "Message")
+        self.assertEqual(DISK_SPACE, project_map[perunid]['quotas']['cinder'].gigabytes, "Message")
+        self.assertEqual(NUMBER_OF_NETWORKS, project_map[perunid]['quotas']['neutron']['quota']['network'], "Message")
+        self.assertEqual(NUMBER_OF_SUBNETS, project_map[perunid]['quotas']['neutron']['quota']['subnet'], "Message")
+        self.assertEqual(NUMBER_OF_PORTS, project_map[perunid]['quotas']['neutron']['quota']['port'], "Message")
 
         # delete previous created project
         self.ks.projects_delete(perunid)
