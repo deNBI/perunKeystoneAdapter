@@ -124,6 +124,8 @@ class TestKeystone(unittest.TestCase):
 
         perunid = self.__uuid()
 
+        print(perunid)
+
         denbi_project = self.ks.projects_create(perunid)
 
         # TODO: test ValueError if the project is not found in project_map
