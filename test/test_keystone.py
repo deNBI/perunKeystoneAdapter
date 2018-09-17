@@ -16,11 +16,11 @@ class TestKeystone(unittest.TestCase):
     """
 
     def setUp(self):
-        environ = {'OS_AUTH_URL':'http://localhost:5000/v3/',
+        environ = {'OS_AUTH_URL':'http://192.168.198.4/identity/v3',
                 'OS_PROJECT_NAME':'admin',
                 'OS_USER_DOMAIN_NAME':'Default',
                 'OS_USERNAME':'admin',
-                'OS_PASSWORD':'s3cr3t'}
+                'OS_PASSWORD':'secret'}
 
         self.ks = KeyStone(environ,default_role="user",create_default_role=True,support_quotas=True,target_domain_name='elixir')
 
@@ -128,6 +128,8 @@ class TestKeystone(unittest.TestCase):
         print("Run 'test_project_quota'")
 
         perunid = self.__uuid()
+
+        print(perunid)
 
         denbi_project = self.ks.projects_create(perunid)
 
