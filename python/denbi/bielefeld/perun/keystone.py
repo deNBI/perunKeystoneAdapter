@@ -296,16 +296,32 @@ class KeyStone:
         :return:
         """
         perun_id = str(perun_id)
+
         if self.support_quotas:
             if perun_id in self.denbi_project_map:
                 # get project from map
                 project = self.denbi_project_map[perun_id]
-                if number_of_vms is not None and number_of_vms > 0:
+
+                # check quota usage (nova quotas)
+                vms_in_use = project['quotas']['nova'].instances['in_use']
+                cpus_in_use = project['quotas']['nova'].cores['in_use']
+                ram_in_use = project['quotas']['nova'].ram['in_use']
+
+                # check quota usage (cinder quotas)
+                disk_in_use = project['quotas']['cinder'].gigabytes['in_use']
+
+                if number_of_vms is not None and vms_in_use <= number_of_vms > 0:
                     self.nova.quotas.update(tenant_id=project['id'], instances=number_of_vms)
-                if number_of_cpus is not None and number_of_cpus > 0:
+                elif number_of_vms is not None:
+                    raise ValueError('number_of_vms is 0 or lower than used vms!')
+                if number_of_cpus is not None and cpus_in_use <= number_of_cpus > 0:
                     self.nova.quotas.update(tenant_id=project['id'], cores=number_of_cpus)
-                if ram_per_vm is not None and ram_per_vm > 0:
+                elif number_of_cpus is not None:
+                    raise ValueError('number_of_cpus is 0 or lower than used cpus!')
+                if ram_per_vm is not None and ram_in_use <= ram_per_vm > 0:
                     self.nova.quotas.update(tenant_id=project['id'], ram=ram_per_vm)
+                elif ram_per_vm is not None:
+                    raise ValueError('ram_per_vm is 0 or lower than used ram!')
 
                 '''
                 if metadata_items > 0:
@@ -318,8 +334,10 @@ class KeyStone:
                     self.nova.quotas.update(tenant_id=project['id'], server_group_members=None)
                 '''
 
-                if disk_space is not None and disk_space > 0:
+                if disk_space is not None and disk_in_use <= disk_space > 0:
                     self.cinder.quotas.update(tenant_id=project['id'], gigabytes=disk_space)
+                elif disk_space is not None:
+                    raise ValueError('disk_space is 0 or lower than used disk_space!')
                 # , snapshots=None, volumes=None)
 
                 # 'network', 'subnet', 'port', 'router', 'floatingip',
@@ -459,8 +477,8 @@ class KeyStone:
         if self.support_quotas:
             for perun_id in self.denbi_project_map:
                 project_id = self.denbi_project_map[perun_id]['id']
-                self.denbi_project_map[perun_id]['quotas']['nova'] = self.nova.quotas.get(tenant_id=project_id, user_id=None, detail=False)
-                self.denbi_project_map[perun_id]['quotas']['cinder'] = self.cinder.quotas.get(tenant_id=project_id)
+                self.denbi_project_map[perun_id]['quotas']['nova'] = self.nova.quotas.get(tenant_id=project_id, user_id=None, detail=True)
+                self.denbi_project_map[perun_id]['quotas']['cinder'] = self.cinder.quotas.get(tenant_id=project_id, usage=True)
                 self.denbi_project_map[perun_id]['quotas']['neutron'] = self.neutron.show_quota(project_id)
 
                 # TODO: include missing quotas
