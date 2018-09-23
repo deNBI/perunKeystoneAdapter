@@ -7,7 +7,6 @@ from novaclient import client as novaClient
 from cinderclient import client as cinderClient
 from neutronclient.v2_0 import client as neutronClient
 
-
 class KeyStone:
     """
     Keystone simplifies the communication with Openstack. Offers shortcuts for common functions and also
@@ -284,7 +283,7 @@ class KeyStone:
                       number_of_cpus=None,
                       number_of_networks=None,
                       number_of_subnets=None,
-                      number_of_ports=None):
+                      number_of_router=None):
         """
         Set/Update quota for project
         :param number_of_vms:
@@ -345,12 +344,22 @@ class KeyStone:
                 #                          'vip', 'pool', 'member', 'healthmonitor',
                 #                          'loadbalancer', 'listener', 'rbac_policy'
 
-                if number_of_networks is not None and number_of_networks > 0:
+                networks_in_use = project['quotas']['neutron']['quota']['networks_in_use']
+                subnetworks_in_use = project['quotas']['neutron']['quota']['subnetworks_in_use']
+                routers_in_use = project['quotas']['neutron']['quota']['routers_in_use']
+
+                if number_of_networks is not None and networks_in_use <= number_of_networks > 0:
                     self.neutron.update_quota(project['id'], body={'quota': {'network': number_of_networks}})
-                if number_of_subnets is not None and number_of_subnets > 0:
+                elif number_of_networks is not None:
+                    raise ValueError('number_of_networks is 0 or lower than used networks_in_use!')
+                if number_of_subnets is not None and subnetworks_in_use <= number_of_subnets > 0:
                     self.neutron.update_quota(project['id'], body={'quota': {'subnet': number_of_subnets}})
-                if number_of_ports is not None and number_of_ports > 0:
-                    self.neutron.update_quota(project['id'], body={'quota': {'port': number_of_ports}})
+                elif number_of_subnets is not None:
+                    raise ValueError('number_of_subnets is 0 or lower than used subnetworks_in_use!')
+                if number_of_router is not None and routers_in_use <= number_of_router > 0:
+                    self.neutron.update_quota(project['id'], body={'quota': {'router': number_of_router}})
+                elif number_of_router is not None:
+                    raise ValueError('number_of_router is 0 or lower than used routers_in_use!')
 
                 # TODO: include missing quotas
 
@@ -480,6 +489,17 @@ class KeyStone:
                 self.denbi_project_map[perun_id]['quotas']['nova'] = self.nova.quotas.get(tenant_id=project_id, user_id=None, detail=True)
                 self.denbi_project_map[perun_id]['quotas']['cinder'] = self.cinder.quotas.get(tenant_id=project_id, usage=True)
                 self.denbi_project_map[perun_id]['quotas']['neutron'] = self.neutron.show_quota(project_id)
+
+                # Count number of networks, subnets and routers
+                netw_list = self.neutron.list_networks()
+                subnet_list = self.neutron.list_subnets()
+                router_list = self.neutron.list_routers(retrieve_all=True)
+                netwcount = netw_list['networks']
+                subnetcount = subnet_list['subnets']
+                routercount = router_list['routers']
+                self.denbi_project_map[perun_id]['quotas']['neutron']['quota']['networks_in_use'] = len(netwcount)
+                self.denbi_project_map[perun_id]['quotas']['neutron']['quota']['subnetworks_in_use'] = len(subnetcount)
+                self.denbi_project_map[perun_id]['quotas']['neutron']['quota']['routers_in_use'] = len(routercount)
 
                 # TODO: include missing quotas
 
