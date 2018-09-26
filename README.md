@@ -46,7 +46,7 @@ As a help there are two scripts included in the assets directory of this reposit
 
    where
 
-   * `user_id` is or `project_id` the OpenStack specific ID
+   * `user_id` and `project_id` are OpenStack specific IDs
    * `flag_name` can be any value which is set for the `flag` attribute. If you do not modify the perunKeystoneAdapter, it expects `perun_propagation` as the value.
 
 ## Installation
@@ -64,7 +64,7 @@ pip install git+https://github.com/deNBI/perunKeystoneAdapter@0.1.1
 ### Commandline client
 
 The perun propagation service transfers a zipped tar file containing a users and groups file in scim format.
-The following script unzip and untar the propagated information and  add it to the keystone database. Keystone is addressed by environment variables (sourcing the openstack rc file) or  directly by passing an environemt map (not used in the example). The Openstack user needs at least permission to modify entries in Keystone
+The following script unzips and untars the propagated information and adds it to the keystone database. Keystone is addressed by environment variables (sourcing the openstack rc file) or directly by passing an environemt map (not used in the example). The Openstack user needs at least permission to modify entries in Keystone
 
 ```console
 $ perun_propagation perun_upload.tar.gz
@@ -72,7 +72,7 @@ $ perun_propagation perun_upload.tar.gz
 
 ### WSGI script
 
-The python module also contains a built-in server version of the `perun_propagation` script. The script uses [flask](http://flask.pocoo.org/) to provide an upload function and run library functions in a separate thread. It can be simply tested starting the flask built-in webserver ...
+The python module also contains a built-in server version of the `perun_propagation` script. The script uses [flask](http://flask.pocoo.org/) to provide an upload function and run library functions in a separate thread. It can be simply tested starting the flask built-in webserver.
 
 ```console
 $ perun_propagation_service
