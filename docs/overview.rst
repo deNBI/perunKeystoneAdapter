@@ -114,14 +114,14 @@ container) it will fail due to the domain not having been created yet.
 .. code:: console
 
     $ perun_propagation -v test/resources/perun.tar.gz
-    INFO:denbi.bielefeld.perun.endpoint:Importing data mode=denbi_portal_compute_center users_path=/tmp/tmpaqduxj3q/users.scim groups_path=/tmp/tmpaqduxj3q/groups.scim
-    INFO:denbi.bielefeld.perun.endpoint:Creating user 50000 elixir_id=d877b2f6-3b90-4483-89ce-91eab1bdba99__@elixir-europe.org email=user1@donot.use, enabled=True
-    INFO:denbi.bielefeld.perun.endpoint:Creating user 50001 elixir_id=b3d216a7-8696-451a-9cbf-b8d5e17a6ec2__@elixir-europe.org email=user2@donot.use, enabled=True
-    INFO:denbi.bielefeld.perun.endpoint:Creating user 50002 elixir_id=bb01cabe-eae7-4e46-955f-b35db6e3d552__@elixir-europe.org email=user3@donotuse, enabled=True
-    INFO:denbi.bielefeld.perun.endpoint:Creating user 50003 elixir_id=ce317030-288f-4712-9e5c-922539777c62__@elixir-europe.org email=user4@donotuse, enabled=True
-    INFO:denbi.bielefeld.perun.endpoint:Creating user 50004 elixir_id=60420cf9-eb3e-45f4-8e1b-f8a2b317b042__@elixir-europe.org email=user5@donotuse, enabled=False
-    INFO:denbi.bielefeld.perun.endpoint:Creating project 9999 with name=Test Projekt members={50000,50001,50002}
-    INFO:denbi.bielefeld.perun.endpoint:Creating project 10000 with name=Test Projekt 2 members={50003}
+    INFO:denbi.perun.endpoint:Importing data mode=denbi_portal_compute_center users_path=/tmp/tmpaqduxj3q/users.scim groups_path=/tmp/tmpaqduxj3q/groups.scim
+    INFO:denbi.perun.endpoint:Creating user 50000 elixir_id=d877b2f6-3b90-4483-89ce-91eab1bdba99__@elixir-europe.org email=user1@donot.use, enabled=True
+    INFO:denbi.perun.endpoint:Creating user 50001 elixir_id=b3d216a7-8696-451a-9cbf-b8d5e17a6ec2__@elixir-europe.org email=user2@donot.use, enabled=True
+    INFO:denbi.perun.endpoint:Creating user 50002 elixir_id=bb01cabe-eae7-4e46-955f-b35db6e3d552__@elixir-europe.org email=user3@donotuse, enabled=True
+    INFO:denbi.perun.endpoint:Creating user 50003 elixir_id=ce317030-288f-4712-9e5c-922539777c62__@elixir-europe.org email=user4@donotuse, enabled=True
+    INFO:denbi.perun.endpoint:Creating user 50004 elixir_id=60420cf9-eb3e-45f4-8e1b-f8a2b317b042__@elixir-europe.org email=user5@donotuse, enabled=False
+    INFO:denbi.perun.endpoint:Creating project 9999 with name=Test Projekt members={50000,50001,50002}
+    INFO:denbi.perun.endpoint:Creating project 10000 with name=Test Projekt 2 members={50003}
 
 Server
 ~~~~~~
@@ -151,14 +151,14 @@ Which will produce an identical output
 
     INFO:werkzeug:127.0.0.1 - - [13/Sep/2018 12:35:44] "PUT /upload HTTP/1.1" 200 -
     INFO:root:Processing data uploaded by Perun: /tmp/perun_uploadk34p4gg0.tar.gz
-    INFO:denbi.bielefeld.perun.endpoint:Importing data mode=denbi_portal_compute_center users_path=/tmp/tmpd9ooj5wo/users.scim groups_path=/tmp/tmpd9ooj5wo/groups.scim
-    INFO:denbi.bielefeld.perun.endpoint:Creating user 50000 elixir_id=d877b2f6-3b90-4483-89ce-91eab1bdba99__@elixir-europe.org email=user1@donot.use, enabled=True
-    INFO:denbi.bielefeld.perun.endpoint:Creating user 50001 elixir_id=b3d216a7-8696-451a-9cbf-b8d5e17a6ec2__@elixir-europe.org email=user2@donot.use, enabled=True
-    INFO:denbi.bielefeld.perun.endpoint:Creating user 50002 elixir_id=bb01cabe-eae7-4e46-955f-b35db6e3d552__@elixir-europe.org email=user3@donotuse, enabled=True
-    INFO:denbi.bielefeld.perun.endpoint:Creating user 50003 elixir_id=ce317030-288f-4712-9e5c-922539777c62__@elixir-europe.org email=user4@donotuse, enabled=True
-    INFO:denbi.bielefeld.perun.endpoint:Creating user 50004 elixir_id=60420cf9-eb3e-45f4-8e1b-f8a2b317b042__@elixir-europe.org email=user5@donotuse, enabled=False
-    INFO:denbi.bielefeld.perun.endpoint:Creating project 9999 with name=Test Projekt members={50000,50001,50002}
-    INFO:denbi.bielefeld.perun.endpoint:Creating project 10000 with name=Test Projekt 2 members={50003}
+    INFO:denbi.perun.endpoint:Importing data mode=denbi_portal_compute_center users_path=/tmp/tmpd9ooj5wo/users.scim groups_path=/tmp/tmpd9ooj5wo/groups.scim
+    INFO:denbi.perun.endpoint:Creating user 50000 elixir_id=d877b2f6-3b90-4483-89ce-91eab1bdba99__@elixir-europe.org email=user1@donot.use, enabled=True
+    INFO:denbi.perun.endpoint:Creating user 50001 elixir_id=b3d216a7-8696-451a-9cbf-b8d5e17a6ec2__@elixir-europe.org email=user2@donot.use, enabled=True
+    INFO:denbi.perun.endpoint:Creating user 50002 elixir_id=bb01cabe-eae7-4e46-955f-b35db6e3d552__@elixir-europe.org email=user3@donotuse, enabled=True
+    INFO:denbi.perun.endpoint:Creating user 50003 elixir_id=ce317030-288f-4712-9e5c-922539777c62__@elixir-europe.org email=user4@donotuse, enabled=True
+    INFO:denbi.perun.endpoint:Creating user 50004 elixir_id=60420cf9-eb3e-45f4-8e1b-f8a2b317b042__@elixir-europe.org email=user5@donotuse, enabled=False
+    INFO:denbi.perun.endpoint:Creating project 9999 with name=Test Projekt members={50000,50001,50002}
+    INFO:denbi.perun.endpoint:Creating project 10000 with name=Test Projekt 2 members={50003}
     INFO:root:Finished processing /tmp/perun_uploadk34p4gg0.tar.gz
 
 Production

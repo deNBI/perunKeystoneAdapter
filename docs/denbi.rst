@@ -6,7 +6,7 @@ Subpackages
 
 .. toctree::
 
-    denbi.bielefeld
+    denbi.perun
     denbi.scripts
 
 Module contents

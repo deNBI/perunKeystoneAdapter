@@ -1,7 +1,7 @@
 import json
 import logging
 
-from denbi.bielefeld.perun.keystone import KeyStone
+from denbi.perun.keystone import KeyStone
 
 log = logging.getLogger(__name__)
 

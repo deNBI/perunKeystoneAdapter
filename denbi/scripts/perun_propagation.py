@@ -5,8 +5,8 @@ import shutil
 import tarfile
 import tempfile
 
-from denbi.bielefeld.perun.endpoint import Endpoint
-from denbi.bielefeld.perun.keystone import KeyStone
+from denbi.perun.endpoint import Endpoint
+from denbi.perun.keystone import KeyStone
 
 logging.basicConfig(level=logging.WARN)
 

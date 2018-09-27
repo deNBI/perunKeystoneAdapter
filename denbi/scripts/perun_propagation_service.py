@@ -8,8 +8,8 @@ import tempfile
 
 from flask import Flask
 from flask import request
-from denbi.bielefeld.perun.endpoint import Endpoint
-from denbi.bielefeld.perun.keystone import KeyStone
+from denbi.perun.endpoint import Endpoint
+from denbi.perun.keystone import KeyStone
 from threading import Thread
 
 app = Flask(__name__)

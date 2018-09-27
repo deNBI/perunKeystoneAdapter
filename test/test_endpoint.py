@@ -1,8 +1,8 @@
 import os
 import unittest
 
-from denbi.bielefeld.perun.endpoint import Endpoint
-from denbi.bielefeld.perun.keystone import KeyStone
+from denbi.perun.endpoint import Endpoint
+from denbi.perun.keystone import KeyStone
 
 TESTDIR = os.path.dirname(os.path.realpath(__file__))
 
