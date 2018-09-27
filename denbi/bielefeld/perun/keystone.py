@@ -233,7 +233,6 @@ class KeyStone:
                 if not hasattr(os_user, 'perun_id'):
                     raise Exception("User ID %s should have perun_id" % (os_user.id, ))
 
-
                 denbi_user = {'id': str(os_user.id),  # str
                               'perun_id': str(os_user.perun_id),  # str
                               'elixir_id': str(os_user.name),  # str
@@ -394,8 +393,8 @@ class KeyStone:
         """
         self.projects_update(perun_id, scratched=True)
         # TODO(hxr): implement real-delete mode?
-        #project = self.denbi_project_map[perun_id]
-        #print('deleting', project['id'])
+        # project = self.denbi_project_map[perun_id]
+        # print('deleting', project['id'])
 
     def projects_terminate(self, perun_id):
         """
