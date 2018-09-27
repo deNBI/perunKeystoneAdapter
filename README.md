@@ -4,9 +4,9 @@ The *Perun Keystone Adapter* is a library written in Python that parses data pro
 
 ## Features
 
- -  abstract keystone to simplify often used tasks (create/delete/update/list users and projects) 
+ -  abstract keystone to simplify often used tasks (create/delete/update/list users and projects)
  -  parse SCIM or de.NBI portal compute center propagation data for users and projects
- -  modify Keystone according the propagated data: 
+ -  modify Keystone according the propagated data:
  -  creates items (users or projects) in Keystone if they not exists but propagated
  -  modify items properties if they changed
  -  mark items as deleted and disable them in Keystone if they are not propagated any more
@@ -84,11 +84,13 @@ $ perun_propagation_service
  * Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)
 ```
 
-For running this in production it is typical to use something like `gunicorn` as follows:
+For running this in production it is easy to use `gunicorn` as follows:
 
 ```console
-$ gunicorn --workers 1 --bind 127.0.0.1:5000 denbi.scripts.perun_propagation_service:app 
+$ gunicorn --workers 1 --bind 127.0.0.1:5000 denbi.scripts.perun_propagation_service:app
 ```
+
+There are [additional deployment options available](http://flask.pocoo.org/docs/0.12/deploying/) if you prefer to run WSGI applications with Apache, or other setups.
 
 ## Development
 

@@ -2,3 +2,4 @@ python-keystoneclient
 Sphinx
 Flask
 flake8
+gunicorn
