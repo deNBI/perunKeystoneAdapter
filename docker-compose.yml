@@ -22,8 +22,11 @@ services:
 
   keystone:
     image: monasca/keystone
-    environment:
-      KEYSTONE_HOST: "keystone"
+    ports:
+      - 5000:5000
+      - 35357:35357
+    #environment:
+      #KEYSTONE_HOST: "keystone"
       #KEYSTONE_ADMIN_URL: "http://localhost:35357"
       #KEYSTONE_PUBLIC_URL: "http://localhost:5000"
       #KEYSTONE_INTERNAL_URL: "http://localhost:5000"
