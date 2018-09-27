@@ -86,10 +86,10 @@ class Endpoint:
                 if perun_id in user_map:
                     # check if user data changed
                     user = user_map[perun_id]
-                    if not (user['perun_id'] == perun_id and
-                            user['elixir_id'] == elixir_id and
-                            user['email'] == email and
-                            user['enabled'] == enabled):
+                    if not (user['perun_id'] == perun_id
+                            and user['elixir_id'] == elixir_id
+                            and user['email'] == email
+                            and user['enabled'] == enabled):
                         # update user
                         log.info("Updating user %s elixir_id=%s email=%s enabled=%s", perun_id, elixir_id, email, enabled)
                         self.keystone.users_update(perun_id, elixir_id=elixir_id, email=email, enabled=enabled)
@@ -174,10 +174,10 @@ class Endpoint:
                 if perun_id in user_map:
                     # check if user data changed
                     user = user_map[perun_id]
-                    if not (user['perun_id'] == perun_id and
-                            user['elixir_id'] == elixir_id and
-                            user['email'] == email and
-                            user['enabled'] == enabled):
+                    if not (user['perun_id'] == perun_id
+                            and user['elixir_id'] == elixir_id
+                            and user['email'] == email
+                            and user['enabled'] == enabled):
                         # update user
                         log.info("Updating user %s elixir_id=%s email=%s enabled=%s", perun_id, elixir_id, email, enabled)
                         self.keystone.users_update(perun_id, elixir_id, email, enabled)
