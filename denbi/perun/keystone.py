@@ -310,6 +310,15 @@ class KeyStone:
 
         return denbi_project
 
+    def test_new_number(self, new_number, in_use):
+        """
+        Tests if given number is valid
+        :param new_number: given number
+        :param in_use: amount of used quota
+        :return: True if given number is valid
+        """
+        return (new_number is not None and in_use <= new_number > -2)
+
     def project_quota(self,
                       perun_id,
                       number_of_vms=None,
@@ -318,6 +327,8 @@ class KeyStone:
                       ram_per_vm=None,
                       object_storage=None,
                       number_of_cpus=None,
+                      number_of_snapshots=None,
+                      volume_limit=None,
                       number_of_networks=None,
                       number_of_subnets=None,
                       number_of_router=None):
@@ -330,8 +341,14 @@ class KeyStone:
         :param ram_per_vm: in GB
         :param object_storage: in GB
         :param number_of_cpus:
+        :param number_of_snapshots:
+        :param volume_limit:
+        :param number_of_networks:
+        :param number_of_subnets:
+        :param number_of_router:
         :return:
         """
+
         perun_id = str(perun_id)
 
         if self.support_quotas:
@@ -346,60 +363,58 @@ class KeyStone:
 
                 # check quota usage (cinder quotas)
                 disk_in_use = project['quotas']['cinder'].gigabytes['in_use']
+                volumes_in_use = project['quotas']['cinder'].volumes['in_use']
+                snapshots_in_use = project['quotas']['cinder'].snapshots['in_use']
 
-                if number_of_vms is not None and vms_in_use <= number_of_vms > 0:
-                    self.nova.quotas.update(tenant_id=project['id'], instances=number_of_vms)
-                elif number_of_vms is not None:
-                    raise ValueError('number_of_vms is 0 or lower than used vms!')
-                if number_of_cpus is not None and cpus_in_use <= number_of_cpus > 0:
-                    self.nova.quotas.update(tenant_id=project['id'], cores=number_of_cpus)
-                elif number_of_cpus is not None:
-                    raise ValueError('number_of_cpus is 0 or lower than used cpus!')
-                if ram_per_vm is not None and ram_in_use <= ram_per_vm > 0:
-                    self.nova.quotas.update(tenant_id=project['id'], ram=ram_per_vm)
-                elif ram_per_vm is not None:
-                    raise ValueError('ram_per_vm is 0 or lower than used ram!')
-
-                '''
-                if metadata_items > 0:
-                    self.nova.quotas.update(tenant_id=project['id'], metadata_items=None)
-                if key_pairs > 0:
-                    self.nova.quotas.update(tenant_id=project['id'], key_pairs=None)
-                if server_groups:
-                    self.nova.quotas.update(tenant_id=project['id'], server_groups=None)
-                if server_group_members > 0:
-                    self.nova.quotas.update(tenant_id=project['id'], server_group_members=None)
-                '''
-
-                if disk_space is not None and disk_in_use <= disk_space > 0:
-                    self.cinder.quotas.update(tenant_id=project['id'], gigabytes=disk_space)
-                elif disk_space is not None:
-                    raise ValueError('disk_space is 0 or lower than used disk_space!')
-                # , snapshots=None, volumes=None)
-
-                # 'network', 'subnet', 'port', 'router', 'floatingip',
-                #                          'security_group', 'security_group_rule',
-                #                          'vip', 'pool', 'member', 'healthmonitor',
-                #                          'loadbalancer', 'listener', 'rbac_policy'
-
+                # check quota usage (neutron quotas)
                 networks_in_use = project['quotas']['neutron']['quota']['networks_in_use']
                 subnetworks_in_use = project['quotas']['neutron']['quota']['subnetworks_in_use']
                 routers_in_use = project['quotas']['neutron']['quota']['routers_in_use']
 
-                if number_of_networks is not None and networks_in_use <= number_of_networks > 0:
+                if self.test_new_number(number_of_vms, vms_in_use):
+                    self.nova.quotas.update(tenant_id=project['id'], instances=number_of_vms)
+                elif number_of_vms is not None:
+                    raise ValueError('number_of_vms is lower than used vms or -1!')
+
+                if self.test_new_number(number_of_cpus, cpus_in_use):
+                    self.nova.quotas.update(tenant_id=project['id'], cores=number_of_cpus)
+                elif number_of_cpus is not None:
+                    raise ValueError('number_of_cpus is lower than used vms or -1!')
+
+                if self.test_new_number(ram_per_vm, ram_in_use):
+                    self.nova.quotas.update(tenant_id=project['id'], ram=ram_per_vm)
+                elif ram_per_vm is not None:
+                    raise ValueError('ram_per_vm is lower than used vms or -1')
+
+                if self.test_new_number(disk_space, disk_in_use):
+                    self.cinder.quotas.update(tenant_id=project['id'], gigabytes=disk_space)
+                elif disk_space is not None:
+                    raise ValueError('disk_space is lower than used vms or -1!')
+
+                if self.test_new_number(number_of_snapshots, snapshots_in_use):
+                    self.cinder.quotas.update(tenant_id=project['id'], snapshots=number_of_snapshots)
+                elif number_of_snapshots is not None:
+                    raise ValueError('number_of_snapshots is lower than used vms or -1!')
+
+                if self.test_new_number(volume_limit, volumes_in_use ):
+                    self.cinder.quotas.update(tenant_id=project['id'], volumes=volume_limit)
+                elif disk_space is not None:
+                    raise ValueError('volume_limit is lower than used vms or -1!')
+
+                if self.test_new_number(number_of_networks, networks_in_use):
                     self.neutron.update_quota(project['id'], body={'quota': {'network': number_of_networks}})
                 elif number_of_networks is not None:
-                    raise ValueError('number_of_networks is 0 or lower than used networks_in_use!')
-                if number_of_subnets is not None and subnetworks_in_use <= number_of_subnets > 0:
+                    raise ValueError('number_of_networks is lower than used vms or -1!')
+
+                if self.test_new_number(number_of_subnets, subnetworks_in_use):
                     self.neutron.update_quota(project['id'], body={'quota': {'subnet': number_of_subnets}})
                 elif number_of_subnets is not None:
-                    raise ValueError('number_of_subnets is 0 or lower than used subnetworks_in_use!')
-                if number_of_router is not None and routers_in_use <= number_of_router > 0:
+                    raise ValueError('number_of_subnets is lower than used vms or -1!')
+
+                if self.test_new_number(number_of_router, routers_in_use):
                     self.neutron.update_quota(project['id'], body={'quota': {'router': number_of_router}})
                 elif number_of_router is not None:
-                    raise ValueError('number_of_router is 0 or lower than used routers_in_use!')
-
-                # TODO: include missing quotas
+                    raise ValueError('number_of_router is lower than used vms or -1!')
 
             else:
                 raise ValueError('Project with perun_id ' + perun_id + ' not found in project_map!')
@@ -552,8 +567,6 @@ class KeyStone:
                 self.denbi_project_map[perun_id]['quotas']['neutron']['quota']['networks_in_use'] = len(netwcount)
                 self.denbi_project_map[perun_id]['quotas']['neutron']['quota']['subnetworks_in_use'] = len(subnetcount)
                 self.denbi_project_map[perun_id]['quotas']['neutron']['quota']['routers_in_use'] = len(routercount)
-
-                # TODO: include missing quotas
 
         return self.denbi_project_map
 
