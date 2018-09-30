@@ -215,6 +215,13 @@ class Endpoint:
                 special_purpose_hardware = dpcc_project ['denbiProjectSpecialPurposeHardware'] # values ?
                 ram_per_vm = dpcc_project ['denbiProjectRamPerVm'] # in GB
                 object_storage = dpcc_project ['denbiProjectObjectStorage'] # in GB
+                number_of_cpus = dpcc_project['"denbiProjectNumberOfCpus"']
+                number_of_snapshots = dpcc_project['denbiProjectNumberOfSnapshots']
+                volume_limit = dpcc_project['denbiProjectVlumeLimit']
+                number_of_networks = dpcc_project['denbiProjectNumberOfNetworks']
+                number_of_subnets = dpcc_project['denbiProjectNumberOfSubnets']
+                number_of_router = dpcc_project['denbiProjectNumberOfRouter']
+
 
                 # if project already registered in keystone
                 if perun_id in project_map:
@@ -233,21 +240,39 @@ class Endpoint:
                             ('disk_space' in quotas and quotas['disk_space']  != disk_space) or \
                             ('special_purpose_hardware' in quotas and quotas['special_purpose_hardware']  != special_purpose_hardware) or \
                             ('ram_per_vm' in quotas and quotas['ram_per_vm']  != ram_per_vm) or \
-                            ('object_storage' in quotas and quotas['object_storage']  != object_storage):
+                            ('object_storage' in quotas and quotas['object_storage']  != object_storage) or \
+                            ('number_of_cpus' in quotas and quotas['number_of_cpus'] != number_of_cpus) or \
+                            ('number_of_snapshots' in quotas and quotas['number_of_snapshots'] != number_of_snapshots) or \
+                            ('volume_limit' in quotas and quotas['volume_limit'] != volume_limit) or \
+                            ('number_of_networks' in quotas and quotas['number_of_networks'] != number_of_networks) or \
+                            ('number_of_subnets' in quotas and quotas['number_of_subnets'] != number_of_subnets) or \
+                            ('number_of_router' in quotas and quotas['number_of_router'] != number_of_router):
                             self.keystone.project_quota(number_of_vms=number_of_vms,\
-                                                    disk_space=disk_space,\
-                                                    special_purpose_hardware=special_purpose_hardware,\
-                                                    ram_per_vm = ram_per_vm,\
-                                                    object_storage = object_storage)
+                                                        disk_space=disk_space,\
+                                                        special_purpose_hardware=special_purpose_hardware,\
+                                                        ram_per_vm = ram_per_vm,\
+                                                        object_storage = object_storage,\
+                                                        number_of_cpus = number_of_cpus,\
+                                                        number_of_snapshots = number_of_snapshots,\
+                                                        volume_limit = volume_limit,\
+                                                        number_of_networks = number_of_networks,\
+                                                        number_of_subnets = number_of_subnets,\
+                                                        number_of_router = number_of_router)
 
                 else:
                     self.keystone.projects_create(perun_id,name=name,description=description,members=members)
                     if self.support_quotas:
                         self.keystone.project_quota(number_of_vms=number_of_vms,\
-                            disk_space=disk_space,\
-                            special_purpose_hardware=special_purpose_hardware,\
-                            ram_per_vm = ram_per_vm,\
-                            object_storage = object_storage)
+                                                    disk_space=disk_space,\
+                                                    special_purpose_hardware=special_purpose_hardware,\
+                                                    ram_per_vm = ram_per_vm,\
+                                                    object_storage = object_storage,\
+                                                    number_of_cpus = number_of_cpus,\
+                                                    number_of_snapshots = number_of_snapshots,\
+                                                    volume_limit = volume_limit,\
+                                                    number_of_networks = number_of_networks,\
+                                                    number_of_subnets = number_of_subnets,\
+                                                    number_of_router = number_of_router)
                 project_ids.append(perun_id)
 
             else:

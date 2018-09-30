@@ -170,15 +170,15 @@ class TestKeystone(unittest.TestCase):
 
         # call method project_quota with negative values
         # TODO: test all quotas with negative values
-        self.ks.project_quota(perunid, number_of_vms=-1, \
-                              disk_space=-1, \
+        self.ks.project_quota(perunid, number_of_vms=-2, \
+                              disk_space=-2, \
                               special_purpose_hardware=None, \
-                              ram_per_vm=-1, \
-                              object_storage=None,
-                              number_of_cpus=-1,
-                              number_of_networks=-1,
-                              number_of_subnets=-1,
-                              number_of_ports=-1)
+                              ram_per_vm=-2, \
+                              object_storage=None,\
+                              number_of_cpus=-2,\
+                              number_of_networks=-2,\
+                              number_of_subnets=-2,\
+                              number_of_ports=-2)
 
         # receiving project quotas
         project_map = self.ks.projects_map()
