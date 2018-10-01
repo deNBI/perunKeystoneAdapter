@@ -1,4 +1,5 @@
 import os
+import ast
 
 from keystoneauth1.identity import v3
 from keystoneauth1 import session
@@ -371,53 +372,106 @@ class KeyStone:
                 subnetworks_in_use = project['quotas']['neutron']['quota']['subnetworks_in_use']
                 routers_in_use = project['quotas']['neutron']['quota']['routers_in_use']
 
+                # converts number_of_vms if given as a string
+                if type(number_of_vms) is str:
+                    number_of_vms = self.convert_str_to_int(number_of_vms)
+                # sets numbers of vms if new number is valid
                 if self.test_new_number(number_of_vms, vms_in_use):
                     self.nova.quotas.update(tenant_id=project['id'], instances=number_of_vms)
                 elif number_of_vms is not None:
-                    raise ValueError('number_of_vms is lower than used vms or -1!')
+                    raise ValueError(number_of_vms + ' is lower than used vms or -1!')
 
+                # converts number_of_cpus if given as a string
+                if type(number_of_cpus) is str:
+                    number_of_cpus = self.convert_str_to_int(number_of_cpus)
+                # sets numbers of cpus if new number is valid
                 if self.test_new_number(number_of_cpus, cpus_in_use):
                     self.nova.quotas.update(tenant_id=project['id'], cores=number_of_cpus)
                 elif number_of_cpus is not None:
-                    raise ValueError('number_of_cpus is lower than used vms or -1!')
+                    raise ValueError(number_of_cpus + ' is lower than used cpus or -1!')
 
+                # converts ram_per_vm if given as a string
+                if type(ram_per_vm) is str:
+                    ram_per_vm = self.convert_str_to_int(ram_per_vm)
+                # sets ram per vm if new number is valid
                 if self.test_new_number(ram_per_vm, ram_in_use):
                     self.nova.quotas.update(tenant_id=project['id'], ram=ram_per_vm)
                 elif ram_per_vm is not None:
-                    raise ValueError('ram_per_vm is lower than used vms or -1')
+                    raise ValueError(ram_per_vm + ' is lower than used ram or -1')
 
+                # converts disk_space if given as a string
+                if type(disk_space) is str:
+                    disk_space = self.convert_str_to_int(disk_space)
+                # sets disk space if new number is valid
                 if self.test_new_number(disk_space, disk_in_use):
                     self.cinder.quotas.update(tenant_id=project['id'], gigabytes=disk_space)
                 elif disk_space is not None:
-                    raise ValueError('disk_space is lower than used vms or -1!')
+                    raise ValueError(disk_space + ' is lower than used disk_space or -1!')
 
+                # converts number_of_snapshots if given as a string
+                if type(number_of_snapshots) is str:
+                    number_of_snapshots = self.convert_str_to_int(number_of_snapshots)
+                # sets numbers of snapshots if new number is valid
                 if self.test_new_number(number_of_snapshots, snapshots_in_use):
                     self.cinder.quotas.update(tenant_id=project['id'], snapshots=number_of_snapshots)
                 elif number_of_snapshots is not None:
-                    raise ValueError('number_of_snapshots is lower than used vms or -1!')
+                    raise ValueError(number_of_snapshots + ' is lower than used snapshots or -1!')
 
-                if self.test_new_number(volume_limit, volumes_in_use ):
+                # converts volume_limit if given as a string
+                if type(volume_limit) is str:
+                    volume_limit = self.convert_str_to_int(volume_limit)
+                # sets volume limit if new number is valid
+                if self.test_new_number(volume_limit, volumes_in_use):
                     self.cinder.quotas.update(tenant_id=project['id'], volumes=volume_limit)
-                elif disk_space is not None:
-                    raise ValueError('volume_limit is lower than used vms or -1!')
+                elif volume_limit is not None:
+                    raise ValueError(volume_limit + ' is lower than used volumes or -1!')
 
+                # converts number_of_networks if given as a string
+                if type(number_of_networks) is str:
+                    number_of_networks = self.convert_str_to_int(number_of_networks)
+                # sets numbers of networks if new number is valid
                 if self.test_new_number(number_of_networks, networks_in_use):
                     self.neutron.update_quota(project['id'], body={'quota': {'network': number_of_networks}})
                 elif number_of_networks is not None:
-                    raise ValueError('number_of_networks is lower than used vms or -1!')
+                    raise ValueError(number_of_networks + ' is lower than used networks or -1!')
 
+                # converts number_of_subnets if given as a string
+                if type(number_of_subnets) is str:
+                    number_of_subnets = self.convert_str_to_int(number_of_subnets)
+                # sets numbers of subnets if new number is valid
                 if self.test_new_number(number_of_subnets, subnetworks_in_use):
                     self.neutron.update_quota(project['id'], body={'quota': {'subnet': number_of_subnets}})
                 elif number_of_subnets is not None:
-                    raise ValueError('number_of_subnets is lower than used vms or -1!')
+                    raise ValueError(number_of_subnets + ' is lower than used subnets or -1!')
 
+                # converts number_of_router if given as a string
+                if type(number_of_router) is str:
+                    number_of_router = self.convert_str_to_int(number_of_router)
+                # sets numbers of routers if new number is valid
                 if self.test_new_number(number_of_router, routers_in_use):
                     self.neutron.update_quota(project['id'], body={'quota': {'router': number_of_router}})
                 elif number_of_router is not None:
-                    raise ValueError('number_of_router is lower than used vms or -1!')
+                    raise ValueError(number_of_router + ' is lower than used routers or -1!')
 
             else:
                 raise ValueError('Project with perun_id ' + perun_id + ' not found in project_map!')
+
+    def test_new_number(self, new_number, in_use):
+        """
+        Tests if given number is valid
+        :param new_number: given number
+        :param in_use: amount of used quota
+        :return: True if given number is valid
+        """
+        return (new_number is not None and in_use <= new_number > -2)
+
+    def convert_str_to_int(self, value):
+        """
+        Converts string to int
+        :param value: given string
+        :return: converted integer
+        """
+        return ast.literal_eval(value)
 
     def projects_update(self,perun_id,members=None, name=None, description=None,enabled=None, scratched = False):
         """
@@ -553,11 +607,12 @@ class KeyStone:
         if self.support_quotas:
             for perun_id in self.denbi_project_map:
                 project_id = self.denbi_project_map[perun_id]['id']
+                # Get Quotas (with number of used)
                 self.denbi_project_map[perun_id]['quotas']['nova'] = self.nova.quotas.get(tenant_id=project_id, user_id=None, detail=True)
                 self.denbi_project_map[perun_id]['quotas']['cinder'] = self.cinder.quotas.get(tenant_id=project_id, usage=True)
                 self.denbi_project_map[perun_id]['quotas']['neutron'] = self.neutron.show_quota(project_id)
 
-                # Count number of networks, subnets and routers
+                # Count number of networks, subnets and routers to find number of used quotas
                 netw_list = self.neutron.list_networks()
                 subnet_list = self.neutron.list_subnets()
                 router_list = self.neutron.list_routers(retrieve_all=True)
