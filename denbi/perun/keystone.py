@@ -1,5 +1,6 @@
 import os
 import ast
+import numbers
 
 from keystoneauth1.identity import v3
 from keystoneauth1 import session
@@ -463,7 +464,13 @@ class KeyStone:
         :param in_use: amount of used quota
         :return: True if given number is valid
         """
-        return (new_number is not None and in_use <= new_number > -2)
+        if new_number is not None:
+            if isinstance(new_number, numbers.Integral):
+                return (in_use <= new_number > -2) or new_number == -1
+            else:
+                raise ValueError(new_number + ' should be an Integer!')
+        else:
+            return False
 
     def convert_str_to_int(self, value):
         """
