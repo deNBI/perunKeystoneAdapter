@@ -475,6 +475,7 @@ class KeyStone:
     def convert_str_to_int(self, value):
         """
         Converts string to int
+        necessary for the following method test_new_number,
         :param value: given string
         :return: converted integer
         """
@@ -614,7 +615,7 @@ class KeyStone:
         if self.support_quotas:
             for perun_id in self.denbi_project_map:
                 project_id = self.denbi_project_map[perun_id]['id']
-                # Get Quotas (with number of used)
+                # Get Quotas (nova and cinder with number of used)
                 self.denbi_project_map[perun_id]['quotas']['nova'] = self.nova.quotas.get(tenant_id=project_id, user_id=None, detail=True)
                 self.denbi_project_map[perun_id]['quotas']['cinder'] = self.cinder.quotas.get(tenant_id=project_id, usage=True)
                 self.denbi_project_map[perun_id]['quotas']['neutron'] = self.neutron.show_quota(project_id)
