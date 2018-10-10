@@ -126,6 +126,7 @@ class TestKeystone(unittest.TestCase):
         print("Run 'test_project_quota'")
 
         perunid = self.__uuid()
+        # id, which is not in the list for testing error
         perunid_without_list = self.__uuid()
 
         denbi_project = self.ks.projects_create(perunid)
@@ -138,13 +139,11 @@ class TestKeystone(unittest.TestCase):
 
         # call method project_quota without setting any quota
         self.ks.project_quota(perunid, number_of_vms=None, \
-                              disk_space=None, \
-                              special_purpose_hardware=None, \
-                              ram_per_vm=None, \
-                              object_storage=None, \
                               number_of_cpus=None, \
-                              number_of_snapshots=None, \
+                              ram_per_vm=None, \
+                              disk_space=None, \
                               volume_limit=None, \
+                              number_of_snapshots=None, \
                               number_of_networks=None, \
                               number_of_subnets=None, \
                               number_of_router=None)
@@ -153,32 +152,46 @@ class TestKeystone(unittest.TestCase):
         project_map = self.ks.projects_map()
 
         # project quota should not have changed
-        self.assertEqual(project_map_original[perunid]['quotas']['nova'].instances,
-                         project_map[perunid]['quotas']['nova'].instances, "Message")
-        self.assertEqual(project_map_original[perunid]['quotas']['nova'].cores,
-                         project_map[perunid]['quotas']['nova'].cores, "Message")
-        self.assertEqual(project_map_original[perunid]['quotas']['nova'].ram,
-                         project_map[perunid]['quotas']['nova'].ram, "Message")
-        self.assertEqual(project_map_original[perunid]['quotas']['cinder'].gigabytes,
-                         project_map[perunid]['quotas']['cinder'].gigabytes, "Message")
-        self.assertEqual(project_map_original[perunid]['quotas']['cinder'].snapshots,
-                         project_map[perunid]['quotas']['cinder'].snapshots, "Message")
-        self.assertEqual(project_map_original[perunid]['quotas']['cinder'].volumes,
-                         project_map[perunid]['quotas']['cinder'].volumes, "Message")
-        self.assertEqual(project_map_original[perunid]['quotas']['neutron']['quota']['network'],
-                         project_map[perunid]['quotas']['neutron']['quota']['network'], "Message")
-        self.assertEqual(project_map_original[perunid]['quotas']['neutron']['quota']['subnet'],
-                         project_map[perunid]['quotas']['neutron']['quota']['subnet'], "Message")
-        self.assertEqual(project_map_original[perunid]['quotas']['neutron']['quota']['router'],
-                         project_map[perunid]['quotas']['neutron']['quota']['router'], "Message")
+        self.assertEqual(
+            project_map_original[perunid]['quotas']['nova'].instances, project_map[perunid]['quotas']['nova'].instances,
+            "project_quota with None changed number_of_vms")
+        self.assertEqual(
+            project_map_original[perunid]['quotas']['nova'].cores, project_map[perunid]['quotas']['nova'].cores,
+            "project_quota with None changed number_of_cpus")
+        self.assertEqual(
+            project_map_original[perunid]['quotas']['nova'].ram, project_map[perunid]['quotas']['nova'].ram,
+            "project_quota with None changed ram_per_vm")
+        self.assertEqual(
+            project_map_original[perunid]['quotas']['cinder'].gigabytes,
+            project_map[perunid]['quotas']['cinder'].gigabytes,
+            "project_quota with None changed  disc_space")
+        self.assertEqual(
+            project_map_original[perunid]['quotas']['cinder'].volumes, project_map[perunid]['quotas']['cinder'].volumes,
+            "project_quota with None changed volume_limit")
+        self.assertEqual(
+            project_map_original[perunid]['quotas']['cinder'].snapshots,
+            project_map[perunid]['quotas']['cinder'].snapshots,
+            "project_quota with None changed snapshots")
+        self.assertEqual(
+            project_map_original[perunid]['quotas']['neutron']['quota']['network'],
+            project_map[perunid]['quotas']['neutron']['quota']['network'],
+            "project_quota with None changed number_of_networks")
+        self.assertEqual(
+            project_map_original[perunid]['quotas']['neutron']['quota']['subnet'],
+            project_map[perunid]['quotas']['neutron']['quota']['subnet'],
+            "project_quota with None changed number_of_subnets")
+        self.assertEqual(
+            project_map_original[perunid]['quotas']['neutron']['quota']['router'],
+            project_map[perunid]['quotas']['neutron']['quota']['router'],
+            "project_quota with None changed number_of_router")
 
         # call method project_quota with strings
         self.ks.project_quota(perunid, number_of_vms="11", \
-                              disk_space="7", \
-                              ram_per_vm="11", \
                               number_of_cpus="9", \
-                              number_of_snapshots="21", \
+                              ram_per_vm="11", \
+                              disk_space="7", \
                               volume_limit="57", \
+                              number_of_snapshots="21", \
                               number_of_networks="99", \
                               number_of_subnets="97", \
                               number_of_router="63")
@@ -187,35 +200,51 @@ class TestKeystone(unittest.TestCase):
         project_map = self.ks.projects_map()
 
         # project quotas should match the given numbers
-        self.assertEqual(11, project_map[perunid]['quotas']['nova'].instances['limit'], "Message")
-        self.assertEqual(11, project_map[perunid]['quotas']['nova'].ram['limit'], "Message")
-        self.assertEqual(9, project_map[perunid]['quotas']['nova'].cores['limit'], "Message")
-        self.assertEqual(7, project_map[perunid]['quotas']['cinder'].gigabytes['limit'], "Message")
-        self.assertEqual(21, project_map[perunid]['quotas']['cinder'].snapshots['limit'], "Message")
-        self.assertEqual(57, project_map[perunid]['quotas']['cinder'].volumes['limit'], "Message")
-        self.assertEqual(99, project_map[perunid]['quotas']['neutron']['quota']['network'], "Message")
-        self.assertEqual(97, project_map[perunid]['quotas']['neutron']['quota']['subnet'], "Message")
-        self.assertEqual(63, project_map[perunid]['quotas']['neutron']['quota']['router'], "Message")
+        self.assertEqual(
+            11, project_map[perunid]['quotas']['nova'].instances['limit'],
+            "project_quota with string did not set number_of_vms")
+        self.assertEqual(
+            9, project_map[perunid]['quotas']['nova'].cores['limit'],
+            "project_quota with string did not set number_of_cpus")
+        self.assertEqual(
+            11, project_map[perunid]['quotas']['nova'].ram['limit'],
+            "project_quota with string did not set ram_per_vm")
+        self.assertEqual(
+            7, project_map[perunid]['quotas']['cinder'].gigabytes['limit'],
+            "project_quota with string did not set disk_space")
+        self.assertEqual(
+            57, project_map[perunid]['quotas']['cinder'].volumes['limit'],
+            "project_quota with string did not set volume_limit")
+        self.assertEqual(
+            21, project_map[perunid]['quotas']['cinder'].snapshots['limit'],
+            "project_quota with string did not set snapshots")
+        self.assertEqual(
+            99, project_map[perunid]['quotas']['neutron']['quota']['network'],
+            "project_quota with string did not set number_of_networks")
+        self.assertEqual(
+            97, project_map[perunid]['quotas']['neutron']['quota']['subnet'],
+            "project_quota with string did not set number_of_subnets")
+        self.assertEqual(
+            63, project_map[perunid]['quotas']['neutron']['quota']['router'],
+            "project_quota with string did not set number_of_routers")
 
         NUMBER_OF_VMS = project_map_original[perunid]['quotas']['nova'].instances['limit'] + 1
         RAM_PER_VM = project_map_original[perunid]['quotas']['nova'].ram['limit'] + 1
         NUMBER_OF_CPUS = project_map_original[perunid]['quotas']['nova'].cores['limit'] + 1
-        NUMBER_OF_SNAPSHOTS = project_map_original[perunid]['quotas']['cinder'].snapshots['limit'] + 1
-        VOLUME_LIMIT = project_map_original[perunid]['quotas']['cinder'].volumes['limit'] + 1
         DISK_SPACE = project_map_original[perunid]['quotas']['cinder'].gigabytes['limit'] + 1
+        VOLUME_LIMIT = project_map_original[perunid]['quotas']['cinder'].volumes['limit'] + 1
+        NUMBER_OF_SNAPSHOTS = project_map_original[perunid]['quotas']['cinder'].snapshots['limit'] + 1
         NUMBER_OF_NETWORKS = project_map_original[perunid]['quotas']['neutron']['quota']['network'] + 1
         NUMBER_OF_SUBNETS = project_map_original[perunid]['quotas']['neutron']['quota']['subnet'] + 1
         NUMBER_OF_ROUTER = project_map_original[perunid]['quotas']['neutron']['quota']['router'] + 1
 
         # call method project_quota with predefined values
         self.ks.project_quota(perunid, number_of_vms=NUMBER_OF_VMS, \
-                              disk_space=DISK_SPACE, \
-                              special_purpose_hardware=None, \
-                              ram_per_vm=RAM_PER_VM, \
-                              object_storage=None,
                               number_of_cpus=NUMBER_OF_CPUS,
-                              number_of_snapshots=NUMBER_OF_SNAPSHOTS, \
+                              ram_per_vm=RAM_PER_VM, \
+                              disk_space=DISK_SPACE, \
                               volume_limit=VOLUME_LIMIT, \
+                              number_of_snapshots=NUMBER_OF_SNAPSHOTS, \
                               number_of_networks=NUMBER_OF_NETWORKS,
                               number_of_subnets=NUMBER_OF_SUBNETS,
                               number_of_router=NUMBER_OF_ROUTER)
@@ -224,23 +253,41 @@ class TestKeystone(unittest.TestCase):
         project_map = self.ks.projects_map()
 
         # project quotas should match the predefined values
-        self.assertEqual(NUMBER_OF_VMS, project_map[perunid]['quotas']['nova'].instances['limit'], "Message")
-        self.assertEqual(RAM_PER_VM, project_map[perunid]['quotas']['nova'].ram['limit'], "Message")
-        self.assertEqual(NUMBER_OF_CPUS, project_map[perunid]['quotas']['nova'].cores['limit'], "Message")
-        self.assertEqual(DISK_SPACE, project_map[perunid]['quotas']['cinder'].gigabytes['limit'], "Message")
-        self.assertEqual(NUMBER_OF_SNAPSHOTS, project_map[perunid]['quotas']['cinder'].snapshots['limit'], "Message")
-        self.assertEqual(VOLUME_LIMIT, project_map[perunid]['quotas']['cinder'].volumes['limit'], "Message")
-        self.assertEqual(NUMBER_OF_NETWORKS, project_map[perunid]['quotas']['neutron']['quota']['network'], "Message")
-        self.assertEqual(NUMBER_OF_SUBNETS, project_map[perunid]['quotas']['neutron']['quota']['subnet'], "Message")
-        self.assertEqual(NUMBER_OF_ROUTER, project_map[perunid]['quotas']['neutron']['quota']['router'], "Message")
+        self.assertEqual(
+            NUMBER_OF_VMS, project_map[perunid]['quotas']['nova'].instances['limit'],
+            "project_quota with valid value did not set number_of_vms")
+        self.assertEqual(
+            NUMBER_OF_CPUS, project_map[perunid]['quotas']['nova'].cores['limit'],
+            "project_quota with valid value did not set number_of_cpus")
+        self.assertEqual(
+            RAM_PER_VM, project_map[perunid]['quotas']['nova'].ram['limit'],
+            "project_quota with valid value did not set ram_per_vm")
+        self.assertEqual(
+            DISK_SPACE, project_map[perunid]['quotas']['cinder'].gigabytes['limit'],
+            "project_quota with valid value did not set disk_space")
+        self.assertEqual(
+            VOLUME_LIMIT, project_map[perunid]['quotas']['cinder'].volumes['limit'],
+            "project_quota with valid value did not set volume_limit")
+        self.assertEqual(
+            NUMBER_OF_SNAPSHOTS, project_map[perunid]['quotas']['cinder'].snapshots['limit'],
+            "project_quota with valid value did not set snapshots")
+        self.assertEqual(
+            NUMBER_OF_NETWORKS, project_map[perunid]['quotas']['neutron']['quota']['network'],
+            "project_quota with valid value did not set number_of_networks")
+        self.assertEqual(
+            NUMBER_OF_SUBNETS, project_map[perunid]['quotas']['neutron']['quota']['subnet'],
+            "project_quota with valid value did not set number_of_subnets")
+        self.assertEqual(
+            NUMBER_OF_ROUTER, project_map[perunid]['quotas']['neutron']['quota']['router'],
+            "project_quota with valid value did not set number_of_routers")
 
         # call method project_quota with negative values
         self.assertRaises(ValueError, self.ks.project_quota(perunid), number_of_vms=-2)
-        self.assertRaises(ValueError, self.ks.project_quota(perunid), disk_space=-2)
-        self.assertRaises(ValueError, self.ks.project_quota(perunid), ram_per_vm=-2)
         self.assertRaises(ValueError, self.ks.project_quota(perunid), number_of_cpus=-2)
-        self.assertRaises(ValueError, self.ks.project_quota(perunid), number_of_snapshots=-2)
+        self.assertRaises(ValueError, self.ks.project_quota(perunid), ram_per_vm=-2)
+        self.assertRaises(ValueError, self.ks.project_quota(perunid), disk_space=-2)
         self.assertRaises(ValueError, self.ks.project_quota(perunid), volume_limit=-2)
+        self.assertRaises(ValueError, self.ks.project_quota(perunid), number_of_snapshots=-2)
         self.assertRaises(ValueError, self.ks.project_quota(perunid), number_of_networks=-2)
         self.assertRaises(ValueError, self.ks.project_quota(perunid), number_of_subnets=-2)
         self.assertRaises(ValueError, self.ks.project_quota(perunid), number_of_router=-2)
