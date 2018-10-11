@@ -1,2 +1,5 @@
-python-keystoneclient>=3.11.0
-
+python-keystoneclient
+Sphinx==1.7.8
+Flask
+flake8
+gunicorn

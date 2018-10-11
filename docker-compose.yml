@@ -1,0 +1,32 @@
+---
+version: '2'
+services:
+  adapter:
+    build: .
+    ports:
+      - 8000:5000
+    links:
+      - keystone:keystone
+    environment:
+      OS_AUTH_URL: "http://keystone:5000/v3"
+      OS_IDENTITY_API_VERSION: "3"
+      #OS_INTERFACE: "public"
+      OS_PASSWORD: "s3cr3t"
+      OS_PROJECT_NAME: "admin"
+      OS_REGION_NAME: "RegionOne"
+      OS_USERNAME: "admin"
+      OS_USER_DOMAIN_NAME: "Default"
+      # http://docs.gunicorn.org/en/stable/settings.html#enable-stdio-inheritance
+      PYTHONUNBUFFERED: 1
+      PERUN_LOG_LEVEL: INFO
+
+  keystone:
+    image: monasca/keystone
+    ports:
+      - 5000:5000
+      - 35357:35357
+    #environment:
+      #KEYSTONE_HOST: "keystone"
+      #KEYSTONE_ADMIN_URL: "http://localhost:35357"
+      #KEYSTONE_PUBLIC_URL: "http://localhost:5000"
+      #KEYSTONE_INTERNAL_URL: "http://localhost:5000"
