@@ -1,3 +1,5 @@
+[![Documentation Status](https://readthedocs.org/projects/perunkeystoneadapter/badge/?version=latest)](https://perunkeystoneadapter.readthedocs.io/en/latest/?badge=latest)
+
 # Perun Keystone Adapter
 
 The *Perun Keystone Adapter* is a library written in Python that parses data propagated by [Perun](https://perun.elixir-czech.cz) and modifies a connected [Openstack](https://www.openstack.org) [Keystone](https://docs.openstack.org/keystone/latest/).
