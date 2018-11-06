@@ -135,14 +135,14 @@ class TestKeystone(unittest.TestCase):
         project_map_original = self.ks.projects_map()
 
         # call method project_quota without setting any quota
-        self.ks.project_quota(perunid, number_of_vms=None, \
-                              number_of_cpus=None, \
-                              ram_per_vm=None, \
-                              disk_space=None, \
-                              volume_limit=None, \
-                              number_of_snapshots=None, \
-                              number_of_networks=None, \
-                              number_of_subnets=None, \
+        self.ks.project_quota(perunid, number_of_vms=None,
+                              number_of_cpus=None,
+                              ram_per_vm=None,
+                              disk_space=None,
+                              volume_limit=None,
+                              number_of_snapshots=None,
+                              number_of_networks=None,
+                              number_of_subnets=None,
                               number_of_router=None)
 
         # receiving project quotas
@@ -183,14 +183,14 @@ class TestKeystone(unittest.TestCase):
             "project_quota with None changed number_of_router")
 
         # call method project_quota with strings
-        self.ks.project_quota(perunid, number_of_vms="11", \
-                              number_of_cpus="9", \
-                              ram_per_vm="11", \
-                              disk_space="7", \
-                              volume_limit="57", \
-                              number_of_snapshots="21", \
-                              number_of_networks="99", \
-                              number_of_subnets="97", \
+        self.ks.project_quota(perunid, number_of_vms="11",
+                              number_of_cpus="9",
+                              ram_per_vm="11",
+                              disk_space="7",
+                              volume_limit="57",
+                              number_of_snapshots="21",
+                              number_of_networks="99",
+                              number_of_subnets="97",
                               number_of_router="63")
 
         # receiving project quotas
