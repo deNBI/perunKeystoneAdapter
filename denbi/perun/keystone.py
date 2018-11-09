@@ -489,7 +489,8 @@ class KeyStone:
 
         for os_project in self.keystone.projects.list(domain=self.target_domain_id):
             if hasattr(os_project, 'flag') and os_project.flag == self.flag:
-                self.logger.debug('Found denbi associated project %s (id %s)',os_project.name, os_project.id)
+                self.logger.debug('Found denbi associated project %s (id %s)',
+                                  os_project.name, os_project.id)
                 denbi_project = {
                     'id': str(os_project.id),  # str
                     'name': str(os_project.name),  # str
