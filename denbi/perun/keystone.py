@@ -505,8 +505,11 @@ class KeyStone:
 
                 # get all assigned roles for this project
                 # this call should be possible with domain admin right
-                for role in self.keystone.role_assignments.list(project=os_project.id):
+                # include_subtree is necessary since the default policies either
+                # allow domain role assignment querie
+                for role in self.keystone.role_assignments.list(project=os_project.id, include_subtree=True):
                     if role.user['id'] in self.__user_id2perun_id__:
+                        self.logger.debug('Found user %s as member to project %s', role.user['id'], os_project.name)
                         denbi_project['members'].append(self.__user_id2perun_id__[role.user['id']])
 
         # Check for project specific quota
