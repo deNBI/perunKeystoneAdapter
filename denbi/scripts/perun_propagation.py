@@ -11,7 +11,8 @@ from denbi.perun.keystone import KeyStone
 logging.basicConfig(level=logging.WARN)
 
 
-def process_tarball(tarball_path, read_only=False):
+def process_tarball(tarball_path, read_only=False, target_domain_name='elixir',
+                    default_role='user'):
     directory = tempfile.mkdtemp()
 
     # extract tar file
@@ -20,8 +21,9 @@ def process_tarball(tarball_path, read_only=False):
     tar.close()
 
     # import into keystone
-    keystone = KeyStone(default_role="user", create_default_role=True,
-                        support_quotas=False, target_domain_name='elixir', read_only=read_only)
+    keystone = KeyStone(default_role=default_role, create_default_role=True,
+                        support_quotas=False, target_domain_name=target_domain_name,
+                        read_only=read_only)
     endpoint = Endpoint(keystone=keystone, mode="denbi_portal_compute_center",
                         support_quotas=False)
     endpoint.import_data(directory + '/users.scim', directory + '/groups.scim')
@@ -34,6 +36,10 @@ def main():
     parser = argparse.ArgumentParser(description='Process perun tarball')
     parser.add_argument('tarball', type=argparse.FileType('r'), help="Input tarball from perun")
     parser.add_argument('--read-only', action='store_true', help="Do not make any modifications to keystone")
+    parser.add_argument('--domain', default='elixir',
+                        help="Domain to create users and projects in, defaults to 'elixir'")
+    parser.add_argument('--role', default='user',
+                        help="Defaut role to assign to new users, defaults to 'user'")
     parser.add_argument("-v", "--verbose", dest="verbose_count",
                         action="count", default=0, help="increases log verbosity for each occurence.")
     args = parser.parse_args()
@@ -42,7 +48,9 @@ def main():
     log_level = max(3 - args.verbose_count, 1) * 10
     logging.getLogger('denbi').setLevel(log_level)
 
-    process_tarball(args.tarball.name, read_only=args.read_only)
+    process_tarball(args.tarball.name, read_only=args.read_only,
+                    target_domain_name=args.domain,
+                    default_role=args.role)
 
 
 if __name__ == '__main__':
