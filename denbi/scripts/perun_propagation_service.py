@@ -56,7 +56,8 @@ def upload():
     # parse propagated data in separate thread
     t = Thread(target=_perun_propagation, args=(file.name,),
                kwargs={'read_only': app.config.get('keystone_read_only', False),
-                       'target_domain_name': app.confg.get('target_domain_name', 'elixir')})
+                       'target_domain_name': app.confg.get('target_domain_name', 'elixir'),
+                       'default_role': app.config.get('default_role', 'user')})
     t.start()
 
     # return immediately
@@ -83,6 +84,7 @@ def main():
 
     app.config['keystone_read_only'] = args.read_only
     app.config['target_domain_name'] = args.domain
+    app.config['default_role'] = args.role
 
     app.run(host=args.host, port=args.port)
 
