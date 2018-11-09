@@ -489,6 +489,7 @@ class KeyStone:
 
         for os_project in self.keystone.projects.list(domain=self.target_domain_id):
             if hasattr(os_project, 'flag') and os_project.flag == self.flag:
+                self.logger.debug('Found denbi associated project %s (id %s)',os_project.name, os_project.id)
                 denbi_project = {
                     'id': str(os_project.id),  # str
                     'name': str(os_project.name),  # str
@@ -509,7 +510,7 @@ class KeyStone:
                 # allow domain role assignment querie
                 for role in self.keystone.role_assignments.list(project=os_project.id, include_subtree=True):
                     if role.user['id'] in self.__user_id2perun_id__:
-                        self.logger.debug('Found user %s as member to project %s', role.user['id'], os_project.name)
+                        self.logger.debug('Found user %s as member in project %s', role.user['id'], os_project.name)
                         denbi_project['members'].append(self.__user_id2perun_id__[role.user['id']])
 
         # Check for project specific quota
