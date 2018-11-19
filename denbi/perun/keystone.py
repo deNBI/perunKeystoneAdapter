@@ -3,6 +3,10 @@ import os
 from keystoneauth1.identity import v3
 from keystoneauth1 import session
 from keystoneclient.v3 import client
+from keystoneauth1.exceptions import Forbidden
+from keystoneauth1.exceptions import NotFound
+from keystoneauth1.exceptions import Unauthorized
+import logging
 
 
 class KeyStone:
@@ -17,7 +21,10 @@ class KeyStone:
     denbi_project = ``{id: string, perun_id: string, enabled: boolean, members: [denbi_user]}``
     """
 
-    def __init__(self, environ=None, default_role="_member", create_default_role=False, flag="perun_propagation", support_quotas=True, target_domain_name=None, read_only=False):
+    def __init__(self, environ=None, default_role="_member",
+                 create_default_role=False, flag="perun_propagation",
+                 support_quotas=True, target_domain_name=None, read_only=False,
+                 logging_domain='denbi'):
         """
         Create a new Openstack Keystone session using the system environment.
         The following variables are considered:
@@ -39,27 +46,14 @@ class KeyStone:
 
         """
         self.ro = read_only
+        self.logger = logging.getLogger(logging_domain)
 
         if environ is None:  # use os enviroment settings if no explicit environ is given
-            self.auth_url = os.environ['OS_AUTH_URL']
-            self.username = os.environ['OS_USERNAME']
-            self.password = os.environ['OS_PASSWORD']
-            self.project_name = os.environ['OS_PROJECT_NAME']
-            self.domain_name = os.environ['OS_USER_DOMAIN_NAME']
-        else:
-            self.auth_url = environ['OS_AUTH_URL']
-            self.username = environ['OS_USERNAME']
-            self.password = environ['OS_PASSWORD']
-            self.project_name = environ['OS_PROJECT_NAME']
-            self.domain_name = environ['OS_USER_DOMAIN_NAME']
+            auth = self._create_auth(os.environ)
 
-        # create new keystone client
-        auth = v3.Password(auth_url=self.auth_url,
-                           username=self.username,
-                           password=self.password,
-                           project_name=self.project_name,
-                           user_domain_name=self.domain_name,
-                           project_domain_name=self.domain_name)
+        else:
+            auth = self._create_auth(environ)
+
         sess = session.Session(auth=auth)
         self.keystone = client.Client(session=sess)
 
@@ -71,11 +65,30 @@ class KeyStone:
 
         try:
             self.target_domain_id = str(self.keystone.domains.list(name=self.target_domain_name)[0].id)
+        except Unauthorized:
+            raise Exception("Authorization failed, wrong credentials?")
         except IndexError:
             # target_domain_name does not exist
             if not self.ro:
                 self.target_domain_id = str(self.keystone.domains.create(name=self.target_domain_name, description="Created by perun_endpoint ...").id)
+        except Forbidden:
+            # authenticated user is not allowed to list domains
+            # try to get the domain using the given value as domain id (which
+            # which does not require a domain listing)
+            try:
+                domain = self.keystone.domains.get(self.target_domain_name)
 
+                if domain is not None:
+                    # use the name as id
+                    self.target_domain_id = self.target_domain_name
+                else:
+                    raise Exception("'%s' is neither a valid domain name or a valid domain id" % self.target_domain_name)
+            except Forbidden:
+                raise Exception("Unable to list domains while searching for domain '%s'" % self.target_domain_name)
+            except NotFound:
+                raise Exception("Unable to list domains or '%s' is neither a valid domain name or a valid domain id" % self.target_domain_name)
+
+        self.logger.debug("Working on domain %s", self.target_domain_id)
         # Check if role exists ...
         self.default_role = str(default_role)
         self.default_role_id = None
@@ -90,10 +103,14 @@ class KeyStone:
                 if not self.ro:
                     role = self.keystone.roles.create(self.default_role)
                     self.default_role_id = str(role.id)
+                    self.logger.debug('Created default role %s (id %s)', role.name, role.id)
                 else:
                     self.default_role_id = 'read-only'
+                    self.logger.debug('Read-only mode, not creating default role')
             else:
                 raise Exception("Default role %s does not exists and should not be created!" % default_role)
+        else:
+            self.logger.debug('Using existing default role %s (id %s)', default_role, self.default_role_id)
 
         self.flag = flag
 
@@ -104,6 +121,46 @@ class KeyStone:
         self.__user_id2perun_id__ = {}
         self.denbi_project_map = {}
         self.__project_id2perun_id__ = {}
+
+    def _create_auth(self, environ):
+        """
+        Helper method to create the auth object for keystone, depending on the
+        given environment.
+
+        This method supports authentication via project scoped tokens for
+        project and cloud admins, and domain scoped tokens for domain admins.
+
+        In case of project scoped tokens, the user domain name is also used
+        for the project if no separate project domain name is given.
+
+        :param environ: dicts to take auth information from
+
+        :return: the auth object to be used for contacting keystone
+        """
+
+        # in case of a domain scoped tokes, we do not pass project information
+        # to the password constructor. in case of project scoped tokens,
+        # we need to pass the project name and project domain name:
+
+        if 'OS_PROJECT_NAME' in environ:
+            project_domain_name = environ['OS_PROJECT_DOMAIN_NAME'] if 'OS_PROJECT_DOMAIN_NAME' in environ else environ['OS_USER_DOMAIN_NAME']
+            auth = v3.Password(auth_url=environ['OS_AUTH_URL'],
+                               username=environ['OS_USERNAME'],
+                               password=environ['OS_PASSWORD'],
+                               project_name=environ['OS_PROJECT_NAME'],
+                               user_domain_name=environ['OS_USER_DOMAIN_NAME'],
+                               project_domain_name=project_domain_name)
+            self.domain_name = environ['OS_PROJECT_DOMAIN_NAME']
+        elif 'OS_DOMAIN_NAME' in environ:
+            auth = v3.Password(auth_url=environ['OS_AUTH_URL'],
+                               username=environ['OS_USERNAME'],
+                               password=environ['OS_PASSWORD'],
+                               domain_name=environ['OS_DOMAIN_NAME'],
+                               user_domain_name=environ['OS_USER_DOMAIN_NAME'])
+            self.domain_name = environ['OS_DOMAIN_NAME']
+        else:
+            raise Exception("Neither project nor domain name given")
+        return auth
 
     def users_create(self, elixir_id, perun_id, email=None, enabled=True):
         """
@@ -432,6 +489,8 @@ class KeyStone:
 
         for os_project in self.keystone.projects.list(domain=self.target_domain_id):
             if hasattr(os_project, 'flag') and os_project.flag == self.flag:
+                self.logger.debug('Found denbi associated project %s (id %s)',
+                                  os_project.name, os_project.id)
                 denbi_project = {
                     'id': str(os_project.id),  # str
                     'name': str(os_project.name),  # str
@@ -446,14 +505,14 @@ class KeyStone:
                 self.__project_id2perun_id__[denbi_project['id']] = denbi_project['perun_id']
                 self.denbi_project_map[denbi_project['perun_id']] = denbi_project
 
-        for role in self.keystone.role_assignments.list():
-            if 'project' in role.scope and hasattr(role, 'user'):  # consider only if project and user is assigned, otherwise ignore
-                tpid = str(role.scope['project']['id'])
-                tuid = str(role.user['id'])
-
-                if tpid in self.__project_id2perun_id__ and tuid in self.__user_id2perun_id__:
-                    self.denbi_project_map[self.__project_id2perun_id__[tpid]]['members'].\
-                        append(self.__user_id2perun_id__[tuid])
+                # get all assigned roles for this project
+                # this call should be possible with domain admin right
+                # include_subtree is necessary since the default policies either
+                # allow domain role assignment querie
+                for role in self.keystone.role_assignments.list(project=os_project.id, include_subtree=True):
+                    if role.user['id'] in self.__user_id2perun_id__:
+                        self.logger.debug('Found user %s as member in project %s', role.user['id'], os_project.name)
+                        denbi_project['members'].append(self.__user_id2perun_id__[role.user['id']])
 
         # Check for project specific quota
         if self.support_quotas:
