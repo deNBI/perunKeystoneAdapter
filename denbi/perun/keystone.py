@@ -1,12 +1,16 @@
 import os
+import ast
+import numbers
+import logging
+import itertools
 
 from keystoneauth1.identity import v3
 from keystoneauth1 import session
 from keystoneclient.v3 import client
 from keystoneauth1.exceptions import Unauthorized
-import logging
-import itertools
-
+from novaclient import client as novaClient
+from cinderclient import client as cinderClient
+from neutronclient.v2_0 import client as neutronClient
 
 class KeyStone:
     """
@@ -68,6 +72,8 @@ class KeyStone:
         # we have both session, now check the credentials
         # by authenticating to keystone. we also need the AccessInfo
         # instances to retrieve project and domain ids for later
+
+
         try:
             domain_access = domain_auth.get_access(domain_session)
         except Unauthorized:
@@ -83,6 +89,13 @@ class KeyStone:
         # store both session for later use
         self._domain_keystone = client.Client(session=domain_session)
         self._project_keystone = client.Client(session=project_session)
+
+
+        # If support_quotas create instance of nova client
+        if support_quotas:
+            self.nova = novaClient.Client(2, session=project_session, endpoint_type="public")
+            self.cinder = cinderClient.Client(2, session=project_session, endpoint_type="public")
+            self.neutron = neutronClient.Client(session=project_session, endpoint_type="public")
 
         # override the domain name if necessary
         # we need to check that a correct value is given if a different
@@ -419,13 +432,28 @@ class KeyStone:
 
         return denbi_project
 
+    def test_new_number(self, new_number, in_use):
+        """
+        Tests if given number is valid
+        :param new_number: given number
+        :param in_use: amount of used quota
+        :return: True if given number is valid
+        """
+        return (new_number is not None and in_use <= new_number > -2)
+
     def project_quota(self,
                       perun_id,
                       number_of_vms=None,
                       disk_space=None,
                       special_purpose_hardware=None,
                       ram_per_vm=None,
-                      object_storage=None):
+                      object_storage=None,
+                      number_of_cpus=None,
+                      number_of_snapshots=None,
+                      volume_limit=None,
+                      number_of_networks=None,
+                      number_of_subnets=None,
+                      number_of_router=None):
         """
         Set/Update quota for project
 
@@ -434,15 +462,146 @@ class KeyStone:
         :param special_purpose_hardware: supported values GPU, FPGA
         :param ram_per_vm: in GB
         :param object_storage: in GB
-
+        :param number_of_cpus:
+        :param number_of_snapshots:
+        :param volume_limit:
+        :param number_of_networks:
+        :param number_of_subnets:
+        :param number_of_router:
         :return:
         """
-        perun_id = str(perun_id)
-        if self.support_quotas:
-            # project = self.denbi_project_map[perun_id]
-            raise NotImplementedError
 
-    def projects_update(self, perun_id, members=None, name=None, description=None, enabled=None, scratched=False):
+        perun_id = str(perun_id)
+
+        if self.support_quotas:
+            if perun_id in self.denbi_project_map:
+                # get project from map
+                project = self.denbi_project_map[perun_id]
+
+                # check quota usage (nova quotas)
+                vms_in_use = project['quotas']['nova'].instances['in_use']
+                cpus_in_use = project['quotas']['nova'].cores['in_use']
+                ram_in_use = project['quotas']['nova'].ram['in_use']
+
+                # check quota usage (cinder quotas)
+                disk_in_use = project['quotas']['cinder'].gigabytes['in_use']
+                volumes_in_use = project['quotas']['cinder'].volumes['in_use']
+                snapshots_in_use = project['quotas']['cinder'].snapshots['in_use']
+
+                # check quota usage (neutron quotas)
+                networks_in_use = project['quotas']['neutron']['quota']['networks_in_use']
+                subnetworks_in_use = project['quotas']['neutron']['quota']['subnetworks_in_use']
+                routers_in_use = project['quotas']['neutron']['quota']['routers_in_use']
+
+                # converts number_of_vms if given as a string
+                if type(number_of_vms) is str:
+                    number_of_vms = self.convert_str_to_int(number_of_vms)
+                # sets numbers of vms if new number is valid
+                if self.test_new_number(number_of_vms, vms_in_use):
+                    self.nova.quotas.update(tenant_id=project['id'], instances=number_of_vms)
+                elif number_of_vms is not None:
+                    raise ValueError(number_of_vms + ' is lower than used vms or -1!')
+
+                # converts number_of_cpus if given as a string
+                if type(number_of_cpus) is str:
+                    number_of_cpus = self.convert_str_to_int(number_of_cpus)
+                # sets numbers of cpus if new number is valid
+                if self.test_new_number(number_of_cpus, cpus_in_use):
+                    self.nova.quotas.update(tenant_id=project['id'], cores=number_of_cpus)
+                elif number_of_cpus is not None:
+                    raise ValueError(number_of_cpus + ' is lower than used cpus or -1!')
+
+                # converts ram_per_vm if given as a string
+                if type(ram_per_vm) is str:
+                    ram_per_vm = self.convert_str_to_int(ram_per_vm)
+                # sets ram per vm if new number is valid
+                if self.test_new_number(ram_per_vm, ram_in_use):
+                    self.nova.quotas.update(tenant_id=project['id'], ram=ram_per_vm)
+                elif ram_per_vm is not None:
+                    raise ValueError(ram_per_vm + ' is lower than used ram or -1')
+
+                # converts disk_space if given as a string
+                if type(disk_space) is str:
+                    disk_space = self.convert_str_to_int(disk_space)
+                # sets disk space if new number is valid
+                if self.test_new_number(disk_space, disk_in_use):
+                    self.cinder.quotas.update(tenant_id=project['id'], gigabytes=disk_space)
+                elif disk_space is not None:
+                    raise ValueError(disk_space + ' is lower than used disk_space or -1!')
+
+                # converts number_of_snapshots if given as a string
+                if type(number_of_snapshots) is str:
+                    number_of_snapshots = self.convert_str_to_int(number_of_snapshots)
+                # sets numbers of snapshots if new number is valid
+                if self.test_new_number(number_of_snapshots, snapshots_in_use):
+                    self.cinder.quotas.update(tenant_id=project['id'], snapshots=number_of_snapshots)
+                elif number_of_snapshots is not None:
+                    raise ValueError(number_of_snapshots + ' is lower than used snapshots or -1!')
+
+                # converts volume_limit if given as a string
+                if type(volume_limit) is str:
+                    volume_limit = self.convert_str_to_int(volume_limit)
+                # sets volume limit if new number is valid
+                if self.test_new_number(volume_limit, volumes_in_use):
+                    self.cinder.quotas.update(tenant_id=project['id'], volumes=volume_limit)
+                elif volume_limit is not None:
+                    raise ValueError(volume_limit + ' is lower than used volumes or -1!')
+
+                # converts number_of_networks if given as a string
+                if type(number_of_networks) is str:
+                    number_of_networks = self.convert_str_to_int(number_of_networks)
+                # sets numbers of networks if new number is valid
+                if self.test_new_number(number_of_networks, networks_in_use):
+                    self.neutron.update_quota(project['id'], body={'quota': {'network': number_of_networks}})
+                elif number_of_networks is not None:
+                    raise ValueError(number_of_networks + ' is lower than used networks or -1!')
+
+                # converts number_of_subnets if given as a string
+                if type(number_of_subnets) is str:
+                    number_of_subnets = self.convert_str_to_int(number_of_subnets)
+                # sets numbers of subnets if new number is valid
+                if self.test_new_number(number_of_subnets, subnetworks_in_use):
+                    self.neutron.update_quota(project['id'], body={'quota': {'subnet': number_of_subnets}})
+                elif number_of_subnets is not None:
+                    raise ValueError(number_of_subnets + ' is lower than used subnets or -1!')
+
+                # converts number_of_router if given as a string
+                if type(number_of_router) is str:
+                    number_of_router = self.convert_str_to_int(number_of_router)
+                # sets numbers of routers if new number is valid
+                if self.test_new_number(number_of_router, routers_in_use):
+                    self.neutron.update_quota(project['id'], body={'quota': {'router': number_of_router}})
+                elif number_of_router is not None:
+                    raise ValueError(number_of_router + ' is lower than used routers or -1!')
+
+            else:
+                raise ValueError('Project with perun_id ' + perun_id + ' not found in project_map!')
+
+    def test_new_number(self, new_number, in_use):
+        """
+        Tests if given number is valid
+        :param new_number: given number
+        :param in_use: amount of used quota
+        :return: True if given number is valid
+        """
+        if new_number is not None:
+            if isinstance(new_number, numbers.Integral):
+                return (in_use <= new_number > -2) or new_number == -1
+            else:
+                raise ValueError(new_number + ' should be an Integer!')
+        else:
+            return False
+
+    def convert_str_to_int(self, value):
+        """
+        Converts string to int
+        necessary for the following method test_new_number,
+        :param value: given string
+        :return: converted integer
+        """
+        return ast.literal_eval(value)
+
+    def projects_update(self,perun_id,members=None, name=None, description=None,enabled=None, scratched = False):
         """
         Update  a project
 
@@ -576,7 +735,23 @@ class KeyStone:
 
         # Check for project specific quota
         if self.support_quotas:
-            raise NotImplementedError
+            for perun_id in self.denbi_project_map:
+                project_id = self.denbi_project_map[perun_id]['id']
+                # Get Quotas (nova and cinder with number of used)
+                self.denbi_project_map[perun_id]['quotas']['nova'] = self.nova.quotas.get(tenant_id=project_id, user_id=None, detail=True)
+                self.denbi_project_map[perun_id]['quotas']['cinder'] = self.cinder.quotas.get(tenant_id=project_id, usage=True)
+                self.denbi_project_map[perun_id]['quotas']['neutron'] = self.neutron.show_quota(project_id)
+
+                # Count number of networks, subnets and routers to find number of used quotas
+                netw_list = self.neutron.list_networks()
+                subnet_list = self.neutron.list_subnets()
+                router_list = self.neutron.list_routers(retrieve_all=True)
+                netwcount = netw_list['networks']
+                subnetcount = subnet_list['subnets']
+                routercount = router_list['routers']
+                self.denbi_project_map[perun_id]['quotas']['neutron']['quota']['networks_in_use'] = len(netwcount)
+                self.denbi_project_map[perun_id]['quotas']['neutron']['quota']['subnetworks_in_use'] = len(subnetcount)
+                self.denbi_project_map[perun_id]['quotas']['neutron']['quota']['routers_in_use'] = len(routercount)
 
         return self.denbi_project_map
 
