@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.WARN)
 
 
 def process_tarball(tarball_path, read_only=False, target_domain_name='elixir',
-                    default_role='user'):
+                    default_role='user', nested=False):
     directory = tempfile.mkdtemp()
 
     # extract tar file
@@ -23,7 +23,7 @@ def process_tarball(tarball_path, read_only=False, target_domain_name='elixir',
     # import into keystone
     keystone = KeyStone(default_role=default_role, create_default_role=True,
                         support_quotas=False, target_domain_name=target_domain_name,
-                        read_only=read_only)
+                        read_only=read_only, nested=nested)
     endpoint = Endpoint(keystone=keystone, mode="denbi_portal_compute_center",
                         support_quotas=False)
     endpoint.import_data(directory + '/users.scim', directory + '/groups.scim')
@@ -42,6 +42,8 @@ def main():
                         help="Defaut role to assign to new users, defaults to 'user'")
     parser.add_argument("-v", "--verbose", dest="verbose_count",
                         action="count", default=0, help="increases log verbosity for each occurence.")
+    parser.add_argument("-n", "--nested", action="store_true", default=False,
+                        help="use nested project instead of cloud/domain admin")
     args = parser.parse_args()
 
     # Defaults to WARN, with every added -v it goes to INFO then DEBUG
@@ -50,7 +52,7 @@ def main():
 
     process_tarball(args.tarball.name, read_only=args.read_only,
                     target_domain_name=args.domain,
-                    default_role=args.role)
+                    default_role=args.role, nested=args.nested)
 
 
 if __name__ == '__main__':

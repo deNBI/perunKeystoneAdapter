@@ -3,10 +3,9 @@ import os
 from keystoneauth1.identity import v3
 from keystoneauth1 import session
 from keystoneclient.v3 import client
-from keystoneauth1.exceptions import Forbidden
-from keystoneauth1.exceptions import NotFound
 from keystoneauth1.exceptions import Unauthorized
 import logging
+import itertools
 
 
 class KeyStone:
@@ -24,7 +23,7 @@ class KeyStone:
     def __init__(self, environ=None, default_role="_member",
                  create_default_role=False, flag="perun_propagation",
                  support_quotas=True, target_domain_name=None, read_only=False,
-                 logging_domain='denbi'):
+                 logging_domain='denbi', nested=False, cloud_admin=False):
         """
         Create a new Openstack Keystone session using the system environment.
         The following variables are considered:
@@ -43,56 +42,80 @@ class KeyStone:
         :param support_quotas: support project quotas  (needs a complete openstack setup)
         :param target_domain_name: domain where all users & projects are created, will be created if it not exists
         :param read_only: do not make any changes to the keystone
+        :param nested: use nested projects instead of cloud/domain admin accesss
+        :param cloud_admin: credentials are cloud admin credentials
 
         """
         self.ro = read_only
+        self.nested = nested
         self.logger = logging.getLogger(logging_domain)
 
-        if environ is None:  # use os enviroment settings if no explicit environ is given
-            auth = self._create_auth(os.environ)
-
+        if cloud_admin:
+            # working as cloud admin requires setting a target domain
+            if target_domain_name is None:
+                raise Exception("You need to set a target domain if working with cloud admin credentials.")
+            # with cloud admin credentials we do not need multiple sessions
+            auth = self._create_auth(environ, False)
+            project_session = session.Session(auth=auth)
+            domain_session = project_session
         else:
-            auth = self._create_auth(environ)
+            # use two separate sessions for domain and project access
+            domain_auth = self._create_auth(environ, True)
+            project_auth = self._create_auth(environ, False)
+            domain_session = session.Session(auth=domain_auth)
+            project_session = session.Session(auth=project_auth)
 
-        sess = session.Session(auth=auth)
-        self.keystone = client.Client(session=sess)
-
-        self.target_domain_name = str(target_domain_name)
-
-        # If target_domain_name not set
-        if not(self.target_domain_name):
-            self.target_domain_name = str(self.domain_name)
-
+        # we have both session, now check the credentials
+        # by authenticating to keystone. we also need the AccessInfo
+        # instances to retrieve project and domain ids for later
         try:
-            self.target_domain_id = str(self.keystone.domains.list(name=self.target_domain_name)[0].id)
+            domain_access = domain_auth.get_access(domain_session)
         except Unauthorized:
-            raise Exception("Authorization failed, wrong credentials?")
-        except IndexError:
-            # target_domain_name does not exist
-            if not self.ro:
-                self.target_domain_id = str(self.keystone.domains.create(name=self.target_domain_name, description="Created by perun_endpoint ...").id)
-        except Forbidden:
-            # authenticated user is not allowed to list domains
-            # try to get the domain using the given value as domain id (which
-            # which does not require a domain listing)
-            try:
-                domain = self.keystone.domains.get(self.target_domain_name)
+            raise Exception("Authorization for domain session failed, wrong credentials / role?")
+        try:
+            if domain_session is not project_session:
+                project_access = project_auth.get_access(project_session)
+            else:
+                project_access = domain_access
+        except Unauthorized:
+            raise Exception("Authorization for project session failed, wrong credentials / role?")
 
-                if domain is not None:
-                    # use the name as id
-                    self.target_domain_id = self.target_domain_name
-                else:
-                    raise Exception("'%s' is neither a valid domain name or a valid domain id" % self.target_domain_name)
-            except Forbidden:
-                raise Exception("Unable to list domains while searching for domain '%s'" % self.target_domain_name)
-            except NotFound:
-                raise Exception("Unable to list domains or '%s' is neither a valid domain name or a valid domain id" % self.target_domain_name)
+        # store both session for later use
+        self._domain_keystone = client.Client(session=domain_session)
+        self._project_keystone = client.Client(session=project_session)
+
+        # override the domain name if necessary
+        # we need to check that a correct value is given if a different
+        # domain is used
+        # TODO: the check might need to be improved if we need to differentiate
+        #       between domain name syntax and uuid syntax
+        if (target_domain_name
+           and target_domain_name != domain_access.domain_name
+           and target_domain_name != domain_access.domain_id):
+            # valide the different domain name
+            # the credentials should be cloud admin credentials in this case
+            self.target_domain_id = self._resolve_domain(target_domain_name)
+        else:
+            if target_domain_name:
+                self.logger.debug("Overridden domain name is same as project domain, ignoring value.")
+
+            # use project domain
+            self.target_domain_id = domain_access.domain_id
 
         self.logger.debug("Working on domain %s", self.target_domain_id)
+
+        if nested:
+            self.parent_project_id = project_access.project_id
+            self.logger.debug("Using nested project %s (id %s)",
+                              project_access.project_name,
+                              self.parent_project_id)
+        else:
+            self.parent_project_id = None
+
         # Check if role exists ...
         self.default_role = str(default_role)
         self.default_role_id = None
-        for role in self.keystone.roles.list():
+        for role in self.domain_keystone.roles.list():
             if str(role.name) == self.default_role:
                 self.default_role_id = str(role.id)
                 break
@@ -101,7 +124,7 @@ class KeyStone:
         if not(self.default_role_id):
             if create_default_role:
                 if not self.ro:
-                    role = self.keystone.roles.create(self.default_role)
+                    role = self.domain_keystone.roles.create(self.default_role)
                     self.default_role_id = str(role.id)
                     self.logger.debug('Created default role %s (id %s)', role.name, role.id)
                 else:
@@ -122,27 +145,53 @@ class KeyStone:
         self.denbi_project_map = {}
         self.__project_id2perun_id__ = {}
 
-    def _create_auth(self, environ):
+    @property
+    def domain_keystone(self):
+        return self._domain_keystone
+
+    @property
+    def project_keystone(self):
+        return self._project_keystone
+
+    @property
+    def keystone(self, want_domain=True):
+        if want_domain:
+            return self.domain_keystone
+        else:
+            return self.project_keystone
+
+    def _create_auth(self, environ, auth_at_domain=False):
         """
         Helper method to create the auth object for keystone, depending on the
         given environment.
 
         This method supports authentication via project scoped tokens for
         project and cloud admins, and domain scoped tokens for domain admins.
+        The auth_at_domain flag indicates which kind of authentication is
+        requested.
 
         In case of project scoped tokens, the user domain name is also used
         for the project if no separate project domain name is given.
 
         :param environ: dicts to take auth information from
+        :param nested: enforce nested projects
+        :param auth_at_domain: create domain scoped token
 
-        :return: the auth object to be used for contacting keystone
+        :returns: the auth object to be used for contacting keystone
         """
 
-        # in case of a domain scoped tokes, we do not pass project information
-        # to the password constructor. in case of project scoped tokens,
-        # we need to pass the project name and project domain name:
-
-        if 'OS_PROJECT_NAME' in environ:
+        # default to shell environment if no specific one was given
+        if environ is None:
+            environ = os.environ
+        if auth_at_domain:
+            # create a domain scoped token
+            auth = v3.Password(auth_url=environ['OS_AUTH_URL'],
+                               username=environ['OS_USERNAME'],
+                               password=environ['OS_PASSWORD'],
+                               domain_name=environ['OS_DOMAIN_NAME'],
+                               user_domain_name=environ['OS_USER_DOMAIN_NAME'])
+        else:
+            # create a project scoped token
             project_domain_name = environ['OS_PROJECT_DOMAIN_NAME'] if 'OS_PROJECT_DOMAIN_NAME' in environ else environ['OS_USER_DOMAIN_NAME']
             auth = v3.Password(auth_url=environ['OS_AUTH_URL'],
                                username=environ['OS_USERNAME'],
@@ -150,17 +199,27 @@ class KeyStone:
                                project_name=environ['OS_PROJECT_NAME'],
                                user_domain_name=environ['OS_USER_DOMAIN_NAME'],
                                project_domain_name=project_domain_name)
-            self.domain_name = environ['OS_PROJECT_DOMAIN_NAME']
-        elif 'OS_DOMAIN_NAME' in environ:
-            auth = v3.Password(auth_url=environ['OS_AUTH_URL'],
-                               username=environ['OS_USERNAME'],
-                               password=environ['OS_PASSWORD'],
-                               domain_name=environ['OS_DOMAIN_NAME'],
-                               user_domain_name=environ['OS_USER_DOMAIN_NAME'])
-            self.domain_name = environ['OS_DOMAIN_NAME']
-        else:
-            raise Exception("Neither project nor domain name given")
         return auth
+
+    def _resolve_domain(self, target_domain):
+        """
+        Helper method to check whether the given domain is accessible and
+        to return the ID of that domain
+
+        :param target_domain: name or id of the domain to check
+
+        :returns: the keystone id of the given domain if the domain
+                  is accessible
+        """
+
+        # start by enumerating all domains the current sessions have access to
+        for domain in itertools.chain(self.domain_keystone.auth.domains(),
+                                      self.project_keystone.auth.domains()):
+            # compare domain to target and return id on match
+            if (domain.id == target_domain or domain.name == target_domain):
+                return domain.id
+        # no matching domain found....
+        raise Exception("Unknown or inaccessible domain %s" % target_domain)
 
     def users_create(self, elixir_id, perun_id, email=None, enabled=True):
         """
@@ -332,7 +391,8 @@ class KeyStone:
                                                        description=description,
                                                        enabled=bool(enabled),
                                                        scratched=False,
-                                                       flag=self.flag)
+                                                       flag=self.flag,
+                                                       parent=self.parent_project_id if self.nested else None)
             denbi_project = {'id': str(os_project.id),
                              'name': str(os_project.name),
                              'perun_id': str(os_project.perun_id),

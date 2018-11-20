@@ -19,7 +19,7 @@ logging.basicConfig(level=getattr(logging, os.environ.get('PERUN_LOG_LEVEL', 'WA
 
 
 def process_tarball(tarball_path, read_only=False, target_domain_name='elixir',
-                    default_role='user'):
+                    default_role='user', nested=False):
     # TODO(hxr): deduplicate
     directory = tempfile.mkdtemp()
     logging.info("Processing data uploaded by Perun: %s" % tarball_path)
@@ -31,7 +31,8 @@ def process_tarball(tarball_path, read_only=False, target_domain_name='elixir',
 
     # import into keystone
     keystone = KeyStone(default_role=default_role, create_default_role=True,
-                        support_quotas=False, target_domain_name=target_domain_name, read_only=read_only)
+                        support_quotas=False, target_domain_name=target_domain_name,
+                        read_only=read_only, nested=nested)
     endpoint = Endpoint(keystone=keystone, mode="denbi_portal_compute_center",
                         support_quotas=False)
     endpoint.import_data(directory + '/users.scim', directory + '/groups.scim')
@@ -57,7 +58,8 @@ def upload():
     t = Thread(target=_perun_propagation, args=(file.name,),
                kwargs={'read_only': app.config.get('keystone_read_only', False),
                        'target_domain_name': app.confg.get('target_domain_name', 'elixir'),
-                       'default_role': app.config.get('default_role', 'user')})
+                       'default_role': app.config.get('default_role', 'user'),
+                       'nested': app.config.get('nested')})
     t.start()
 
     # return immediately
@@ -80,11 +82,14 @@ def main():
                         help="Domain to create users and projects in, defaults to 'elixir'")
     parser.add_argument('--role', default='user',
                         help="Defaut role to assign to new users, defaults to 'user'")
+    parser.add_argument("-n", "--nested", action="store_true", default=False,
+                        help="use nested project instead of cloud/domain admin")
     args = parser.parse_args()
 
     app.config['keystone_read_only'] = args.read_only
     app.config['target_domain_name'] = args.domain
     app.config['default_role'] = args.role
+    app.config['nested'] = args.nested
 
     app.run(host=args.host, port=args.port)
 
