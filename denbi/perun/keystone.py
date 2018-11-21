@@ -1,6 +1,4 @@
 import os
-import ast
-import numbers
 import logging
 import itertools
 
@@ -8,9 +6,6 @@ from keystoneauth1.identity import v3
 from keystoneauth1 import session
 from keystoneclient.v3 import client
 from keystoneauth1.exceptions import Unauthorized
-from novaclient import client as novaClient
-from cinderclient import client as cinderClient
-from neutronclient.v2_0 import client as neutronClient
 from denbi.perun.quotas import manager as quotas
 
 class KeyStone:
@@ -27,7 +22,7 @@ class KeyStone:
 
     def __init__(self, environ=None, default_role="_member_",
                  create_default_role=False, flag="perun_propagation",
-                 support_quotas=True, target_domain_name=None, read_only=False,
+                 target_domain_name=None, read_only=False,
                  logging_domain='denbi', nested=False, cloud_admin=False):
         """
         Create a new Openstack Keystone session using the system environment.
@@ -91,12 +86,6 @@ class KeyStone:
         self._domain_keystone = client.Client(session=domain_session)
         self._project_keystone = client.Client(session=project_session)
 
-        # If support_quotas create instance of nova client
-        if support_quotas:
-            self.nova = novaClient.Client(2, session=project_session, endpoint_type="public")
-            self.cinder = cinderClient.Client(2, session=project_session, endpoint_type="public")
-            self.neutron = neutronClient.Client(session=project_session, endpoint_type="public")
-
         # override the domain name if necessary
         # we need to check that a correct value is given if a different
         # domain is used
@@ -149,8 +138,6 @@ class KeyStone:
             self.logger.debug('Using existing default role %s (id %s)', default_role, self.default_role_id)
 
         self.flag = flag
-
-        self.support_quotas = support_quotas
 
         # initialize user and project map
         self.denbi_user_map = {}
@@ -439,139 +426,6 @@ class KeyStone:
 
         return denbi_project
 
-    def project_quota(self,
-                      perun_id,
-                      number_of_vms=None,
-                      disk_space=None,
-                      special_purpose_hardware=None,
-                      ram_per_vm=None,
-                      object_storage=None,
-                      number_of_cpus=None,
-                      number_of_snapshots=None,
-                      volume_limit=None,
-                      number_of_networks=None,
-                      number_of_subnets=None,
-                      number_of_router=None):
-        """
-        Set/Update quota for project
-
-        :param number_of_vms:
-        :param disk_space: in GB
-        :param special_purpose_hardware: supported values GPU, FPGA
-        :param ram_per_vm: in GB
-        :param object_storage: in GB
-        :param number_of_cpus:
-        :param number_of_snapshots:
-        :param volume_limit:
-        :param number_of_networks:
-        :param number_of_subnets:
-        :param number_of_router:
-        :return:
-        """
-
-        perun_id = str(perun_id)
-
-        if self.support_quotas:
-            if perun_id in self.denbi_project_map:
-                # get project from map
-                project = self.denbi_project_map[perun_id]
-
-                # check quota usage (nova quotas)
-                vms_in_use = project['quotas']['nova'].instances['in_use']
-                cpus_in_use = project['quotas']['nova'].cores['in_use']
-                ram_in_use = project['quotas']['nova'].ram['in_use']
-
-                # check quota usage (cinder quotas)
-                disk_in_use = project['quotas']['cinder'].gigabytes['in_use']
-                volumes_in_use = project['quotas']['cinder'].volumes['in_use']
-                snapshots_in_use = project['quotas']['cinder'].snapshots['in_use']
-
-                # check quota usage (neutron quotas)
-                networks_in_use = project['quotas']['neutron']['quota']['networks_in_use']
-                subnetworks_in_use = project['quotas']['neutron']['quota']['subnetworks_in_use']
-                routers_in_use = project['quotas']['neutron']['quota']['routers_in_use']
-
-                self._set_quota(self.nova.quotas, project['id'], 'instances',
-                                number_of_vms, vms_in_use)
-                self._set_quota(self.nova.quotas, project['id'], 'cores',
-                                number_of_cpus, cpus_in_use)
-                # TODO: ram_per_vm is wrong name for that value....
-                self._set_quota(self.nova.quotas, project['id'], 'ram',
-                                ram_per_vm, ram_in_use)
-                self._set_quota(self.cinder.quotas, project['id'], 'gigabytes',
-                                disk_space, disk_in_use)
-                self._set_quota(self.cinder.quotas, project['id'], 'snapshots',
-                                number_of_snapshots, snapshots_in_use)
-                self._set_quota(self.cinder.quotas, project['id'], 'volumes',
-                                volume_limit, volumes_in_use)
-                self._set_quota(self.neutron, project['id'], 'network',
-                                number_of_networks, networks_in_use,
-                                use_body=True)
-                self._set_quota(self.neutron, project['id'], 'subnet',
-                                number_of_subnets, subnetworks_in_use,
-                                use_body=True)
-                self._set_quota(self.neutron, project['id'], 'router',
-                                number_of_router, routers_in_use,
-                                use_body=True)
-            else:
-                raise ValueError('Project with perun_id ' + perun_id + ' not found in project_map!')
-
-    def _set_quota(self, handler, project_id, name, current_value, new_value,
-                   use_body=False):
-        """
-        Sets a new quota for the project
-
-        :param handler: quota handling instance, e.g. a novaclient object
-        :param project_id: project to set the quota for
-        :param name: name of the quota field, e.g. 'router' or 'volumes'
-        :param current_value: current value of quota (if available, none else),
-                              or amount of resources actually in use
-        :param new_value: new value for quota
-        :param use_body: set quota via body dict, e.g. for neutron quotas
-
-        Checks that the new quota is sane (larger or equal than current value),
-        and invokes the update_quota method on the handler with the correct
-        parameters.
-        """
-
-        # converts new value to integer if given as a string
-        if type(new_value) is str:
-            new_value = self.convert_str_to_int(new_value)
-            # check new value and set it if it is sane
-            if self.test_new_number(new_value, current_value):
-                if use_body:
-                    handler.update_quota(project_id, body={'quota': {name: new_value}})
-                else:
-                    # TODO: novaclient 2.57 introduces a new method with
-                    #       explicit parameter names. Can we convert this?
-                    handler.update(project_id, {name: new_value})
-            elif new_value is not None:
-                raise ValueError(new_value + ' is lower than used or current value for '+name+' or -1!')
-
-    def test_new_number(self, new_number, in_use):
-        """
-        Tests if given number is valid
-        :param new_number: given number
-        :param in_use: amount of used quota
-        :return: True if given number is valid
-        """
-        if new_number is not None:
-            if isinstance(new_number, numbers.Integral):
-                return (in_use <= new_number > -2) or new_number == -1
-            else:
-                raise ValueError(new_number + ' should be an Integer!')
-        else:
-            return False
-
-    def convert_str_to_int(self, value):
-        """
-        Converts string to int
-        necessary for the following method test_new_number,
-        :param value: given string
-        :return: converted integer
-        """
-        return ast.literal_eval(value)
-
     def projects_update(self, perun_id, members=None, name=None,
                         description=None, enabled=None, scratched=False):
         """
@@ -704,30 +558,6 @@ class KeyStone:
                     if role.user['id'] in self.__user_id2perun_id__:
                         self.logger.debug('Found user %s as member in project %s', role.user['id'], os_project.name)
                         denbi_project['members'].append(self.__user_id2perun_id__[role.user['id']])
-
-        # Check for project specific quota
-        if self.support_quotas:
-            for perun_id in self.denbi_project_map:
-                project_id = self.denbi_project_map[perun_id]['id']
-                # Get Quotas (nova and cinder with number of used)
-                self.denbi_project_map[perun_id]['quotas']['nova'] = self.nova.quotas.get(tenant_id=project_id, user_id=None, detail=True)
-                self.denbi_project_map[perun_id]['quotas']['cinder'] = self.cinder.quotas.get(tenant_id=project_id, usage=True)
-                self.denbi_project_map[perun_id]['quotas']['neutron'] = self.neutron.show_quota(project_id)
-
-                # Count number of networks, subnets and routers to find number of used quotas
-                netw_list = self.neutron.list_networks()
-                subnet_list = self.neutron.list_subnets()
-                router_list = self.neutron.list_routers(retrieve_all=True)
-                netwcount = netw_list['networks']
-                subnetcount = subnet_list['subnets']
-                routercount = router_list['routers']
-                self.denbi_project_map[perun_id]['quotas']['neutron']['quota']['networks_in_use'] = len(netwcount)
-                self.denbi_project_map[perun_id]['quotas']['neutron']['quota']['subnetworks_in_use'] = len(subnetcount)
-                self.denbi_project_map[perun_id]['quotas']['neutron']['quota']['routers_in_use'] = len(routercount)
-
-                self.logger.debug("Got quotas for project %s: %s",
-                                  project_id,
-                                  self.denbi_project_map[perun_id]['quotas'])
 
         return self.denbi_project_map
 
