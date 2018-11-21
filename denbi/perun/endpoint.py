@@ -217,18 +217,25 @@ class Endpoint:
                     members.append(str(m['id']))  # as ascii str
 
                 # retrieve project quota
-                number_of_vms = dpcc_project['denbiProjectNumberOfVms']
-                disk_space = dpcc_project['denbiProjectDiskSpace'] # in GB
-                special_purpose_hardware = dpcc_project ['denbiProjectSpecialPurposeHardware'] # values ?
-                ram_per_vm = dpcc_project ['denbiProjectRamPerVm'] # in GB
-                object_storage = dpcc_project ['denbiProjectObjectStorage'] # in GB
-                number_of_cpus = dpcc_project['"denbiProjectNumberOfCpus"']
-                number_of_snapshots = dpcc_project['denbiProjectNumberOfSnapshots']
-                volume_limit = dpcc_project['denbiProjectVlumeLimit']
-                number_of_networks = dpcc_project['denbiProjectNumberOfNetworks']
-                number_of_subnets = dpcc_project['denbiProjectNumberOfSubnets']
-                number_of_router = dpcc_project['denbiProjectNumberOfRouter']
-
+                # quotas are defined by the following fields in the dict:
+                # VMs: denbiProjectNumberOfVms
+                # RAM: denbiRAMLimit
+                # Cores: denbiCoresLimit
+                # Volume: denbiVolumeLimit
+                # Volume Counter: denbiVolumeCounter
+                # Object Storage: denbiProjectObjectStorage
+                # TODO: make a complete list
+                number_of_vms = dpcc_project.get('denbiProjectNumberOfVms', None)
+                disk_space = dpcc_project.get('denbiProjectDiskSpace', None)
+                special_purpose_hardware = dpcc_project.get('denbiProjectSpecialPurposeHardware', None)
+                ram_per_vm = dpcc_project.get('denbiProjectRamPerVm', None)
+                object_storage = dpcc_project.get('denbiProjectObjectStorage', None)
+                number_of_cpus = dpcc_project.get('denbiProjectNumberOfCpus', None)
+                number_of_snapshots = dpcc_project.get('denbiProjectNumberOfSnapshots', None)
+                volume_limit = dpcc_project.get('denbiProjectVolumeLimit', None)
+                number_of_networks = dpcc_project.get('denbiProjectNumberOfNetworks', None)
+                number_of_subnets = dpcc_project.get('denbiProjectNumberOfSubnets', None)
+                number_of_router = dpcc_project.get('denbiProjectNumberOfRouter', None)
 
                 # if project already registered in keystone
                 if perun_id in project_map:

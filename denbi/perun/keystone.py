@@ -11,6 +11,7 @@ from keystoneauth1.exceptions import Unauthorized
 from novaclient import client as novaClient
 from cinderclient import client as cinderClient
 from neutronclient.v2_0 import client as neutronClient
+from denbi.perun.quotas import manager as quotas
 
 class KeyStone:
     """
@@ -24,7 +25,7 @@ class KeyStone:
     denbi_project = ``{id: string, perun_id: string, enabled: boolean, members: [denbi_user]}``
     """
 
-    def __init__(self, environ=None, default_role="_member",
+    def __init__(self, environ=None, default_role="_member_",
                  create_default_role=False, flag="perun_propagation",
                  support_quotas=True, target_domain_name=None, read_only=False,
                  logging_domain='denbi', nested=False, cloud_admin=False):
@@ -89,7 +90,6 @@ class KeyStone:
         # store both session for later use
         self._domain_keystone = client.Client(session=domain_session)
         self._project_keystone = client.Client(session=project_session)
-
 
         # If support_quotas create instance of nova client
         if support_quotas:
@@ -157,6 +157,9 @@ class KeyStone:
         self.__user_id2perun_id__ = {}
         self.denbi_project_map = {}
         self.__project_id2perun_id__ = {}
+
+        # initialize the quota factory
+        self._quota_factory = quotas.QuotaFactory(project_session)
 
     @property
     def domain_keystone(self):
@@ -432,15 +435,6 @@ class KeyStone:
 
         return denbi_project
 
-    def test_new_number(self, new_number, in_use):
-        """
-        Tests if given number is valid
-        :param new_number: given number
-        :param in_use: amount of used quota
-        :return: True if given number is valid
-        """
-        return (new_number is not None and in_use <= new_number > -2)
-
     def project_quota(self,
                       perun_id,
                       number_of_vms=None,
@@ -493,89 +487,62 @@ class KeyStone:
                 subnetworks_in_use = project['quotas']['neutron']['quota']['subnetworks_in_use']
                 routers_in_use = project['quotas']['neutron']['quota']['routers_in_use']
 
-                # converts number_of_vms if given as a string
-                if type(number_of_vms) is str:
-                    number_of_vms = self.convert_str_to_int(number_of_vms)
-                # sets numbers of vms if new number is valid
-                if self.test_new_number(number_of_vms, vms_in_use):
-                    self.nova.quotas.update(tenant_id=project['id'], instances=number_of_vms)
-                elif number_of_vms is not None:
-                    raise ValueError(number_of_vms + ' is lower than used vms or -1!')
-
-                # converts number_of_cpus if given as a string
-                if type(number_of_cpus) is str:
-                    number_of_cpus = self.convert_str_to_int(number_of_cpus)
-                # sets numbers of cpus if new number is valid
-                if self.test_new_number(number_of_cpus, cpus_in_use):
-                    self.nova.quotas.update(tenant_id=project['id'], cores=number_of_cpus)
-                elif number_of_cpus is not None:
-                    raise ValueError(number_of_cpus + ' is lower than used cpus or -1!')
-
-                # converts ram_per_vm if given as a string
-                if type(ram_per_vm) is str:
-                    ram_per_vm = self.convert_str_to_int(ram_per_vm)
-                # sets ram per vm if new number is valid
-                if self.test_new_number(ram_per_vm, ram_in_use):
-                    self.nova.quotas.update(tenant_id=project['id'], ram=ram_per_vm)
-                elif ram_per_vm is not None:
-                    raise ValueError(ram_per_vm + ' is lower than used ram or -1')
-
-                # converts disk_space if given as a string
-                if type(disk_space) is str:
-                    disk_space = self.convert_str_to_int(disk_space)
-                # sets disk space if new number is valid
-                if self.test_new_number(disk_space, disk_in_use):
-                    self.cinder.quotas.update(tenant_id=project['id'], gigabytes=disk_space)
-                elif disk_space is not None:
-                    raise ValueError(disk_space + ' is lower than used disk_space or -1!')
-
-                # converts number_of_snapshots if given as a string
-                if type(number_of_snapshots) is str:
-                    number_of_snapshots = self.convert_str_to_int(number_of_snapshots)
-                # sets numbers of snapshots if new number is valid
-                if self.test_new_number(number_of_snapshots, snapshots_in_use):
-                    self.cinder.quotas.update(tenant_id=project['id'], snapshots=number_of_snapshots)
-                elif number_of_snapshots is not None:
-                    raise ValueError(number_of_snapshots + ' is lower than used snapshots or -1!')
-
-                # converts volume_limit if given as a string
-                if type(volume_limit) is str:
-                    volume_limit = self.convert_str_to_int(volume_limit)
-                # sets volume limit if new number is valid
-                if self.test_new_number(volume_limit, volumes_in_use):
-                    self.cinder.quotas.update(tenant_id=project['id'], volumes=volume_limit)
-                elif volume_limit is not None:
-                    raise ValueError(volume_limit + ' is lower than used volumes or -1!')
-
-                # converts number_of_networks if given as a string
-                if type(number_of_networks) is str:
-                    number_of_networks = self.convert_str_to_int(number_of_networks)
-                # sets numbers of networks if new number is valid
-                if self.test_new_number(number_of_networks, networks_in_use):
-                    self.neutron.update_quota(project['id'], body={'quota': {'network': number_of_networks}})
-                elif number_of_networks is not None:
-                    raise ValueError(number_of_networks + ' is lower than used networks or -1!')
-
-                # converts number_of_subnets if given as a string
-                if type(number_of_subnets) is str:
-                    number_of_subnets = self.convert_str_to_int(number_of_subnets)
-                # sets numbers of subnets if new number is valid
-                if self.test_new_number(number_of_subnets, subnetworks_in_use):
-                    self.neutron.update_quota(project['id'], body={'quota': {'subnet': number_of_subnets}})
-                elif number_of_subnets is not None:
-                    raise ValueError(number_of_subnets + ' is lower than used subnets or -1!')
-
-                # converts number_of_router if given as a string
-                if type(number_of_router) is str:
-                    number_of_router = self.convert_str_to_int(number_of_router)
-                # sets numbers of routers if new number is valid
-                if self.test_new_number(number_of_router, routers_in_use):
-                    self.neutron.update_quota(project['id'], body={'quota': {'router': number_of_router}})
-                elif number_of_router is not None:
-                    raise ValueError(number_of_router + ' is lower than used routers or -1!')
-
+                self._set_quota(self.nova.quotas, project['id'], 'instances',
+                                number_of_vms, vms_in_use)
+                self._set_quota(self.nova.quotas, project['id'], 'cores',
+                                number_of_cpus, cpus_in_use)
+                # TODO: ram_per_vm is wrong name for that value....
+                self._set_quota(self.nova.quotas, project['id'], 'ram',
+                                ram_per_vm, ram_in_use)
+                self._set_quota(self.cinder.quotas, project['id'], 'gigabytes',
+                                disk_space, disk_in_use)
+                self._set_quota(self.cinder.quotas, project['id'], 'snapshots',
+                                number_of_snapshots, snapshots_in_use)
+                self._set_quota(self.cinder.quotas, project['id'], 'volumes',
+                                volume_limit, volumes_in_use)
+                self._set_quota(self.neutron, project['id'], 'network',
+                                number_of_networks, networks_in_use,
+                                use_body=True)
+                self._set_quota(self.neutron, project['id'], 'subnet',
+                                number_of_subnets, subnetworks_in_use,
+                                use_body=True)
+                self._set_quota(self.neutron, project['id'], 'router',
+                                number_of_router, routers_in_use,
+                                use_body=True)
             else:
                 raise ValueError('Project with perun_id ' + perun_id + ' not found in project_map!')
+
+    def _set_quota(self, handler, project_id, name, current_value, new_value,
+                   use_body=False):
+        """
+        Sets a new quota for the project
+
+        :param handler: quota handling instance, e.g. a novaclient object
+        :param project_id: project to set the quota for
+        :param name: name of the quota field, e.g. 'router' or 'volumes'
+        :param current_value: current value of quota (if available, none else),
+                              or amount of resources actually in use
+        :param new_value: new value for quota
+        :param use_body: set quota via body dict, e.g. for neutron quotas
+
+        Checks that the new quota is sane (larger or equal than current value),
+        and invokes the update_quota method on the handler with the correct
+        parameters.
+        """
+
+        # converts new value to integer if given as a string
+        if type(new_value) is str:
+            new_value = self.convert_str_to_int(new_value)
+            # check new value and set it if it is sane
+            if self.test_new_number(new_value, current_value):
+                if use_body:
+                    handler.update_quota(project_id, body={'quota': {name: new_value}})
+                else:
+                    # TODO: novaclient 2.57 introduces a new method with
+                    #       explicit parameter names. Can we convert this?
+                    handler.update(project_id, {name: new_value})
+            elif new_value is not None:
+                raise ValueError(new_value + ' is lower than used or current value for '+name+' or -1!')
 
     def test_new_number(self, new_number, in_use):
         """
@@ -601,7 +568,8 @@ class KeyStone:
         """
         return ast.literal_eval(value)
 
-    def projects_update(self,perun_id,members=None, name=None, description=None,enabled=None, scratched = False):
+    def projects_update(self, perun_id, members=None, name=None,
+                        description=None, enabled=None, scratched=False):
         """
         Update  a project
 
@@ -752,6 +720,10 @@ class KeyStone:
                 self.denbi_project_map[perun_id]['quotas']['neutron']['quota']['networks_in_use'] = len(netwcount)
                 self.denbi_project_map[perun_id]['quotas']['neutron']['quota']['subnetworks_in_use'] = len(subnetcount)
                 self.denbi_project_map[perun_id]['quotas']['neutron']['quota']['routers_in_use'] = len(routercount)
+
+                self.logger.debug("Got quotas for project %s: %s",
+                                  project_id,
+                                  self.denbi_project_map[perun_id]['quotas'])
 
         return self.denbi_project_map
 
