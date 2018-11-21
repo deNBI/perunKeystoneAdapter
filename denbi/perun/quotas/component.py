@@ -132,7 +132,7 @@ class QuotaComponent:
 
         raise ValueError("New quota of %s for %s exceed currently used resource amount".format(value, name))
 
-    def flush:
+    def flush(self):
         """
         Flushes the internal quota cache and enforces a reload on next request.
         """
