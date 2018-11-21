@@ -8,6 +8,7 @@ from keystoneclient.v3 import client
 from keystoneauth1.exceptions import Unauthorized
 from denbi.perun.quotas import manager as quotas
 
+
 class KeyStone:
     """
     Keystone simplifies the communication with Openstack. Offers shortcuts for common functions and also
@@ -68,7 +69,6 @@ class KeyStone:
         # we have both session, now check the credentials
         # by authenticating to keystone. we also need the AccessInfo
         # instances to retrieve project and domain ids for later
-
 
         try:
             domain_access = domain_auth.get_access(domain_session)
