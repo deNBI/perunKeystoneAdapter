@@ -110,9 +110,9 @@ class QuotaManager:
         :param neutron: neutron client instance
 
         """
-        self._components = {self.NOVA: component.QuotaComponent(project_id, nova),
-                            self.CINDER: component.QuotaComponent(project_id, cinder),
-                            self.NEUTRON: component.QuotaComponent(project_id, neutron)}
+        self._components = {self.NOVA: component.QuotaComponent(nova,project_id),
+                            self.CINDER: component.QuotaComponent(cinder, project_id),
+                            self.NEUTRON: component.QuotaComponent(neutron, project_id)}
 
     def _map_to_component(self, name):
         if name in self.QUOTA_MAPPING:

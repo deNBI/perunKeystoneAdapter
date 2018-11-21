@@ -22,7 +22,6 @@ def process_tarball(tarball_path, read_only=False, target_domain_name='elixir',
 
     # import into keystone
     keystone = KeyStone(default_role=default_role, create_default_role=True,
-                        support_quotas=support_quotas,
                         target_domain_name=target_domain_name,
                         read_only=read_only, nested=nested)
     endpoint = Endpoint(keystone=keystone, mode="denbi_portal_compute_center",

@@ -20,7 +20,23 @@ class Endpoint:
 
     """
 
-    def __init__(self, keystone=None, mode="scim", store_email=True, support_quotas=True, read_only=False):
+    # mapping of quota names in the de.NBI portal datasets to openstack quotas
+    # a value of None indicates that the quota may be present, but is not
+    # implemented so far
+    DENBI_QUOTA_NAMES = {'denbiProjectNumberOfVms': 'instances',
+                         'denbiProjectDiskSpace': 'gigabytes',
+                         'denbiProjectSpecialPurposeHardware': None,
+                         'denbiProjectRamPerVm': 'ram',
+                         'denbiProjectObjectStorage': None,
+                         'denbiProjectNumberOfCpus': 'cores',
+                         'denbiProjectNumberOfSnapshots': 'snapshots',
+                         'denbiProjectVolumeLimit': 'volumes',
+                         'denbiProjectNumberOfNetworks': 'network',
+                         'denbiProjectNumberOfSubnets': 'subnet',
+                         'denbiProjectNumberOfRouter': 'router'}
+
+    def __init__(self, keystone=None, mode="scim", store_email=True,
+                 support_quotas=True, read_only=False):
         '''
 
         :param keystone: initialized keystone object
@@ -39,6 +55,7 @@ class Endpoint:
         self.mode = str(mode)
         self.store_email = bool(store_email)
         self.support_quotas = bool(support_quotas)
+        self.read_only = read_only
 
     def import_data(self, users_path, groups_path):
         '''
@@ -216,27 +233,6 @@ class Endpoint:
                 for m in dpcc_project['denbiProjectMembers']:
                     members.append(str(m['id']))  # as ascii str
 
-                # retrieve project quota
-                # quotas are defined by the following fields in the dict:
-                # VMs: denbiProjectNumberOfVms
-                # RAM: denbiRAMLimit
-                # Cores: denbiCoresLimit
-                # Volume: denbiVolumeLimit
-                # Volume Counter: denbiVolumeCounter
-                # Object Storage: denbiProjectObjectStorage
-                # TODO: make a complete list
-                number_of_vms = dpcc_project.get('denbiProjectNumberOfVms', None)
-                disk_space = dpcc_project.get('denbiProjectDiskSpace', None)
-                special_purpose_hardware = dpcc_project.get('denbiProjectSpecialPurposeHardware', None)
-                ram_per_vm = dpcc_project.get('denbiProjectRamPerVm', None)
-                object_storage = dpcc_project.get('denbiProjectObjectStorage', None)
-                number_of_cpus = dpcc_project.get('denbiProjectNumberOfCpus', None)
-                number_of_snapshots = dpcc_project.get('denbiProjectNumberOfSnapshots', None)
-                volume_limit = dpcc_project.get('denbiProjectVolumeLimit', None)
-                number_of_networks = dpcc_project.get('denbiProjectNumberOfNetworks', None)
-                number_of_subnets = dpcc_project.get('denbiProjectNumberOfSubnets', None)
-                number_of_router = dpcc_project.get('denbiProjectNumberOfRouter', None)
-
                 # if project already registered in keystone
                 if perun_id in project_map:
                     # check if project data changed
@@ -251,55 +247,16 @@ class Endpoint:
 
                     # check for quotas and update it if possible
                     if self.support_quotas:
-                        quotas = project['quotas']
-                        # TODO(hxr): makes assumption that some quota vals are set. they're not.
-                        modified = (
-                            ('number_of_vms' in quotas and quotas['number_of_vms'] != number_of_vms),
-                            ('disk_space' in quotas and quotas['disk_space'] != disk_space),
-                            ('special_purpose_hardware' in quotas and quotas['special_purpose_hardware'] != special_purpose_hardware),
-                            ('ram_per_vm' in quotas and quotas['ram_per_vm'] != ram_per_vm),
-                            ('object_storage' in quotas and quotas['object_storage'] != object_storage),
-                            ('number_of_cpus' in quotas and quotas['number_of_cpus'] != number_of_cpus),
-                            ('number_of_snapshots' in quotas and quotas['number_of_snapshots'] != number_of_snapshots),
-                            ('volume_limit' in quotas and quotas['volume_limit'] != volume_limit),
-                            ('number_of_networks' in quotas and quotas['number_of_networks'] != number_of_networks),
-                            ('number_of_subnets' in quotas and quotas['number_of_subnets'] != number_of_subnets),
-                            ('number_of_router' in quotas and quotas['number_of_router'] != number_of_router)
-                        )
-
-                        # TODO(hxr): prod had none of these values on the quotas object, so none were attempted to be set.
-                        if any(modified):
-                            log.info("Updating quota vms=%s disk=%s hardware=%s ram=%s os=%s", number_of_vms, disk_space, special_purpose_hardware, ram_per_vm, object_storage)
-                            self.keystone.project_quota(number_of_vms=number_of_vms,
-                                                        disk_space=disk_space,
-                                                        special_purpose_hardware=special_purpose_hardware,
-                                                        ram_per_vm=ram_per_vm,
-                                                        object_storage=object_storage,
-                                                        number_of_cpus = number_of_cpus,
-                                                        number_of_snapshots = number_of_snapshots,
-                                                        volume_limit = volume_limit,
-                                                        number_of_networks = number_of_networks,
-                                                        number_of_subnets = number_of_subnets,
-                                                        number_of_router = number_of_router)
-                        else:
-                            log.debug("Quota unchanged")
+                        self._set_quotas(project['id'], dpcc_project)
 
                 else:
                     log.info("Creating project %s with name=%s members={%s}", perun_id, name, ','.join(members))
                     self.keystone.projects_create(perun_id, name=name, description=description, members=members)
                     if self.support_quotas:
-                        log.info("Setting quota vms=%s disk=%s hardware=%s ram=%s os=%s", number_of_vms, disk_space, special_purpose_hardware, ram_per_vm, object_storage)
-                        self.keystone.project_quota(number_of_vms=number_of_vms,
-                                                    disk_space=disk_space,
-                                                    special_purpose_hardware=special_purpose_hardware,
-                                                    ram_per_vm=ram_per_vm,
-                                                    object_storage=object_storage,
-                                                    number_of_cpus = number_of_cpus,
-                                                    number_of_snapshots = number_of_snapshots,
-                                                    volume_limit = volume_limit,
-                                                    number_of_networks = number_of_networks,
-                                                    number_of_subnets = number_of_subnets,
-                                                    number_of_router = number_of_router)
+                        if self.read_only:
+                            log.info("Not setting quotas for new project %s, readonly mode", name)
+                        else:
+                            self._set_quotas(project['id'], dpcc_project)
                 project_ids.append(perun_id)
 
             else:
@@ -311,3 +268,29 @@ class Endpoint:
         for id in del_projects:
             log.info("Deleting project %s", id)
             self.keystone.projects_delete(id)
+
+    def _set_quotas(self, project_id, project_definition):
+        manager = self.keystone.quota_factory.get_manager(project_id)
+
+        for name in self.DENBI_QUOTA_NAMES:
+            value = project_definition.get(name, None)
+            if value is not None:
+                quota_name = self.DENBI_QUOTA_NAMES[name]
+                if quota_name is None:
+                    log.info("Skipping quota %s for project %s, not supported yet", name, project_id)
+                else:
+                    try:
+                        log.debug("Checking quota %s for project %s",
+                                  quota_name, project_id)
+                        current = manager.get_current_quota(quota_name)
+                        log.debug("Comparing %s vs %s", current, value)
+                        if manager.check_value(quota_name, value):
+                            if self.read_only:
+                                log.info("Would update quota %s for project %s to from value %s to value %s",
+                                         quota_name, project_id, current, value)
+                            else:
+                                log.info("Updating quota %s for project %s to from value %s to value %s",
+                                         quota_name, project_id, current, value)
+                                manager.set_value(quota_name, value)
+                    except ValueError as error:
+                        log.error("Unable to check/set quota %s: %s", quota_name, str(error))

@@ -22,12 +22,12 @@ class QuotaComponent:
         :param project_id: project to query quotas for
         """
 
-        self.logger = logging.getLogger()
+        self.logger = logging.getLogger('denbi')
         self._client = client
         self._project_id = project_id
 
         # neutron requires a special handling, so recognize it
-        self._is_neutron = isinstance(client, neutronClient)
+        self._is_neutron = isinstance(client, neutronClient.Client)
         self._quota_cache = None
         self._lock = threading.Lock()
 
@@ -50,15 +50,16 @@ class QuotaComponent:
                     if self._is_neutron:
                         self._get_neutron_quotas()
                     else:
-                        self.logger.debug("Retrieving quotas for project %s in component %s",
-                                          self._project_id, self._client)
-                        self._quota_cache = self.client.quotas.get(self._project_id,
-                                                                   detail=True)
+                        self._quota_cache = self._client.quotas.get(self._project_id,
+                                                                    detail=True).to_dict()
 
         if name in self._quota_cache:
             return self._quota_cache[name]['limit']
         raise ValueError("Unknown quota %s in component %s"
                          .format(name, self._client))
+
+    def _get_neutron_quotas(self):
+        raise Exception("Not implemented yet")
 
     def check_value(self, name, value):
         """
@@ -131,6 +132,9 @@ class QuotaComponent:
                 self._quota_cache[name]['limit'] = value
 
         raise ValueError("New quota of %s for %s exceed currently used resource amount".format(value, name))
+
+    def _set_neutron_quota(self, name, value):
+        raise Exception("Not implemented yet")
 
     def flush(self):
         """
