@@ -176,6 +176,10 @@ class KeyStone:
         else:
             return self.project_keystone
 
+    @property
+    def quota_factory(self):
+        return self._quota_factory
+
     def _create_auth(self, environ, auth_at_domain=False):
         """
         Helper method to create the auth object for keystone, depending on the
