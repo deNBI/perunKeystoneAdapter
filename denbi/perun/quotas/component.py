@@ -1,17 +1,44 @@
 from neutronclient.v2_0 import client as neutronClient
+from cinderclient.v3 import client as cinderClient
+from novaclient.v2 import client as novaClient
 import threading
 import logging
+import abc
+
+
+class QuotaComponentFactory:
+    """
+    Simple factory class to create the right kind of component implementation
+    for a given openstack clientself.
+    """
+
+    @staticmethod
+    def get_component(client, project_id):
+        """
+        Return a quota management component for the given client to be
+        used with the given project.
+        """
+        if isinstance(client, neutronClient.Client):
+            return NeutronQuotaComponent(client, project_id)
+        elif isinstance(client, cinderClient.Client):
+            return CinderQuotaComponent(client, project_id)
+        elif isinstance(client, novaClient.Client):
+            return NovaQuotaComponent(client, project_id)
+        else:
+            raise ValueError("Unsupport client "+str(client))
 
 
 class QuotaComponent:
     """
-    Quotas defined in an OpenStack component.
+    Base class for quotas defined in an OpenStack component.
 
     This class defines the necessary method to retrieve the current values
     (if any), checks a new values and finally updates the quotas in the
     component.
 
     """
+
+    __metaclass__ = abc.ABCMeta
 
     def __init__(self, client, project_id):
         """
@@ -25,9 +52,6 @@ class QuotaComponent:
         self.logger = logging.getLogger('denbi')
         self._client = client
         self._project_id = project_id
-
-        # neutron requires a special handling, so recognize it
-        self._is_neutron = isinstance(client, neutronClient.Client)
         self._quota_cache = None
         self._lock = threading.Lock()
 
@@ -47,16 +71,19 @@ class QuotaComponent:
             # query all quotas
             with self._lock:
                 if self._quota_cache is None:
-                    if self._is_neutron:
-                        self._get_neutron_quotas()
-                    else:
-                        self._quota_cache = self._client.quotas.get(self._project_id,
-                                                                    detail=True).to_dict()
+                    self._quota_cache = self._get_cache()
 
         if name in self._quota_cache:
             return self._quota_cache[name]['limit']
-        raise ValueError("Unknown quota %s in component %s"
-                         .format(name, self._client))
+        raise ValueError("Unknown quota "+name+" in component "+str(self._client))
+
+    @abc.abstractmethod
+    def _get_cache(self):
+        """
+        Method to return the quota cache with the quota values and the
+        amount of currently used resources
+        """
+        return
 
     def get_in_use(self, name, consider_reserved=True):
         """
@@ -72,9 +99,6 @@ class QuotaComponent:
             return self._quota_cache[name]['in_use'] + self._quota_cache[name]['reserved']
         else:
             return self._quota_cache[name]['in_use']
-
-    def _get_neutron_quotas(self):
-        raise Exception("Not implemented yet")
 
     def check_value(self, name, value):
         """
@@ -135,18 +159,19 @@ class QuotaComponent:
                           value, name, self._client)
         if self.check_value(name, value):
             if self.get_value(name) != value:
-                if self._is_neutron:
-                    self._set_neutron_quota(name, value)
-                else:
-                    # TODO: the APIs are migrating to a stricter form of
-                    #       parameter passing (named parameters instead of dict)
-                    #       how do we do this correctly with the new calls?
-                    self._client.quotas.update(self._project_id, **{name: value})
-                    self.logger.info("Set quota value %s for quota %s in component %s",
-                                     value, name, self._client)
-                    self._quota_cache[name]['limit'] = value
+                self._set_new_quota(name, value)
+                self.logger.info("Set quota value %s for quota %s in component %s",
+                                 value, name, self._client)
+                self._quota_cache[name]['limit'] = value
         else:
             raise ValueError("New quota of %s for %s exceed currently used resource amount".format(value, name))
+
+    @abc.abstractmethod
+    def _set_new_quota(self, name, value):
+        """
+        Abstract method to set a new quota value
+        """
+        return
 
     def _set_neutron_quota(self, name, value):
         raise Exception("Not implemented yet")
@@ -157,3 +182,47 @@ class QuotaComponent:
         """
         with self._lock:
             self._quota_cache = None
+
+
+class SimpleQuotaComponent(QuotaComponent):
+    """
+    Class used for clients with a 'QuotaSet' fields supporting
+    getting and setting quotas
+    """
+
+    def _set_new_quota(self, name, value):
+        # TODO: the APIs are migrating to a stricter form of
+        #       parameter passing (named parameters instead of dict)
+        #       how do we do this correctly with the new calls?
+        self._client.quotas.update(self._project_id, **{name: value})
+
+
+class NovaQuotaComponent(SimpleQuotaComponent):
+    def _get_cache(self):
+        return self._client.quotas.get(self._project_id, detail=True).to_dict()
+
+
+class CinderQuotaComponent(SimpleQuotaComponent):
+    def _get_cache(self):
+        return self._client.quotas.get(self._project_id, usage=True).to_dict()
+
+
+class NeutronQuotaComponent(QuotaComponent):
+    """
+    Neutron client has a different APIs, and thus requires a more complex
+    quota implementation.
+    """
+
+    def _get_cache(self):
+        # neutronclient does not provide a simple method to retrieve the
+        # quotas and used resource, but we can query the API manually...
+        quotas = self._client.get((self._client.quota_path+"/details.json")
+                                   % self._project_id)['quota']
+        # neutron uses different field names, so change the names...
+        for key in quotas.keys():
+            quotas[key]['in_use'] = quotas[key].pop('used', None)
+        return quotas
+
+    def _set_new_quota(self, name, value):
+        self._client.update_quota(self._project_id,
+                                  body={'quota': {name: value}})
