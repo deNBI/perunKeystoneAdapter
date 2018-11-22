@@ -170,4 +170,4 @@ class QuotaManager:
         """
         component = self._map_to_component(name)
         if component is not None:
-            component.set_value(name, value)
+            component.set_quota(name, value)
