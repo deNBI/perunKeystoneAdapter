@@ -308,13 +308,14 @@ class Endpoint:
                         current = manager.get_current_quota(quota_name)
                         log.debug("Comparing %s vs %s", current, value)
                         if manager.check_value(quota_name, value):
-                            if self.read_only:
-                                log.info("Would update quota %s for project %s to from value %s to value %s",
-                                         quota_name, project_id, current, value)
-                            else:
-                                log.info("Updating quota %s for project %s to from value %s to value %s",
-                                         quota_name, project_id, current, value)
-                                manager.set_value(quota_name, value)
+                            if manager.get_current_quota(quota_name) != value:
+                                if self.read_only:
+                                    log.info("Would update quota %s for project %s to from value %s to value %s",
+                                             quota_name, project_id, current, value)
+                                else:
+                                    log.info("Updating quota %s for project %s to from value %s to value %s",
+                                             quota_name, project_id, current, value)
+                                    manager.set_value(quota_name, value)
                         else:
                             log.warn("Unable to set quota %s to %s, would exceed currently used resources",
                                      quota_name, value)

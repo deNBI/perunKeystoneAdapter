@@ -135,6 +135,17 @@ class QuotaManager:
             return component.get_value(name)
         return None
 
+    def get_current_in_use(self, name):
+        """
+        Returns the current amount of resource in use for the given quota.
+
+        :param name: name of the quota to check
+        """
+        component = self._map_to_component(name)
+        if component is not None:
+            return component.get_in_use(name)
+        return None
+
     def check_value(self, name, value):
         """
         Checks whether the given value is suitable a new quota value.

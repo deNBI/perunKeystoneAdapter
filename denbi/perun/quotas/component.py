@@ -58,6 +58,21 @@ class QuotaComponent:
         raise ValueError("Unknown quota %s in component %s"
                          .format(name, self._client))
 
+    def get_in_use(self, name, consider_reserved=True):
+        """
+        Returns the amounf ot resource controlled by the given qouta
+        that are currently in use
+
+        :param name: name of the quota to check resource usage for
+        :param consider_reserved: also include the reserved resources
+        """
+        # retrieve quota value to get the in use values
+        self.get_value(name)
+        if consider_reserved:
+            return self._quota_cache[name]['in_use'] + self._quota_cache[name]['reserved']
+        else:
+            return self._quota_cache[name]['in_use']
+
     def _get_neutron_quotas(self):
         raise Exception("Not implemented yet")
 
@@ -89,7 +104,7 @@ class QuotaComponent:
             # TODO: do we want to support setting this?
             return True
 
-        if value >= current_quota:
+        if value > current_quota:
             # we can always extend the quota
             # if setting the new quota fails, e.g. due to quotas
             # on a parent project in a nested project setup,
@@ -97,11 +112,10 @@ class QuotaComponent:
             # TODO: do we have a way to check this?
             return True
 
-        # the new value is smaller than the current quota
         # we need to check whether the currently used resources
         # exceed the new value
-        return value <= (self._quota_cache[name]['in_use']
-                         + self._quota_cache[name]['reserved'])
+        self.logger.debug("Currently in use for quota %s: %d", name, self.get_in_use(name))
+        return self.get_in_use(name) <= value
 
     def set_quota(self, name, value):
         """
@@ -120,18 +134,19 @@ class QuotaComponent:
         self.logger.debug("Attempt to set quota value %s for quota %s in component %s",
                           value, name, self._client)
         if self.check_value(name, value):
-            if self._is_neutron:
-                self._set_neutron_quota(name, value)
-            else:
-                # TODO: the APIs are migrating to a stricter form of
-                #       parameter passing (named parameters instead of dict)
-                #       how do we do this correctly with the new calls?
-                self._client.quotas.update(self._project_id, {name: value})
-                self.logger.info("Set quota value %s for quota %s in component %s",
-                                 value, name, self._client)
-                self._quota_cache[name]['limit'] = value
-
-        raise ValueError("New quota of %s for %s exceed currently used resource amount".format(value, name))
+            if self.get_value(name) != value:
+                if self._is_neutron:
+                    self._set_neutron_quota(name, value)
+                else:
+                    # TODO: the APIs are migrating to a stricter form of
+                    #       parameter passing (named parameters instead of dict)
+                    #       how do we do this correctly with the new calls?
+                    self._client.quotas.update(self._project_id, **{name: value})
+                    self.logger.info("Set quota value %s for quota %s in component %s",
+                                     value, name, self._client)
+                    self._quota_cache[name]['limit'] = value
+        else:
+            raise ValueError("New quota of %s for %s exceed currently used resource amount".format(value, name))
 
     def _set_neutron_quota(self, name, value):
         raise Exception("Not implemented yet")
