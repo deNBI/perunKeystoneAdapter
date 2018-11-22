@@ -1,5 +1,5 @@
 from novaclient import client as novaClient
-from cinderclient import client as cinderClient
+from cinderclient.v3 import client as cinderClient
 from neutronclient.v2_0 import client as neutronClient
 from denbi.perun.quotas import component as component
 
@@ -110,9 +110,9 @@ class QuotaManager:
         :param neutron: neutron client instance
 
         """
-        self._components = {self.NOVA: component.QuotaComponent(nova,project_id),
-                            self.CINDER: component.QuotaComponent(cinder, project_id),
-                            self.NEUTRON: component.QuotaComponent(neutron, project_id)}
+        self._components = {self.NOVA: component.QuotaComponentFactory.get_component(nova,project_id),
+                            self.CINDER: component.QuotaComponentFactory.get_component(cinder, project_id),
+                            self.NEUTRON: component.QuotaComponentFactory.get_component(neutron, project_id)}
 
     def _map_to_component(self, name):
         if name in self.QUOTA_MAPPING:
