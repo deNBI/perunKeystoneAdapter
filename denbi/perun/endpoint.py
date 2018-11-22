@@ -54,8 +54,7 @@ class Endpoint:
                            # 'denbiProjectNumberOfRouter': 'router',
 
                            'denbiProjectNumberOfSnapshots': 'snapshots',
-                           'denbiProjectVolumeCounter': 'volumes',
-                        }
+                           'denbiProjectVolumeCounter': 'volumes' }
 
     def __init__(self, keystone=None, mode="scim", store_email=True,
                  support_quotas=True, read_only=False):

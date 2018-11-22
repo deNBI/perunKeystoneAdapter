@@ -96,8 +96,7 @@ class QuotaManager:
                      'router': NEUTRON,
                      'network': NEUTRON,
 
-                     'strange_denbi_quota': None,
-                    }
+                     'strange_denbi_quota': None }
 
     def __init__(self, project_id, nova, cinder, neutron):
         """

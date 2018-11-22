@@ -26,7 +26,7 @@ class TestKeystone(unittest.TestCase):
                    'OS_USERNAME': 'admin',
                    'OS_PASSWORD': 's3cr3t'}
 
-        self.ks = KeyStone(environ,default_role="user", create_default_role=True, target_domain_name='elixir')
+        self.ks = KeyStone(environ, default_role="user", create_default_role=True, target_domain_name='elixir')
 
     def __uuid(self):
         return str(uuid.uuid4())
