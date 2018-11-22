@@ -24,39 +24,38 @@ class Endpoint:
     # a value of None indicates that the quota may be present, but is not
     # implemented so far
     # some names are deprecated, but may still be in use in older projects
-    DENBI_QUOTA_NAMES = {
-                         # denbiProjectDiskSpace is the old. deprecated name
-                         'denbiProjectDiskSpace': 'gigabytes',
-                         'denbiProjectVolumeLimit': 'gigabytes',
+    DENBI_QUOTA_NAMES = {  # denbiProjectDiskSpace is the old. deprecated name
+                           'denbiProjectDiskSpace': 'gigabytes',
+                           'denbiProjectVolumeLimit': 'gigabytes',
 
-                         # this is a deprecated setting without a real
-                         # openstack equivalent...
-                         'denbiProjectRamPerVm': None,
+                           # this is a deprecated setting without a real
+                           # openstack equivalent...
+                           'denbiProjectRamPerVm': None,
 
-                         # custom denbi quotas to control access to object
-                         # storage and fpga/gpu hardware. no implementation yet
-                         'denbiProjectObjectStorage': None,
-                         'denbiProjectSpecialPurposeHardware': None,
+                           # custom denbi quotas to control access to object
+                           # storage and fpga/gpu hardware. no implementation yet
+                           'denbiProjectObjectStorage': None,
+                           'denbiProjectSpecialPurposeHardware': None,
 
-                         'denbiProjectNumberOfVms': 'instances',
-                         'denbiRAMLimit': 'ram',
-                         # old and new quota for vCPUs
-                         'denbiProjectNumberOfCpus': 'cores',
-                         'denbiCoresLimit': 'cores',
+                           'denbiProjectNumberOfVms': 'instances',
+                           'denbiRAMLimit': 'ram',
+                           # old and new quota for vCPUs
+                           'denbiProjectNumberOfCpus': 'cores',
+                           'denbiCoresLimit': 'cores',
 
-                         # assume that all sites are using neutron....
-                         'denbiNrOfFloatingIPs': 'floatingip',
+                           # assume that all sites are using neutron....
+                           'denbiNrOfFloatingIPs': 'floatingip',
 
-                         # these were present in the first quota code,
-                         # but aren't registered with perun or set by the
-                         # portal...
-                         # 'denbiProjectNumberOfNetworks': 'network',
-                         # 'denbiProjectNumberOfSubnets': 'subnet',
-                         # 'denbiProjectNumberOfRouter': 'router',
+                           # these were present in the first quota code,
+                           # but aren't registered with perun or set by the
+                           # portal...
+                           # 'denbiProjectNumberOfNetworks': 'network',
+                           # 'denbiProjectNumberOfSubnets': 'subnet',
+                           # 'denbiProjectNumberOfRouter': 'router',
 
-                         'denbiProjectNumberOfSnapshots': 'snapshots',
-                         'denbiProjectVolumeCounter': 'volumes',
-                         }
+                           'denbiProjectNumberOfSnapshots': 'snapshots',
+                           'denbiProjectVolumeCounter': 'volumes',
+                        }
 
     def __init__(self, keystone=None, mode="scim", store_email=True,
                  support_quotas=True, read_only=False):

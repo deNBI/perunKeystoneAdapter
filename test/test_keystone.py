@@ -26,7 +26,7 @@ class TestKeystone(unittest.TestCase):
                    'OS_USERNAME': 'admin',
                    'OS_PASSWORD': 's3cr3t'}
 
-        self.ks = KeyStone(environ,default_role="user",create_default_role=True,support_quotas=True,target_domain_name='elixir')
+        self.ks = KeyStone(environ,default_role="user", create_default_role=True, target_domain_name='elixir')
 
     def __uuid(self):
         return str(uuid.uuid4())
@@ -236,12 +236,12 @@ class TestKeystone(unittest.TestCase):
         NUMBER_OF_ROUTER = project_map_original[perunid]['quotas']['neutron']['quota']['router'] + 1
 
         # call method project_quota with predefined values
-        self.ks.project_quota(perunid, number_of_vms=NUMBER_OF_VMS, \
+        self.ks.project_quota(perunid, number_of_vms=NUMBER_OF_VMS,
                               number_of_cpus=NUMBER_OF_CPUS,
-                              ram_per_vm=RAM_PER_VM, \
-                              disk_space=DISK_SPACE, \
-                              volume_limit=VOLUME_LIMIT, \
-                              number_of_snapshots=NUMBER_OF_SNAPSHOTS, \
+                              ram_per_vm=RAM_PER_VM,
+                              disk_space=DISK_SPACE,
+                              volume_limit=VOLUME_LIMIT,
+                              number_of_snapshots=NUMBER_OF_SNAPSHOTS,
                               number_of_networks=NUMBER_OF_NETWORKS,
                               number_of_subnets=NUMBER_OF_SUBNETS,
                               number_of_router=NUMBER_OF_ROUTER)

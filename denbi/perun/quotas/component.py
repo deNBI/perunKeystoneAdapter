@@ -25,7 +25,7 @@ class QuotaComponentFactory:
         elif isinstance(client, novaClient.Client):
             return NovaQuotaComponent(client, project_id)
         else:
-            raise ValueError("Unsupport client "+str(client))
+            raise ValueError("Unsupport client " + str(client))
 
 
 class QuotaComponent:
@@ -75,7 +75,7 @@ class QuotaComponent:
 
         if name in self._quota_cache:
             return self._quota_cache[name]['limit']
-        raise ValueError("Unknown quota "+name+" in component "+str(self._client))
+        raise ValueError("Unknown quota " + name + " in component " + str(self._client))
 
     @abc.abstractmethod
     def _get_cache(self):
@@ -216,8 +216,8 @@ class NeutronQuotaComponent(QuotaComponent):
     def _get_cache(self):
         # neutronclient does not provide a simple method to retrieve the
         # quotas and used resource, but we can query the API manually...
-        quotas = self._client.get((self._client.quota_path+"/details.json")
-                                   % self._project_id)['quota']
+        quotas = self._client.get((self._client.quota_path + "/details.json")
+                                  % self._project_id)['quota']
         # neutron uses different field names, so change the names...
         for key in quotas.keys():
             quotas[key]['in_use'] = quotas[key].pop('used', None)

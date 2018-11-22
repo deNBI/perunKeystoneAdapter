@@ -63,42 +63,41 @@ class QuotaManager:
     NOVA = 'nova'
     CINDER = 'cinder'
     NEUTRON = 'neutron'
-    QUOTA_MAPPING = {
-               'cores': NOVA,
-               'fixed_ips': NOVA,
-               'floating_ips': NOVA,
-               'injected_file_content_bytes': NOVA,
-               'injected_files': NOVA,
-               'injected_file_path_bytes': NOVA,
-               'instances': NOVA,
-               'key-pairs': NOVA,
-               'metadata_items': NOVA,
-               'ram': NOVA,
-               'security_group_rules': NOVA,
-               'security_groups': NOVA,
-               'server_group_members': NOVA,
-               'server_groups': NOVA,
+    QUOTA_MAPPING = {'cores': NOVA,
+                     'fixed_ips': NOVA,
+                     'floating_ips': NOVA,
+                     'injected_file_content_bytes': NOVA,
+                     'injected_files': NOVA,
+                     'injected_file_path_bytes': NOVA,
+                     'instances': NOVA,
+                     'key-pairs': NOVA,
+                     'metadata_items': NOVA,
+                     'ram': NOVA,
+                     'security_group_rules': NOVA,
+                     'security_groups': NOVA,
+                     'server_group_members': NOVA,
+                     'server_groups': NOVA,
 
-               'volumes': CINDER,
-               'snapshots': CINDER,
-               'backups': CINDER,
-               'groups': CINDER,
-               'per_volume_gigabytes': CINDER,
-               'gigabytes': CINDER,
-               'backup_gigabytes': CINDER,
+                     'volumes': CINDER,
+                     'snapshots': CINDER,
+                     'backups': CINDER,
+                     'groups': CINDER,
+                     'per_volume_gigabytes': CINDER,
+                     'gigabytes': CINDER,
+                     'backup_gigabytes': CINDER,
 
-               'floatingip': NEUTRON,
-               'rbac_policy': NEUTRON,
-               'subnet': NEUTRON,
-               'subnetpool': NEUTRON,
-               'security_group_rule': NEUTRON,
-               'security_group': NEUTRON,
-               'port': NEUTRON,
-               'router': NEUTRON,
-               'network': NEUTRON,
+                     'floatingip': NEUTRON,
+                     'rbac_policy': NEUTRON,
+                     'subnet': NEUTRON,
+                     'subnetpool': NEUTRON,
+                     'security_group_rule': NEUTRON,
+                     'security_group': NEUTRON,
+                     'port': NEUTRON,
+                     'router': NEUTRON,
+                     'network': NEUTRON,
 
-               'strange_denbi_quota': None,
-               }
+                     'strange_denbi_quota': None,
+                    }
 
     def __init__(self, project_id, nova, cinder, neutron):
         """
@@ -110,7 +109,7 @@ class QuotaManager:
         :param neutron: neutron client instance
 
         """
-        self._components = {self.NOVA: component.QuotaComponentFactory.get_component(nova,project_id),
+        self._components = {self.NOVA: component.QuotaComponentFactory.get_component(nova, project_id),
                             self.CINDER: component.QuotaComponentFactory.get_component(cinder, project_id),
                             self.NEUTRON: component.QuotaComponentFactory.get_component(neutron, project_id)}
 
