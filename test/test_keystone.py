@@ -135,18 +135,21 @@ class TestKeystone(unittest.TestCase):
         project_map_original = self.ks.projects_map()
 
         # call method project_quota without setting any quota
-        self.ks.project_quota(perunid, number_of_vms=None,
-                              number_of_cpus=None,
-                              ram_per_vm=None,
-                              disk_space=None,
-                              volume_limit=None,
-                              number_of_snapshots=None,
-                              number_of_networks=None,
-                              number_of_subnets=None,
-                              number_of_router=None)
+        # self.ks.project_quota(perunid, number_of_vms=None,
+        #                       number_of_cpus=None,
+        #                       ram_per_vm=None,
+        #                       disk_space=None,
+        #                       volume_limit=None,
+        #                       number_of_snapshots=None,
+        #                       number_of_networks=None,
+        #                       number_of_subnets=None,
+        #                       number_of_router=None)
 
-        # get
+        # get quota_factory
         quota_factory = self.ks.quota_factory
+
+
+
 
         # receiving project quotas
         project_map = self.ks.projects_map()

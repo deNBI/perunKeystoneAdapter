@@ -172,11 +172,12 @@ class QuotaManager:
 
         The implementation checks whether the given value is valid and
         updates the quota. If the value is invalid or the name is invalid,
-        the method throws a ValueError exception.
+        the method throws a ValueError exception. If the value is None
+        the named quota left unchanged
 
         :param name: name of the quota to set
         :param quota: new value of the quota
         """
         component = self._map_to_component(name)
-        if component is not None:
+        if component is not None and value is not None:
             component.set_quota(name, value)
