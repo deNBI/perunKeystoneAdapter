@@ -15,7 +15,7 @@ class QuotaFactory:
 
     def __init__(self, session):
         """
-        Initializes the factroy
+        Initializes the factory
 
         :param session: an initialized OpenStack session to use for the
                         various component clients
