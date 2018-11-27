@@ -58,7 +58,16 @@ class KeyStone:
             # with cloud admin credentials we do not need multiple sessions
             auth = self._create_auth(environ, False)
             project_session = session.Session(auth=auth)
-            domain_session = project_session
+
+            # create session
+            self._project_keystone = client.Client(session=project_session)
+            self._domain_keystone = self._project_keystone                  # JK not if needed
+
+            try:
+                self.target_domain_id = self._project_keystone.domains.list(name=target_domain_name)[0].id
+            except IndexError:
+                raise Exception("Unknown domain {}".format(target_domain_name))
+
         else:
             # use two separate sessions for domain and project access
             domain_auth = self._create_auth(environ, True)
@@ -66,53 +75,53 @@ class KeyStone:
             domain_session = session.Session(auth=domain_auth)
             project_session = session.Session(auth=project_auth)
 
-        # we have both session, now check the credentials
-        # by authenticating to keystone. we also need the AccessInfo
-        # instances to retrieve project and domain ids for later
+            # we have both session, now check the credentials
+            # by authenticating to keystone. we also need the AccessInfo
+            # instances to retrieve project and domain ids for later
 
-        try:
-            domain_access = domain_auth.get_access(domain_session)
-        except Unauthorized:
-            raise Exception("Authorization for domain session failed, wrong credentials / role?")
-        try:
-            if domain_session is not project_session:
-                project_access = project_auth.get_access(project_session)
+            try:
+                domain_access = domain_auth.get_access(domain_session)
+            except Unauthorized:
+                raise Exception("Authorization for domain session failed, wrong credentials / role?")
+            try:
+                if domain_session is not project_session:
+                    project_access = project_auth.get_access(project_session)
+                else:
+                    project_access = domain_access
+            except Unauthorized:
+                raise Exception("Authorization for project session failed, wrong credentials / role?")
+
+            # store both session for later use
+            self._domain_keystone = client.Client(session=domain_session)
+            self._project_keystone = client.Client(session=project_session)
+
+            # override the domain name if necessary
+            # we need to check that a correct value is given if a different
+            # domain is used
+            # TODO: the check might need to be improved if we need to differentiate
+            #       between domain name syntax and uuid syntax
+            if (target_domain_name
+               and target_domain_name != domain_access.domain_name
+               and target_domain_name != domain_access.domain_id):
+                # valide the different domain name
+                # the credentials should be cloud admin credentials in this case
+                self.target_domain_id = self._resolve_domain(target_domain_name,cloud_admin) # JK
             else:
-                project_access = domain_access
-        except Unauthorized:
-            raise Exception("Authorization for project session failed, wrong credentials / role?")
+                if target_domain_name:
+                    self.logger.debug("Overridden domain name is same as project domain, ignoring value.")
 
-        # store both session for later use
-        self._domain_keystone = client.Client(session=domain_session)
-        self._project_keystone = client.Client(session=project_session)
+                # use project domain
+                self.target_domain_id = domain_access.domain_id
 
-        # override the domain name if necessary
-        # we need to check that a correct value is given if a different
-        # domain is used
-        # TODO: the check might need to be improved if we need to differentiate
-        #       between domain name syntax and uuid syntax
-        if (target_domain_name
-           and target_domain_name != domain_access.domain_name
-           and target_domain_name != domain_access.domain_id):
-            # valide the different domain name
-            # the credentials should be cloud admin credentials in this case
-            self.target_domain_id = self._resolve_domain(target_domain_name)
-        else:
-            if target_domain_name:
-                self.logger.debug("Overridden domain name is same as project domain, ignoring value.")
+            self.logger.debug("Working on domain %s", self.target_domain_id)
 
-            # use project domain
-            self.target_domain_id = domain_access.domain_id
-
-        self.logger.debug("Working on domain %s", self.target_domain_id)
-
-        if nested:
-            self.parent_project_id = project_access.project_id
-            self.logger.debug("Using nested project %s (id %s)",
-                              project_access.project_name,
-                              self.parent_project_id)
-        else:
-            self.parent_project_id = None
+            if nested:
+                self.parent_project_id = project_access.project_id
+                self.logger.debug("Using nested project %s (id %s)",
+                                  project_access.project_name,
+                                  self.parent_project_id)
+            else:
+                self.parent_project_id = None
 
         # Check if role exists ...
         self.default_role = str(default_role)
@@ -195,8 +204,10 @@ class KeyStone:
             auth = v3.Password(auth_url=environ['OS_AUTH_URL'],
                                username=environ['OS_USERNAME'],
                                password=environ['OS_PASSWORD'],
-                               domain_name=environ['OS_DOMAIN_NAME'],
-                               user_domain_name=environ['OS_USER_DOMAIN_NAME'])
+                               #domain_name=environ['OS_DOMAIN_NAME'],              # JK
+                               project_name=environ['OS_PROJECT_NAME'],             # JK
+                               user_domain_name=environ['OS_USER_DOMAIN_NAME'],
+                               project_domain_name=environ['OS_USER_DOMAIN_NAME'])  # JK
         else:
             # create a project scoped token
             project_domain_name = environ['OS_PROJECT_DOMAIN_NAME'] if 'OS_PROJECT_DOMAIN_NAME' in environ else environ['OS_USER_DOMAIN_NAME']
@@ -218,7 +229,6 @@ class KeyStone:
         :returns: the keystone id of the given domain if the domain
                   is accessible
         """
-
         # start by enumerating all domains the current sessions have access to
         for domain in itertools.chain(self.domain_keystone.auth.domains(),
                                       self.project_keystone.auth.domains()):

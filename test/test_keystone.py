@@ -20,13 +20,13 @@ class TestKeystone(unittest.TestCase):
     """
 
     def setUp(self):
-        environ = {'OS_AUTH_URL': 'http://localhost:5000/v3/',
+        environ = {'OS_AUTH_URL': 'http://192.168.20.14/identity/v3/',
                    'OS_PROJECT_NAME': 'admin',
                    'OS_USER_DOMAIN_NAME': 'Default',
                    'OS_USERNAME': 'admin',
-                   'OS_PASSWORD': 's3cr3t'}
+                   'OS_PASSWORD': 'secret'}
 
-        self.ks = KeyStone(environ, default_role="user", create_default_role=True, target_domain_name='elixir')
+        self.ks = KeyStone(environ, default_role="user", create_default_role=True, target_domain_name='elixir',cloud_admin=True)
 
     def __uuid(self):
         return str(uuid.uuid4())
@@ -128,7 +128,7 @@ class TestKeystone(unittest.TestCase):
 
         denbi_project = self.ks.projects_create(perunid)
 
-        # sest ValueError if the project is not found in project_map
+        # set ValueError if the project is not found in project_map
         self.assertRaises(ValueError, self.ks.project_quota, perunid_without_list)
 
         # receiving project quotas
@@ -144,6 +144,9 @@ class TestKeystone(unittest.TestCase):
                               number_of_networks=None,
                               number_of_subnets=None,
                               number_of_router=None)
+
+        # get
+        quota_factory = self.ks.quota_factory
 
         # receiving project quotas
         project_map = self.ks.projects_map()
