@@ -105,7 +105,7 @@ class KeyStone:
                and target_domain_name != domain_access.domain_id):
                 # valide the different domain name
                 # the credentials should be cloud admin credentials in this case
-                self.target_domain_id = self._resolve_domain(target_domain_name,cloud_admin) # JK
+                self.target_domain_id = self._resolve_domain(target_domain_name, cloud_admin) # JK
             else:
                 if target_domain_name:
                     self.logger.debug("Overridden domain name is same as project domain, ignoring value.")
@@ -204,7 +204,7 @@ class KeyStone:
             auth = v3.Password(auth_url=environ['OS_AUTH_URL'],
                                username=environ['OS_USERNAME'],
                                password=environ['OS_PASSWORD'],
-                               #domain_name=environ['OS_DOMAIN_NAME'],              # JK
+                               # domain_name=environ['OS_DOMAIN_NAME'],             # JK
                                project_name=environ['OS_PROJECT_NAME'],             # JK
                                user_domain_name=environ['OS_USER_DOMAIN_NAME'],
                                project_domain_name=environ['OS_USER_DOMAIN_NAME'])  # JK
@@ -553,8 +553,7 @@ class KeyStone:
                     'description': os_project.description,  #
                     'enabled': bool(os_project.enabled),  # bool
                     'scratched': bool(os_project.scratched),  # bool
-                    'members': [],
-                    'quotas': {}
+                    'members': []
                 }
                 # create entry in maps
                 self.__project_id2perun_id__[denbi_project['id']] = denbi_project['perun_id']
