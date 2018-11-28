@@ -70,7 +70,7 @@ class QuotaManager:
                      'injected_files': NOVA,
                      'injected_file_path_bytes': NOVA,
                      'instances': NOVA,
-                     'key-pairs': NOVA,
+                     'key_pairs': NOVA,
                      'metadata_items': NOVA,
                      'ram': NOVA,
                      'security_group_rules': NOVA,
