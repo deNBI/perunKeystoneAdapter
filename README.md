@@ -13,7 +13,7 @@ The *Perun Keystone Adapter* is a library written in Python that parses data pro
  -  modify items properties if they changed
  -  mark items as deleted and disable them in Keystone if they are not propagated any more
  -  deleting (marked and disabled) items functionality is available but not integrated in the normal workflow.
- -  set/modify project quotas (**alpha state**, needs a full openstack  installation like [DevStack](https://docs.openstack.org/devstack/latest/) for testing)
+ -  set/modify project quotas (needs a full openstack  installation like [DevStack](https://docs.openstack.org/devstack/latest/) for testing)
  -  compatible with python 2.7.x and python 3
 
 ## Preparation
@@ -98,9 +98,14 @@ There are [additional deployment options available](http://flask.pocoo.org/docs/
 
 ### Unit tests
 
-The library comes with a set of unit tests - a running keystone instance is required to perfom the test. The `Makefile` included with the project runs a docker container for providing a keystone server. It is **not** recommended to use your production keystone.
+The library comes with a set of unit tests - a full functional keystone is required to perfom all tests.
 
-There currently **no** tests for setting/modify project quotas.
+For testing the user/project management only a running keystone is enough. The `Makefile` included with 
+the project runs a docker container for providing a keystone server. 
+
+In every case it is **not** recommended to use your production keystone/setup .
+
+
 
 ### Linting
 

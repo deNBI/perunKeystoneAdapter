@@ -1,6 +1,13 @@
 denbi.perun package
 ===================
 
+Subpackages
+-----------
+
+.. toctree::
+
+    denbi.perun.quotas
+
 Submodules
 ----------
 

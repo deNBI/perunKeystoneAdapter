@@ -10,13 +10,9 @@ from denbi.perun.keystone import KeyStone
 
 class TestKeystone(unittest.TestCase):
     """
-        Unit test for class Keystone
+        Unit test for class Keystone.
 
-        Attention: The unit test does currently not support project quotas test.
-        The used monasca/keystone container for test  purposes has only support
-        for keystone, but not for nova (compute resources), neutron (network resources)
-        or  glance (image resources)
-
+        You need a full functional Openstack setup to make the test run properly.
     """
 
     def setUp(self):

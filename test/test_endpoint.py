@@ -11,23 +11,17 @@ class TestEndpoint(unittest.TestCase):
     """
     Unit test for class endpoint.
 
-    Perquisites : Running monasca/keystone with default credentials for admin user.
-
-    Start the container:
-    $ docker run -d -p 5000:5000 -p 35357:35357 monasca/keystone
-
-    see test/keystone/README.md for a more detailed documentation
-
+    You need a full functional Openstack setup to make the test run properly.
     """
 
     def setUp(self):
-        environ = {'OS_AUTH_URL': 'http://localhost:5000/v3/',
+        environ = {'OS_AUTH_URL': 'http://192.168.20.14/identity/v3/',
                    'OS_PROJECT_NAME': 'admin',
                    'OS_USER_DOMAIN_NAME': 'Default',
                    'OS_USERNAME': 'admin',
-                   'OS_PASSWORD': 's3cr3t'}
+                   'OS_PASSWORD': 'secret'}
 
-        self.keystone = KeyStone(environ, default_role="user", create_default_role=True, support_quotas=False, target_domain_name='elixir')
+        self.keystone = KeyStone(environ, default_role="user", create_default_role=True, target_domain_name='elixir', cloud_admin=True)
 
     def _test_user(self, denbiuser, perun_id, elixir_id, email, enabled, deleted=False):
         self.assertEqual(denbiuser['perun_id'], perun_id)
