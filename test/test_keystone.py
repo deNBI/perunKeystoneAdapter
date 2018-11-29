@@ -120,7 +120,6 @@ class TestKeystone(unittest.TestCase):
 
         print("Run 'test_project_quota'")
 
-
         denbi_project = self.ks.projects_create(self.__uuid())
 
         # get quota_factory
@@ -130,7 +129,7 @@ class TestKeystone(unittest.TestCase):
         quota_mgr.set_value('cores', 111)
         self.assertEqual(111, quota_mgr.get_current_quota('cores'))
 
-        quota_mgr.set_value('instances' ,33)
+        quota_mgr.set_value('instances', 33)
         self.assertEqual(33, quota_mgr.get_current_quota('instances'))
 
         quota_mgr.set_value('key_pairs', 34)
@@ -141,7 +140,6 @@ class TestKeystone(unittest.TestCase):
 
         quota_mgr.set_value('ram', 200000)
         self.assertEqual(200000, quota_mgr.get_current_quota('ram'))
-
 
         # set (non-deprecated) CINDER quotas
         quota_mgr.set_value('volumes', 36)
@@ -164,7 +162,6 @@ class TestKeystone(unittest.TestCase):
 
         quota_mgr.set_value('backup_gigabytes', 42)
         self.assertEqual(42, quota_mgr.get_current_quota('backup_gigabytes'))
-
 
         # set (non-deprecated) neutron quotas
         quota_mgr.set_value('floatingip', 43)

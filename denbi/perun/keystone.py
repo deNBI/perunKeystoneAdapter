@@ -61,7 +61,7 @@ class KeyStone:
 
             # create session
             self._project_keystone = client.Client(session=project_session)
-            self._domain_keystone = self._project_keystone                  # JK not if needed
+            self._domain_keystone = self._project_keystone
 
             try:
                 self.target_domain_id = self._project_keystone.domains.list(name=target_domain_name)[0].id
@@ -105,7 +105,7 @@ class KeyStone:
                and target_domain_name != domain_access.domain_id):
                 # valide the different domain name
                 # the credentials should be cloud admin credentials in this case
-                self.target_domain_id = self._resolve_domain(target_domain_name, cloud_admin) # JK
+                self.target_domain_id = self._resolve_domain(target_domain_name, cloud_admin)
             else:
                 if target_domain_name:
                     self.logger.debug("Overridden domain name is same as project domain, ignoring value.")
@@ -204,10 +204,9 @@ class KeyStone:
             auth = v3.Password(auth_url=environ['OS_AUTH_URL'],
                                username=environ['OS_USERNAME'],
                                password=environ['OS_PASSWORD'],
-                               # domain_name=environ['OS_DOMAIN_NAME'],             # JK
-                               project_name=environ['OS_PROJECT_NAME'],             # JK
+                               project_name=environ['OS_PROJECT_NAME'],
                                user_domain_name=environ['OS_USER_DOMAIN_NAME'],
-                               project_domain_name=environ['OS_USER_DOMAIN_NAME'])  # JK
+                               project_domain_name=environ['OS_USER_DOMAIN_NAME'])
         else:
             # create a project scoped token
             project_domain_name = environ['OS_PROJECT_DOMAIN_NAME'] if 'OS_PROJECT_DOMAIN_NAME' in environ else environ['OS_USER_DOMAIN_NAME']
