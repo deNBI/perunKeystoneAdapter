@@ -97,6 +97,9 @@ def main():
                         help="set quotas for projects")
     args = parser.parse_args()
 
+    result = dict(defaults)
+    result.update({k: v for k, v in args.items() if v is not None})  # Update if v is not None
+
     app.config['keystone_read_only'] = args.read_only
     app.config['target_domain_name'] = args.domain
     app.config['default_role'] = args.role
