@@ -5,6 +5,8 @@ import os
 import shutil
 import tarfile
 import tempfile
+import os
+import configparser
 
 from flask import Flask
 from flask import request
@@ -12,6 +14,8 @@ from denbi.perun.endpoint import Endpoint
 from denbi.perun.keystone import KeyStone
 from threading import Thread
 
+
+PERUN_KEYSTONE_ADAPTER_CONFIG_PATH = os.getenv('CONFIG_PATH', '/run/secrets/perunKeystoneAdapter/config.ini')
 app = Flask(__name__)
 app.config['cleanup'] = True
 app.config['keystone_read_only'] = os.environ.get('KEYSTONE_READ_ONLY', 'False').lower() == 'true'
@@ -75,6 +79,10 @@ def _perun_propagation(file, read_only=False, target_domain_name="elixir"):
 
 
 def main():
+    config = configparser.ConfigParser()
+    config.read(PERUN_KEYSTONE_ADAPTER_CONFIG_PATH)
+    defaults = config['default']
+
     parser = argparse.ArgumentParser(description='Run perunKeystoneAdapter service')
     parser.add_argument('--host', default='0.0.0.0', help="Address to bind to")
     parser.add_argument('--port', type=int, default=5000, help="Port to bind to")
