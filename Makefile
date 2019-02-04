@@ -11,6 +11,17 @@ test_docker: ## Run tests with docker-compose launch of container
 	# Then start testing
 	-python -m unittest test.test_keystone.TestKeystone
 	-python -m unittest test.test_endpoint.TestEndpoint
+	# Cleanup
+	docker-compose kill
+	docker-compose rm -f
+
+test_tox:
+	docker-compose up -d
+	# Sleep until the container is ready
+	bash -c 'while true; do docker-compose logs --tail=10 | grep "exited: keystone-bootstrap"; ec=$$?; if ((ec==0)); then break; else echo -n .; sleep 2; fi; done;'
+	# Then start testing
+	tox
+	# Cleanup
 	docker-compose kill
 	docker-compose rm -f
 

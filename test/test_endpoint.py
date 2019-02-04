@@ -22,7 +22,7 @@ class TestEndpoint(unittest.TestCase):
                    'OS_USERNAME': 'admin',
                    'OS_PASSWORD': 's3cr3t'}
 
-        self.keystone = KeyStone(environ, default_role="user", create_default_role=True, target_domain_name='elixir', cloud_admin=True)
+        self.keystone = KeyStone(environ, default_role="user", create_default_role=True, target_domain_name='Default', cloud_admin=True)
 
     def _test_user(self, denbiuser, perun_id, elixir_id, email, enabled, deleted=False):
         self.assertEqual(denbiuser['perun_id'], perun_id)
