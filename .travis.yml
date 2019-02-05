@@ -8,7 +8,7 @@ install:
 
 script:
   - make lint
-  #- make test_docker
+  - make test_tox
 
 services:
   - docker
