@@ -53,6 +53,7 @@ jobs:
       - run:
           name: run tests
           command: |
+            . venv/bin/activate
             make lint
             make test_tox 
 
