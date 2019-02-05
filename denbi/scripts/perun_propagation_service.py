@@ -5,6 +5,7 @@ import shutil
 import tarfile
 import tempfile
 
+from datetime import datetime
 from flask import Flask
 from flask import request
 from denbi.perun.endpoint import Endpoint
@@ -18,28 +19,32 @@ app.config['keystone_read_only'] = os.environ.get('KEYSTONE_READ_ONLY', 'False')
 logging.basicConfig(level=getattr(logging, os.environ.get('PERUN_LOG_LEVEL', 'WARN')))
 
 
-def process_tarball(tarball_path, read_only=False, target_domain_name='elixir',
+def process_tarball(tarball_path, base_dir=tempfile.mkdtemp(), read_only=False, target_domain_name='elixir',
                     default_role='user', nested=False, support_quota=False, cloud_admin=True):
     # TODO(hxr): deduplicate
-    directory = tempfile.mkdtemp()
+    d = datetime.today()
+    dir = base_dir + "/" + str(d.year) + "_" + str(d.month) + "_" + str(d.day) + "-" + str(d.hour) + ":" + str(d.minute) + ":" + str(d.second) + "." + str(d.microsecond)
+    os.mkdir(dir)
+
     logging.info("Processing data uploaded by Perun: %s" % tarball_path)
 
     # extract tar file
     tar = tarfile.open(tarball_path, "r:gz")
-    tar.extractall(path=directory)
+    tar.extractall(path=dir)
     tar.close()
 
     # import into keystone
     keystone = KeyStone(environ=app.config, default_role=default_role, create_default_role=True,
                         target_domain_name=target_domain_name,
                         read_only=read_only, nested=nested, cloud_admin=cloud_admin)
+
     endpoint = Endpoint(keystone=keystone, mode="denbi_portal_compute_center",
                         support_quotas=support_quota)
-    endpoint.import_data(directory + '/users.scim', directory + '/groups.scim')
+    endpoint.import_data(dir + '/users.scim', dir + '/groups.scim')
     logging.info("Finished processing %s" % tarball_path)
 
     # Cleanup
-    shutil.rmtree(directory)
+    shutil.rmtree(dir)
 
 
 @app.route("/upload", methods=['PUT'])
@@ -58,9 +63,10 @@ def upload():
                kwargs={'read_only': app.config.get('KEYSTONE_READ_ONLY', False),
                        'target_domain_name': app.config.get('TARGET_DOMAIN_NAME', 'elixir'),
                        'default_role': app.config.get('DEFAULT_ROLE', 'user'),
-                       'nested': app.config.get('NESTED'),
-                       'cloud_admin': app.config.get('CLOUD_ADMIN'),
-                       'support_quota': app.config.get('SUPPORT_QUOTA')})
+                       'nested': app.config.get('NESTED', False),
+                       'cloud_admin': app.config.get('CLOUD_ADMIN', True),
+                       'base_dir' : app.config.get('BASE_DIR',  tempfile.mkdtemp()),
+                       'support_quota': app.config.get('SUPPORT_QUOTA', False)})
     t.start()
 
     # return immediately
@@ -70,7 +76,7 @@ def upload():
 def _perun_propagation(file, **kwargs):
     process_tarball(file, **kwargs)
 
-    if app.config['cleanup']:
+    if app.config.get('CLEANUP', False):
         os.unlink(file)
 
 
