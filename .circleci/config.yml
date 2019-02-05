@@ -5,7 +5,7 @@
 #
 version: 2
 jobs:
-  build:
+  build_py35: &test-template
     docker:
       # specify the version you desire here
       # use `-browsers` prefix for selenium tests, e.g. `3.6.1-browsers`
@@ -60,3 +60,15 @@ jobs:
       - store_artifacts:
           path: test-reports
           destination: test-reports
+
+  build_py36:
+    <<: *test-template
+    docker:
+      - image: circleci/python:3.6
+
+workflows:
+  version: 2
+  commit:
+    jobs:
+      - build_py35
+      - build_py36
