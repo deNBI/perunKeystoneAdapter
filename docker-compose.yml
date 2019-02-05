@@ -12,7 +12,7 @@ services:
       PERUN_LOG_LEVEL: INFO
     secrets:
       - adapter_config
-    command: "gunicorn --log-level debug  --access-logfile '-' --workers 1 --bind ${BIND_HOST:-0.0.0.0}:${BIND_PORT:-5000} denbi.scripts.perun_propagation_service:app"
+    command: "gunicorn --log-level debug -t 300 --access-logfile '-' --workers 1 --bind ${BIND_HOST:-0.0.0.0}:${BIND_PORT:-5000} denbi.scripts.perun_propagation_service:app"
     volumes:
       - ./perun/upload:/perun/upload
   keystone:
@@ -20,6 +20,11 @@ services:
     ports:
       - 5000:5000
       - 35357:35357
+    environment:
+      KEYSTONE_HOST: keystone
+      KEYSTONE_ADMIN_URL: "http://keystone:35357"
+      KEYSTONE_PUBLIC_URL: "http://keystone:5000"
+      KEYSTONE_INTERNAL_URL: "http://keystone:5000"
 secrets:
   adapter_config:
     file: ./config.ini 
