@@ -61,14 +61,14 @@ jobs:
           path: test-reports
           destination: test-reports
 
-  build_py36:
-    <<: *test-template
-    docker:
-      - image: circleci/python:3.6
+          #  build_py36:
+          #    <<: *test-template
+          #    docker:
+          #      - image: circleci/python:3.6
 
 workflows:
   version: 2
   commit:
     jobs:
       - build_py35
-      - build_py36
+        #- build_py36
