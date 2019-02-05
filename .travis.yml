@@ -1,14 +1,13 @@
 sudo: required
 language: python
 sudo: false
-python: 2.7
-
+python:
+  - 3.6
 install:
   - pip install -r requirements/default.txt
-
+  - pip install travis-tox
 script:
   - make lint
   - make test_tox
-
 services:
   - docker
