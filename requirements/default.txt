@@ -7,3 +7,4 @@ configargparse==0.14.0
 Flask
 flake8
 gunicorn
+gevent
