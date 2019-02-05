@@ -65,7 +65,7 @@ def upload():
                        'default_role': app.config.get('DEFAULT_ROLE', 'user'),
                        'nested': app.config.get('NESTED', False),
                        'cloud_admin': app.config.get('CLOUD_ADMIN', True),
-                       'base_dir': app.config.get('BASE_DIR',  tempfile.mkdtemp()),
+                       'base_dir': app.config.get('BASE_DIR', tempfile.mkdtemp()),
                        'support_quota': app.config.get('SUPPORT_QUOTA', False)})
     t.start()
 
