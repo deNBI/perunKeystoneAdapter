@@ -59,7 +59,7 @@ def upload():
                        'target_domain_name': app.config.get('TARGET_DOMAIN_NAME', 'elixir'),
                        'default_role': app.config.get('DEFAULT_ROLE', 'user'),
                        'nested': app.config.get('NESTED'),
-                       'cloud_admin' : app.config.get('CLOUD_ADMIN'),
+                       'cloud_admin': app.config.get('CLOUD_ADMIN'),
                        'support_quota': app.config.get('SUPPORT_QUOTA')})
     t.start()
 
