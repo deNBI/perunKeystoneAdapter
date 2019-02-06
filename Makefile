@@ -16,6 +16,7 @@ test_docker: ## Run tests with docker-compose launch of container
 	docker-compose rm -f
 
 test_tox:
+	# Set environment variables for container
 	docker-compose up -d
 	# Sleep until the container is ready
 	bash -c 'while true; do docker-compose logs --tail=10 | grep "exited: keystone-bootstrap"; ec=$$?; if ((ec==0)); then break; else echo -n .; sleep 2; fi; done;'
