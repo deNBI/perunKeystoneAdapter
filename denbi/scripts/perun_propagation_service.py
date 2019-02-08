@@ -78,11 +78,11 @@ def upload():
                     support_quota=app.config.get('SUPPORT_QUOTA', False))
 
     if app.config.get('CLEANUP', False):
-      os.unlink(file)
+        os.unlink(file)
 
     return ""
 
 
 app.config.from_envvar('CONFIG_PATH')
 if __name__ == "__main__":
-  app.run(host=app.config['HOST'], port=app.config['PORT'])
+    app.run(host=app.config['HOST'], port=app.config['PORT'])
