@@ -33,6 +33,7 @@ class KeyStone:
         - OS_PASSWORD
         - OS_PROJECT_NAME
         - OS_USER_DOMAIN_NAME
+        - OS_DOMAIN_NAME        (for domain scoped access)
 
         Instead of the system variables a "local" enviroment (a dict) can be explicitly set
 
@@ -105,7 +106,7 @@ class KeyStone:
                and target_domain_name != domain_access.domain_id):
                 # valide the different domain name
                 # the credentials should be cloud admin credentials in this case
-                self.target_domain_id = self._resolve_domain(target_domain_name, cloud_admin)
+                self.target_domain_id = self._resolve_domain(target_domain_name)
             else:
                 if target_domain_name:
                     self.logger.debug("Overridden domain name is same as project domain, ignoring value.")
@@ -204,9 +205,8 @@ class KeyStone:
             auth = v3.Password(auth_url=environ['OS_AUTH_URL'],
                                username=environ['OS_USERNAME'],
                                password=environ['OS_PASSWORD'],
-                               project_name=environ['OS_PROJECT_NAME'],
-                               user_domain_name=environ['OS_USER_DOMAIN_NAME'],
-                               project_domain_name=environ['OS_USER_DOMAIN_NAME'])
+                               domain_name=environ['OS_DOMAIN_NAME'],
+                               user_domain_name=environ['OS_USER_DOMAIN_NAME'])
         else:
             # create a project scoped token
             project_domain_name = environ['OS_PROJECT_DOMAIN_NAME'] if 'OS_PROJECT_DOMAIN_NAME' in environ else environ['OS_USER_DOMAIN_NAME']

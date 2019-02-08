@@ -272,7 +272,7 @@ class Endpoint:
 
                 else:
                     log.info("Creating project %s with name=%s members={%s}", perun_id, name, ','.join(members))
-                    self.keystone.projects_create(perun_id, name=name, description=description, members=members)
+                    project = self.keystone.projects_create(perun_id, name=name, description=description, members=members)
                     if self.support_quotas:
                         if self.read_only:
                             log.info("Not setting quotas for new project %s, readonly mode", name)
