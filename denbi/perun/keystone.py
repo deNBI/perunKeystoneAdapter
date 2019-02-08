@@ -204,9 +204,8 @@ class KeyStone:
             auth = v3.Password(auth_url=environ['OS_AUTH_URL'],
                                username=environ['OS_USERNAME'],
                                password=environ['OS_PASSWORD'],
-                               project_name=environ['OS_PROJECT_NAME'],
-                               user_domain_name=environ['OS_USER_DOMAIN_NAME'],
-                               project_domain_name=environ['OS_USER_DOMAIN_NAME'])
+                               domain_name=environ['OS_DOMAIN_NAME'],
+                               user_domain_name=environ['OS_USER_DOMAIN_NAME'])
         else:
             # create a project scoped token
             project_domain_name = environ['OS_PROJECT_DOMAIN_NAME'] if 'OS_PROJECT_DOMAIN_NAME' in environ else environ['OS_USER_DOMAIN_NAME']
