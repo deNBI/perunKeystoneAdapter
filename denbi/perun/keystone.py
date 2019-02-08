@@ -105,7 +105,7 @@ class KeyStone:
                and target_domain_name != domain_access.domain_id):
                 # valide the different domain name
                 # the credentials should be cloud admin credentials in this case
-                self.target_domain_id = self._resolve_domain(target_domain_name, cloud_admin)
+                self.target_domain_id = self._resolve_domain(target_domain_name)
             else:
                 if target_domain_name:
                     self.logger.debug("Overridden domain name is same as project domain, ignoring value.")
