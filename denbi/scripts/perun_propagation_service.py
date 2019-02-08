@@ -80,8 +80,6 @@ def upload():
     if app.config.get('CLEANUP', False):
       os.unlink(file)
 
-
-
     return ""
 
 
