@@ -2,7 +2,7 @@ help:
 	@egrep '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-16s\033[0m %s\n", $$1, $$2}'
 
 lint: ## Lint all python code with flake8
-	flake8 --ignore=E501,W503 denbi/ test
+	python -m flake8 --ignore=E501,W503 denbi/ test
 
 test_docker: ## Run tests with docker-compose launch of container
 	docker-compose up -d
@@ -11,6 +11,18 @@ test_docker: ## Run tests with docker-compose launch of container
 	# Then start testing
 	-python -m unittest test.test_keystone.TestKeystone
 	-python -m unittest test.test_endpoint.TestEndpoint
+	# Cleanup
+	docker-compose kill
+	docker-compose rm -f
+
+test_tox:
+	# Set environment variables for container
+	docker-compose up -d
+	# Sleep until the container is ready
+	bash -c 'while true; do docker-compose logs --tail=10 | grep "exited: keystone-bootstrap"; ec=$$?; if ((ec==0)); then break; else echo -n .; sleep 2; fi; done;'
+	# Then start testing
+	tox
+	# Cleanup
 	docker-compose kill
 	docker-compose rm -f
 

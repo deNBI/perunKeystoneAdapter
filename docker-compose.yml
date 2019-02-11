@@ -1,32 +1,26 @@
 ---
-version: '2'
+version: '3.1'
 services:
   adapter:
     build: .
     ports:
-      - 8000:5000
+      - 8000:${BIND_PORT:-8000}
     links:
       - keystone:keystone
     environment:
-      OS_AUTH_URL: "http://keystone:5000/v3"
-      OS_IDENTITY_API_VERSION: "3"
-      #OS_INTERFACE: "public"
-      OS_PASSWORD: "s3cr3t"
-      OS_PROJECT_NAME: "admin"
-      OS_REGION_NAME: "RegionOne"
-      OS_USERNAME: "admin"
-      OS_USER_DOMAIN_NAME: "Default"
-      # http://docs.gunicorn.org/en/stable/settings.html#enable-stdio-inheritance
-      PYTHONUNBUFFERED: 1
+      CONFIG_PATH: /run/secrets/adapter_config
       PERUN_LOG_LEVEL: INFO
-
+    secrets:
+      - source: adapter_config
+        target: /run/secrets/adapter_config
+    command: "gunicorn --worker-class gevent --log-level debug -t 300 --access-logfile '-' --workers 1 --bind ${BIND_HOST:-0.0.0.0}:${BIND_PORT:-8000} denbi.scripts.perun_propagation_service:app"
+    volumes:
+      - ./perun/upload:/perun/upload
   keystone:
     image: monasca/keystone
     ports:
       - 5000:5000
       - 35357:35357
-    #environment:
-      #KEYSTONE_HOST: "keystone"
-      #KEYSTONE_ADMIN_URL: "http://localhost:35357"
-      #KEYSTONE_PUBLIC_URL: "http://localhost:5000"
-      #KEYSTONE_INTERNAL_URL: "http://localhost:5000"
+secrets:
+  adapter_config:
+    file: ./config.ini 

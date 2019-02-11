@@ -10,7 +10,7 @@ from flask import Flask
 from flask import request
 from denbi.perun.endpoint import Endpoint
 from denbi.perun.keystone import KeyStone
-from threading import Thread
+
 
 
 app = Flask(__name__)
@@ -59,15 +59,6 @@ def upload():
     file.write(request.get_data())
     file.close()
     # parse propagated data in separate thread
-#    t = Thread(target=_perun_propagation, args=(file.name,),
-#               kwargs={'read_only': app.config.get('KEYSTONE_READ_ONLY', False),
-#                       'target_domain_name': app.config.get('TARGET_DOMAIN_NAME', 'elixir'),
-#                       'default_role': app.config.get('DEFAULT_ROLE', 'user'),
-#                       'nested': app.config.get('NESTED', False),
-#                       'cloud_admin': app.config.get('CLOUD_ADMIN', True),
-#                       'base_dir': app.config.get('BASE_DIR', tempfile.mkdtemp()),
-#                       'support_quota': app.config.get('SUPPORT_QUOTA', False)})
-#    t.start()
 
     process_tarball(file.name, read_only=app.config.get('KEYSTONE_READ_ONLY', False),
                     target_domain_name=app.config.get('TARGET_DOMAIN_NAME', 'elixir'),

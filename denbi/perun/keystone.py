@@ -24,7 +24,7 @@ class KeyStone:
     def __init__(self, environ=None, default_role="_member_",
                  create_default_role=False, flag="perun_propagation",
                  target_domain_name=None, read_only=False,
-                 logging_domain='denbi', nested=False, cloud_admin=False):
+                 logging_domain='denbi', nested=False, cloud_admin=True):
         """
         Create a new Openstack Keystone session using the system environment.
         The following variables are considered:
@@ -33,6 +33,7 @@ class KeyStone:
         - OS_PASSWORD
         - OS_PROJECT_NAME
         - OS_USER_DOMAIN_NAME
+        - OS_DOMAIN_NAME        (for domain scoped access)
 
         Instead of the system variables a "local" enviroment (a dict) can be explicitly set
 
