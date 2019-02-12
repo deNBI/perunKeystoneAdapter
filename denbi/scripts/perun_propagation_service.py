@@ -12,6 +12,7 @@ from denbi.perun.endpoint import Endpoint
 from denbi.perun.keystone import KeyStone
 
 
+
 app = Flask(__name__)
 app.config['cleanup'] = True
 app.config['keystone_read_only'] = os.environ.get('KEYSTONE_READ_ONLY', 'False').lower() == 'true'
@@ -69,8 +70,6 @@ def upload():
 
     if app.config.get('CLEANUP', False):
         os.unlink(file)
-
-
 
     return ""
 
