@@ -1,5 +1,4 @@
 sudo: required
-sudo: false
 python:
   - 3.5
 install:
