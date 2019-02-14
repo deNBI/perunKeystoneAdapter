@@ -15,7 +15,7 @@ class TestEndpoint(unittest.TestCase):
     """
 
     def setUp(self):
-        environ = {'OS_AUTH_URL': 'http://localhost:5000/v3/',
+        environ = {'OS_AUTH_URL': 'http://keystone:5000/v3/',
                    'OS_PROJECT_NAME': 'admin',
                    'OS_USER_DOMAIN_NAME': 'Default',
                    'OS_PROJECT_DOMAIN_NAME': 'Default',
