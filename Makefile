@@ -5,15 +5,15 @@ lint: ## Lint all python code with flake8
 	python -m flake8 --ignore=E501,W503 denbi/ test
 
 test_docker: ## Run tests with docker-compose launch of container
-	docker-compose up -d
+	docker-compose -f  docker-compose.yml -f docker-compose.local.yml up
 	# Sleep until the container is ready
 	bash -c 'while true; do docker-compose logs --tail=10 | grep "exited: keystone-bootstrap"; ec=$$?; if ((ec==0)); then break; else echo -n .; sleep 1; fi; done;'
 	# Then start testing
 	-python -m unittest test.test_keystone.TestKeystone
 	-python -m unittest test.test_endpoint.TestEndpoint
 	# Cleanup
-	docker-compose kill
-	docker-compose rm -f
+	docker-compose -f  docker-compose.yml -f docker-compose.local.yml kill
+	docker-compose -f  docker-compose.yml -f docker-compose.local.yml rm -f
 
 test_tox:
 	# Set environment variables for container
