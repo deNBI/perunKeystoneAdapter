@@ -21,6 +21,7 @@ test_tox:
 	docker-compose -f  docker-compose.yml up -d
 	# Sleep until the container is ready
 	bash -c 'while true; do docker-compose logs --tail=10 | grep "exited: keystone-bootstrap"; ec=$$?; if ((ec==0)); then break; else echo -n .; sleep 2; fi; done;'
+	sleep 5
 	#first test it
 	curl localhost:5000
 	#first test other port
