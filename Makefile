@@ -23,6 +23,8 @@ test_tox:
 	bash -c 'while true; do docker-compose logs --tail=10 | grep "exited: keystone-bootstrap"; ec=$$?; if ((ec==0)); then break; else echo -n .; sleep 2; fi; done;'
 	#first test it
 	curl localhost:5000
+	#first test other port
+	curl localhost:35357
 	# Then start testing
 	tox
 	# Cleanup
