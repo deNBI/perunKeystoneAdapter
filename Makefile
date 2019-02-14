@@ -17,7 +17,8 @@ test_docker: ## Run tests with docker-compose launch of container
 
 test_tox:
 	# Set environment variables for container
-	docker-compose -f  docker-compose.yml -f docker-compose.local.yml up -d
+	#docker-compose -f  docker-compose.yml -f docker-compose.local.yml up -d
+	docker-compose -f  docker-compose.yml up -d
 	# Sleep until the container is ready
 	bash -c 'while true; do docker-compose logs --tail=10 | grep "exited: keystone-bootstrap"; ec=$$?; if ((ec==0)); then break; else echo -n .; sleep 2; fi; done;'
 	# Then start testing
