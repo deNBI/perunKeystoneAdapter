@@ -8,7 +8,7 @@ install:
         #  - pip install -r requirements/default.txt
   - pip install tox-travis
 script:
-  - make test_tox
+  - make test_adapter
   - make lint
 services:
   - docker
