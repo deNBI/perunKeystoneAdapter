@@ -1,13 +1,14 @@
 dist: xenial
-language: python
 sudo: false
+language: python
 python:
-  - 3.6
+  - "3.5"
 install:
-  - pip install -r requirements/default.txt
-  - pip install -U tox-travis
+        #  - pip install --upgrade pip
+  - pip install -r requirements/development.txt
+  - pip install tox-travis
 script:
-  - make lint
   - make test_adapter
+  - make lint
 services:
   - docker
