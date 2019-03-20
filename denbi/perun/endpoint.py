@@ -20,13 +20,14 @@ class Endpoint:
 
     """
 
-    # mapping of quota names in the de.NBI portal datasets to openstack quotas
-    # a value of None indicates that the quota may be present, but is not
-    # implemented so far
-    # some names are deprecated, but may still be in use in older projects
+    # - mapping of quota names in the de.NBI portal datasets to openstack quotas
+    # - value is a factor that is mutliplied to incoming resource value
+    # - a value of None indicates that the quota may be present, but is not
+    #   implemented so far
+    # - some names are deprecated, but may still be in use in older projects
     DENBI_QUOTA_NAMES = {  # denbiProjectDiskSpace is the old. deprecated name
-                           'denbiProjectDiskSpace': 'gigabytes',
-                           'denbiProjectVolumeLimit': 'gigabytes',
+                           'denbiProjectDiskSpace': 1,
+                           'denbiProjectVolumeLimit': 1,
 
                            # this is a deprecated setting without a real
                            # openstack equivalent...
@@ -37,14 +38,14 @@ class Endpoint:
                            'denbiProjectObjectStorage': None,
                            'denbiProjectSpecialPurposeHardware': None,
 
-                           'denbiProjectNumberOfVms': 'instances',
-                           'denbiRAMLimit': 'ram',
+                           'denbiProjectNumberOfVms': 1,
+                           'denbiRAMLimit': 1024,
                            # old and new quota for vCPUs
-                           'denbiProjectNumberOfCpus': 'cores',
-                           'denbiCoresLimit': 'cores',
+                           'denbiProjectNumberOfCpus': 1,
+                           'denbiCoresLimit': 1,
 
                            # assume that all sites are using neutron....
-                           'denbiNrOfFloatingIPs': 'floatingip',
+                           'denbiNrOfFloatingIPs': 1,
 
                            # these were present in the first quota code,
                            # but aren't registered with perun or set by the
@@ -53,8 +54,8 @@ class Endpoint:
                            # 'denbiProjectNumberOfSubnets': 'subnet',
                            # 'denbiProjectNumberOfRouter': 'router',
 
-                           'denbiProjectNumberOfSnapshots': 'snapshots',
-                           'denbiProjectVolumeCounter': 'volumes'}
+                           'denbiProjectNumberOfSnapshots': 1,
+                           'denbiProjectVolumeCounter': 1}
 
     def __init__(self, keystone=None, mode="scim", store_email=True,
                  support_quotas=True, read_only=False):
@@ -293,16 +294,21 @@ class Endpoint:
     def _set_quotas(self, project_id, project_definition):
         manager = self.keystone.quota_factory.get_manager(project_id)
 
-        for name in self.DENBI_QUOTA_NAMES:
-            value = project_definition.get(name, None)
+        for quota_name in self.DENBI_QUOTA_NAMES:
+            value = project_definition.get(quota_name, None)
             if value is not None:
-                quota_name = self.DENBI_QUOTA_NAMES[name]
-                if quota_name is None:
-                    log.info("Skipping quota %s for project %s, not supported yet", name, project_id)
+                quota_factor = self.DENBI_QUOTA_NAMES[quota_name]
+                # if factor is None ignore it
+                if quota_factor is None:
+                    log.info("Skipping quota %s for project %s, not supported yet", quota_name, project_id)
                 else:
+
                     try:
-                        log.debug("Checking quota %s for project %s",
-                                  quota_name, project_id)
+                        log.debug("Checking quota %s for project %s", quota_name, project_id)
+                        # use quota_factor on value
+                        value = value * quota_factor
+
+
                         current = manager.get_current_quota(quota_name)
                         log.debug("Comparing %s vs %s", current, value)
                         if manager.check_value(quota_name, value):
@@ -315,7 +321,7 @@ class Endpoint:
                                              quota_name, project_id, current, value)
                                     manager.set_value(quota_name, value)
                         else:
-                            log.warn("Unable to set quota %s to %s, would exceed currently used resources",
-                                     quota_name, value)
+                            log.warn("Project %s : Unable to set quota %s to %s, would exceed currently used resources",
+                                     project_id, quota_name, value)
                     except ValueError as error:
-                        log.error("Unable to check/set quota %s: %s", quota_name, str(error))
+                        log.error("Project %s : Unable to check/set quota %s: %s", project_id, quota_name, str(error))
