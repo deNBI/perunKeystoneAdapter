@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+"""Process propagated user/project as 'perun tarball'."""
+
 import argparse
 import logging
 import shutil
@@ -27,6 +29,10 @@ logging.basicConfig(level=logging.WARN)
 
 def process_tarball(tarball_path, read_only=False, target_domain_name='elixir',
                     default_role='user', nested=False, support_quotas=False):
+    """Process a propagated tarball.
+
+    Should contain at least a user.scim and group.scim file in SCIM format.
+    """
     directory = tempfile.mkdtemp()
 
     # extract tar file
@@ -47,6 +53,7 @@ def process_tarball(tarball_path, read_only=False, target_domain_name='elixir',
 
 
 def main():
+    """Main method."""
     parser = argparse.ArgumentParser(description='Process perun tarball')
     parser.add_argument('tarball', type=argparse.FileType('r'), help="Input tarball from perun")
     parser.add_argument('--read-only', action='store_true', help="Do not make any modifications to keystone")

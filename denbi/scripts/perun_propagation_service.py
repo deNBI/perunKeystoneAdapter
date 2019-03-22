@@ -12,6 +12,13 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+"""Simple Perun propagation service.
+
+Using this service in a real world scenario makes it possibly necessary
+to implement the upload function in a thread. But the 'process_tarball'
+method shouldn't run parallel.
+"""
+
 import logging
 import os
 import shutil
@@ -35,7 +42,7 @@ logging.basicConfig(level=getattr(logging, os.environ.get('PERUN_LOG_LEVEL', 'WA
 
 def process_tarball(tarball_path, base_dir=tempfile.mkdtemp(), read_only=False, target_domain_name='elixir',
                     default_role='user', nested=False, support_quota=False, cloud_admin=True):
-    # TODO(hxr): deduplicate
+    """Process Perun tarball."""
     d = datetime.today()
     dir = base_dir + "/" + str(d.year) + "_" + str(d.month) + "_" + str(d.day) + "-" + str(d.hour) + ":" + str(d.minute) + ":" + str(d.second) + "." + str(d.microsecond)
     os.mkdir(dir)
@@ -63,17 +70,15 @@ def process_tarball(tarball_path, base_dir=tempfile.mkdtemp(), read_only=False, 
 
 @app.route("/upload", methods=['PUT'])
 def upload():
+    """Recieve a perun tarball, store it in a temporary file and process it."""
     # Create a tempfile to write the data to. delete=False because we will
     # close after writing, before processing, and this would normally cause a
     # tempfile to disappear.
     file = tempfile.NamedTemporaryFile(prefix='perun_upload', suffix='.tar.gz', delete=False)
 
-    # TODO: buffered writing
     # store uploaded data
     file.write(request.get_data())
     file.close()
-    # parse propagated data in separate thread
-
     process_tarball(file.name, read_only=app.config.get('KEYSTONE_READ_ONLY', False),
                     target_domain_name=app.config.get('TARGET_DOMAIN_NAME', 'elixir'),
                     default_role=app.config.get('DEFAULT_ROLE', 'user'),

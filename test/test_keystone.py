@@ -24,10 +24,11 @@ from denbi.perun.keystone import KeyStone
 class TestKeystone(unittest.TestCase):
     """Unit test for class Keystone.
 
-        You need a full functional Openstack setup to make the test run properly.
+    You need a full functional Openstack setup to make the test run properly.
     """
 
     def setUp(self):
+        """Setup test environment."""
         environ = {'OS_AUTH_URL': 'http://localhost:5000/v3/',
                    'OS_PROJECT_NAME': 'admin',
                    'OS_USER_DOMAIN_NAME': 'Default',
