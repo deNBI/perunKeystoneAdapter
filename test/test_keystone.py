@@ -1,6 +1,19 @@
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+
+
+import logging  # NOQA
 import unittest
 import uuid
-import logging  # NOQA
 
 from denbi.perun.keystone import KeyStone
 
@@ -9,8 +22,7 @@ from denbi.perun.keystone import KeyStone
 
 
 class TestKeystone(unittest.TestCase):
-    """
-        Unit test for class Keystone.
+    """Unit test for class Keystone.
 
         You need a full functional Openstack setup to make the test run properly.
     """
@@ -29,10 +41,10 @@ class TestKeystone(unittest.TestCase):
         return str(uuid.uuid4())
 
     def test_user_create_list_delete(self):
-        '''
-        Test the methods users_create users_list and users_delete from KeyStone object.
+        """Test the methods users_create users_list and users_delete from KeyStone object.
+
         :return:
-        '''
+        """
 
         print("Run 'test_user_create_list_delete'")
 
@@ -70,10 +82,10 @@ class TestKeystone(unittest.TestCase):
         self.assertFalse(perunid in denbi_user_map, "User with PerunId does exists.")
 
     def test_project_create_list_delete(self):
-        '''
-        Test the methods project_create, project_list and project_delete from KeyStone object.
+        """Test the methods project_create, project_list and project_delete from KeyStone object.
+
         :return:
-        '''
+        """
 
         print("Run 'test_project_create_list_delete'")
 
@@ -109,11 +121,12 @@ class TestKeystone(unittest.TestCase):
         self.assertFalse(perunid in denbi_project_map, "Project with PerunId '" + perunid + "' does exists.")
 
     def test_project_set_and_get_quotas(self):
-        '''
-        Test setting project quotas using the method project_quota and get results to compare quotas with method
-        projects_map from KeyStone object.
+        """Test project_set and get_quotas.
+        - setting project quotas using the method project_quota
+        - get results to compare quotas with method projects_map from KeyStone object
+
         :return:
-        '''
+        """
 
         print("Run 'test_project_quota'")
 
@@ -195,13 +208,15 @@ class TestKeystone(unittest.TestCase):
         self.ks.projects_terminate(denbi_project['perun_id'])
 
     def test_all(self):
-        '''
-        Test a typically scenario, create two project (a, b), create two users (a, b, c), users ab are members of project a,
-        and users abc are members of project b. Check the projects memberlist and clean up everything.
+        """Test a typically scenario.
+        - create two project (a, b)
+        - create two users (a, b, c)
+          - users (a,b) are members of project a
+          - users abc are members of project b.
+        - check the projects memberlist and clean up everything.
 
         :return:
-        '''
-
+        """
         print("Run 'test_all'")
 
         count_projects = len(self.ks.projects_map().keys())
