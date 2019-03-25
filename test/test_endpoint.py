@@ -12,12 +12,14 @@
 
 import os
 import unittest
+import logging
 
 from denbi.perun.endpoint import Endpoint
 from denbi.perun.keystone import KeyStone
 
 TESTDIR = os.path.dirname(os.path.realpath(__file__))
 
+logging.basicConfig(level=logging.INFO)
 
 class TestEndpoint(unittest.TestCase):
     """Unit test for class endpoint.
@@ -26,14 +28,7 @@ class TestEndpoint(unittest.TestCase):
     """
 
     def setUp(self):
-        environ = {'OS_AUTH_URL': 'http://localhost:5000/v3/',
-                   'OS_PROJECT_NAME': 'admin',
-                   'OS_USER_DOMAIN_NAME': 'Default',
-                   'OS_PROJECT_DOMAIN_NAME': 'Default',
-                   'OS_USERNAME': 'admin',
-                   'OS_PASSWORD': 's3cr3t'}
-
-        self.keystone = KeyStone(environ, default_role="user", create_default_role=True, target_domain_name='Default', cloud_admin=True)
+        self.keystone = KeyStone(environ=None, default_role="user", create_default_role=True, target_domain_name='elixir', cloud_admin=True)
 
     def _test_user(self, denbiuser, perun_id, elixir_id, email, enabled, deleted=False):
         self.assertEqual(denbiuser['perun_id'], perun_id)

@@ -11,15 +11,13 @@
 # under the License.
 
 
-import logging  # NOQA
+import logging
 import unittest
 import uuid
 
 from denbi.perun.keystone import KeyStone
 
-# If you want detailed logs of what is going on, uncomment this.
-# logging.basicConfig(level=logging.INFO)
-
+logging.basicConfig(level=logging.INFO)
 
 class TestKeystone(unittest.TestCase):
     """Unit test for class Keystone.
@@ -28,15 +26,13 @@ class TestKeystone(unittest.TestCase):
     """
 
     def setUp(self):
-        """Setup test environment."""
-        environ = {'OS_AUTH_URL': 'http://localhost:5000/v3/',
-                   'OS_PROJECT_NAME': 'admin',
-                   'OS_USER_DOMAIN_NAME': 'Default',
-                   'OS_PROJECT_DOMAIN_NAME': 'Default',
-                   'OS_USERNAME': 'admin',
-                   'OS_PASSWORD': 's3cr3t'}
+        """Setup test environment.
 
-        self.ks = KeyStone(environ, default_role="user", create_default_role=True, target_domain_name='elixir', cloud_admin=True)
+        Lets keystone search for clouds.yml in ~/.config/openstack or /etc/openstack.
+        See https://docs.openstack.org/python-openstackclient/pike/configuration/index.html for a description.
+        """
+
+        self.ks = KeyStone(environ=None, default_role="user", create_default_role=True, target_domain_name='elixir', cloud_admin=True)
 
     def __uuid(self):
         return str(uuid.uuid4())

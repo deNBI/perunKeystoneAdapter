@@ -25,6 +25,8 @@ import shutil
 import tarfile
 import tempfile
 
+from concurrent.futures import ThreadPoolExecutor
+
 from datetime import datetime
 
 from denbi.perun.endpoint import Endpoint
@@ -38,6 +40,8 @@ app = Flask(__name__)
 app.config['cleanup'] = True
 app.config['keystone_read_only'] = os.environ.get('KEYSTONE_READ_ONLY', 'False').lower() == 'true'
 logging.basicConfig(level=getattr(logging, os.environ.get('PERUN_LOG_LEVEL', 'WARN')))
+
+executor = ThreadPoolExecutor(max_workers=1)
 
 
 def process_tarball(tarball_path, base_dir=tempfile.mkdtemp(), read_only=False, target_domain_name='elixir',
@@ -71,6 +75,7 @@ def process_tarball(tarball_path, base_dir=tempfile.mkdtemp(), read_only=False, 
 @app.route("/upload", methods=['PUT'])
 def upload():
     """Recieve a perun tarball, store it in a temporary file and process it."""
+
     # Create a tempfile to write the data to. delete=False because we will
     # close after writing, before processing, and this would normally cause a
     # tempfile to disappear.
@@ -79,7 +84,9 @@ def upload():
     # store uploaded data
     file.write(request.get_data())
     file.close()
-    process_tarball(file.name, read_only=app.config.get('KEYSTONE_READ_ONLY', False),
+
+    # execute
+    executor.submit(process_tarball, file.name, read_only=app.config.get('KEYSTONE_READ_ONLY', False),
                     target_domain_name=app.config.get('TARGET_DOMAIN_NAME', 'elixir'),
                     default_role=app.config.get('DEFAULT_ROLE', 'user'),
                     nested=app.config.get('NESTED', False),

@@ -11,15 +11,15 @@
 # under the License.
 
 import os
-import logging
 import itertools
+import logging
+import yaml
 
+from denbi.perun.quotas import manager as quotas
 from keystoneauth1.identity import v3
 from keystoneauth1 import session
 from keystoneclient.v3 import client
 from keystoneauth1.exceptions import Unauthorized
-from denbi.perun.quotas import manager as quotas
-
 
 class KeyStone:
     """
@@ -38,7 +38,8 @@ class KeyStone:
                  target_domain_name=None, read_only=False,
                  logging_domain='denbi', nested=False, cloud_admin=True):
         """
-        Create a new Openstack Keystone session using the system environment.
+        Create a new Openstack Keystone session reading clouds.yml in ~/.config/clouds.yaml
+        or /etc/openstack or using the system environment.
         The following variables are considered:
         - OS_AUTH_URL
         - OS_USERNAME
@@ -53,7 +54,6 @@ class KeyStone:
         :param default_role: default role used for all users (default is "_member_")
         :param create_default_role: create a default role if it not exists (default is False)
         :param flag: value used to mark users/projects (default is perun_propagation)
-        :param support_quotas: support project quotas  (needs a complete openstack setup)
         :param target_domain_name: domain where all users & projects are created, will be created if it not exists
         :param read_only: do not make any changes to the keystone
         :param nested: use nested projects instead of cloud/domain admin accesss
@@ -192,7 +192,8 @@ class KeyStone:
     def _create_auth(self, environ, auth_at_domain=False):
         """
         Helper method to create the auth object for keystone, depending on the
-        given environment.
+        given environment (Explicite environment, clouds.yaml or os environment
+        are supported.
 
         This method supports authentication via project scoped tokens for
         project and cloud admins, and domain scoped tokens for domain admins.
@@ -203,7 +204,6 @@ class KeyStone:
         for the project if no separate project domain name is given.
 
         :param environ: dicts to take auth information from
-        :param nested: enforce nested projects
         :param auth_at_domain: create domain scoped token
 
         :returns: the auth object to be used for contacting keystone
@@ -211,7 +211,34 @@ class KeyStone:
 
         # default to shell environment if no specific one was given
         if environ is None:
-            environ = os.environ
+            clouds_yaml_file =  None
+            if os.path.isfile('{}/.config/clouds.yaml'.format(os.environ['HOME'])):
+                clouds_yaml_file =  '{}/.config/clouds.yaml'.format(os.environ['HOME'])
+            elif os.path.isfile('/etc/openstack/clouds.yaml'):
+                clouds_yaml_file = '/etc/openstack/clouds.yaml'
+
+            if clouds_yaml_file:
+                with (open('{}/.config/clouds.yaml'.format(os.environ['HOME']))) as stream:
+                    try:
+                       clouds_yaml = yaml.load(stream)
+                       environ={}
+                       environ['OS_AUTH_URL'] = clouds_yaml['clouds']['openstack']['auth']['auth_url']
+                       environ['OS_USERNAME'] = clouds_yaml['clouds']['openstack']['auth']['username']
+                       environ['OS_PASSWORD'] = clouds_yaml['clouds']['openstack']['auth']['password']
+
+                       environ['OS_PROJECT_NAME'] = clouds_yaml['clouds']['openstack']['auth']['project_name']
+                       environ['OS_USER_DOMAIN_NAME'] = clouds_yaml['clouds']['openstack']['auth']['user_domain_name']
+
+                       # cloud admin
+                       environ['OS_PROJECT_DOMAIN_NAME'] = clouds_yaml['clouds']['openstack']['auth']['project_domain_name']  if 'project_domain_name' in clouds_yaml['clouds']['openstack']['auth'] else clouds_yaml['clouds']['openstack']['auth']['user_domain_name']
+                       # domain admin
+                       environ['OS_DOMAIN_NAME'] = clouds_yaml['clouds']['openstack']['auth']['domain_name']  if 'domain_name' in clouds_yaml['clouds']['openstack']['auth'] else None
+
+                    except Exception as e:
+                        raise Exception("Error parsing/reading clouds.yaml (%s)." % clouds_yaml_file,e)
+
+            else:
+                environ = os.environ
         if auth_at_domain:
             # create a domain scoped token
             auth = v3.Password(auth_url=environ['OS_AUTH_URL'],
@@ -287,6 +314,8 @@ class KeyStone:
                           'email': str(email),
                           'deleted': False}
 
+        self.logger.info("Create user [%s,%s,%s].",denbi_user['elixir_id'],denbi_user['perun_id'],denbi_user['id'])
+
         self.__user_id2perun_id__[denbi_user['id']] = denbi_user['perun_id']
         self.denbi_user_map[denbi_user['perun_id']] = denbi_user
 
@@ -317,6 +346,9 @@ class KeyStone:
             # delete user
             if not self.ro:
                 self.keystone.users.delete(denbi_user['id'])
+
+            self.logger.info("Terminate user [%s,%s,%s]",denbi_user['elixir_id'],denbi_user['perun_id'],denbi_user['id'])
+
             # remove entry from map
             del(self.denbi_user_map[perun_id])
         else:
@@ -358,6 +390,8 @@ class KeyStone:
 
             self.denbi_user_map[denbi_user['perun_id']] = denbi_user
 
+            self.logger.info("Update user [%s,%s,%s] as deleted = %s",denbi_user['elixir_id'],denbi_user['perun_id'],denbi_user['id'],str(deleted))
+
             return denbi_user
         else:
             raise ValueError('User with perun_id %s not found in user_map' % perun_id)
@@ -381,7 +415,6 @@ class KeyStone:
                               'perun_id': str(os_user.perun_id),  # str
                               'elixir_id': str(os_user.name),  # str
                               'enabled': bool(os_user.enabled),  # boolean
-                              # TODO(hxr): prod did not have os_user.deleted, why?
                               'deleted': bool(getattr(os_user, 'deleted', False))}  # boolean
                 # check for optional attribute email
                 if hasattr(os_user, 'email'):
@@ -437,6 +470,8 @@ class KeyStone:
                              'scratched': False,
                              'members': []}
 
+        self.logger.info("Create project [%s,%s].",denbi_project['perun_id'],denbi_project['id'])
+
         self.denbi_project_map[denbi_project['perun_id']] = denbi_project
         self.__project_id2perun_id__[denbi_project['id']] = denbi_project['perun_id']
 
@@ -467,7 +502,6 @@ class KeyStone:
 
         project = self.denbi_project_map[perun_id]
 
-        # TODO(hxr): removed enabled is none due to update having blank enabled
         if (name is not None or description is not None or enabled is not None or project['scratched'] != scratched):
             if name is None:
                 name = project['name']
@@ -488,6 +522,9 @@ class KeyStone:
             project['description'] = description
             project['enabled'] = bool(enabled)
             project['scratched'] = bool(scratched)
+
+            self.logger.info("Update project [%s,%s].",project['perun_id'],project['id'])
+
 
         # update memberslist
         if members:
@@ -515,9 +552,7 @@ class KeyStone:
         :return:
         """
         self.projects_update(perun_id, scratched=True)
-        # TODO(hxr): implement real-delete mode?
-        # project = self.denbi_project_map[perun_id]
-        # print('deleting', project['id'])
+
 
     def projects_terminate(self, perun_id):
         """
@@ -537,8 +572,12 @@ class KeyStone:
                 # delete project by id in keystone database
                 if not self.ro:
                     self.keystone.projects.delete(denbi_project['id'])
+
+                self.logger.info("Terminate project [%s,%s].",denbi_project['perun_id'],denbi_project['id'])
+
                 # delete project from project map
                 del(self.denbi_project_map[denbi_project['perun_id']])
+
             else:
                 raise ValueError('Project with perun_id %s must be tagged as deleted before terminate!' % perun_id)
         else:
@@ -609,6 +648,8 @@ class KeyStone:
 
         self.denbi_project_map[project_id]['members'].append(user_id)
 
+        self.logger.info("Append user %s to project %s.",user_id,project_id)
+
     def projects_remove_user(self, project_id, user_id):
         """
         Remove an user from a project (revoke default_role from user/project)
@@ -636,6 +677,8 @@ class KeyStone:
             self.keystone.roles.revoke(role=self.default_role_id, user=uid, project=pid)
 
         self.denbi_project_map[project_id]['members'].remove(user_id)
+
+        self.logger.info("Remove user %s from project %s.",user_id,project_id)
 
     def projects_memberlist(self, perun_id):
         """
