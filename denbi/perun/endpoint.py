@@ -35,15 +35,17 @@ class Endpoint(object):
 
     Support JSON data in SCIM format and "deNBI Portal Compute Center" format.
 
-    # - mapping of quota names in the de.NBI portal datasets to openstack quotas
-    # - value is a factor that is mutliplied to incoming resource value
+    """
+
+    # Mapping of quota names from de.NBI portal to openstack ns.
     # - a value of None indicates that the quota may be present, but is not
     #   implemented so far
-    # - some names are deprecated, but may still be in use in older projects
-    """
-    DENBI_QUOTA_NAMES = {  # denbiProjectDiskSpace is the old. deprecated name
-                           'denbiProjectDiskSpace': 1,
-                           'denbiProjectVolumeLimit': 1,
+    # - a value is a  map containing  the corresponding openstack quota name and a factor.
+    # - a factor factorize the de.NBI quota value (1 - no factorize - in most cases)
+    # - some de.NBI quotas are deprecated, but may still be in use in older projects
+    DENBI_OPENSTACK_QUOTA_MAPPING = {  # denbiProjectDiskSpace is the old. deprecated name
+                           'denbiProjectDiskSpace': { 'name' : 'gigabytes', 'factor' : 1 },
+                           'denbiProjectVolumeLimit': { 'name' : 'gigabytes', 'factor' : 1 },
 
                            # this is a deprecated setting without a real
                            # openstack equivalent...
@@ -54,24 +56,24 @@ class Endpoint(object):
                            'denbiProjectObjectStorage': None,
                            'denbiProjectSpecialPurposeHardware': None,
 
-                           'denbiProjectNumberOfVms': 1,
-                           'denbiRAMLimit': 1024,
+                           'denbiProjectNumberOfVms': { 'name' : 'instances', 'factor' : 1 },
+                           'denbiRAMLimit': { 'name' : 'ram', 'factor' : 1024 },
                            # old and new quota for vCPUs
-                           'denbiProjectNumberOfCpus': 1,
-                           'denbiCoresLimit': 1,
+                           'denbiProjectNumberOfCpus': { 'name' : 'cores', 'factor' : 1 },
+                           'denbiCoresLimit': { 'name' : 'cores', 'factor' : 1 },
 
                            # assume that all sites are using neutron....
-                           'denbiNrOfFloatingIPs': 1,
+                           'denbiNrOfFloatingIPs': { 'name' : 'floatingip', 'factor' : 1 },
 
                            # these were present in the first quota code,
                            # but aren't registered with perun or set by the
                            # portal...
-                           # 'denbiProjectNumberOfNetworks': 'network',
-                           # 'denbiProjectNumberOfSubnets': 'subnet',
-                           # 'denbiProjectNumberOfRouter': 'router',
+                           # 'denbiProjectNumberOfNetworks': { 'name' : 'network', 'factor' : 1 },
+                           # 'denbiProjectNumberOfSubnets': { 'name' : 'subnet', 'factor' : 1 },
+                           # 'denbiProjectNumberOfRouter': { 'name' : 'router', 'factor' : 1024 },
 
-                           'denbiProjectNumberOfSnapshots': 1,
-                           'denbiProjectVolumeCounter': 1}
+                           'denbiProjectNumberOfSnapshots': { 'name' : 'snapshots', 'factor' : 1 },
+                           'denbiProjectVolumeCounter': { 'name' : 'volumes', 'factor' : 1 }}
 
     def __init__(self, keystone=None, mode="scim", store_email=True,
                  support_quotas=True, read_only=False, logging_domain="denbi"):
@@ -297,7 +299,7 @@ class Endpoint(object):
                         if self.read_only:
                             self.logging.info("Not setting quotas for new project %s, readonly mode", name)
                         else:
-                            self._set_quotas(project['id'], dpcc_project)
+                            self._set_quotas(project, dpcc_project)
                 project_ids.append(perun_id)
 
             else:
@@ -314,34 +316,33 @@ class Endpoint(object):
 
         manager = self.keystone.quota_factory.get_manager(project['id'])
 
-        for quota_name in self.DENBI_QUOTA_NAMES:
-            value = project_definition.get(quota_name, None)
+        for denbi_quota_name in self.DENBI_OPENSTACK_QUOTA_MAPPING:
+            value = project_definition.get(denbi_quota_name, None)
             if value is not None:
-                quota_factor = self.DENBI_QUOTA_NAMES[quota_name]
+                os_quota = self.DENBI_OPENSTACK_QUOTA_MAPPING[denbi_quota_name]
                 # if factor is None ignore it
-                if quota_factor is None:
-                    self.logging.info("Skipping quota %s for project [%s,%s], not supported yet", quota_name, project['perun_id'],project['id'])
+                if os_quota is None:
+                    self.logging.info("Skipping quota %s for project [%s,%s], not supported yet", denbi_quota_name, project['perun_id'],project['id'])
                 else:
 
                     try:
-                        self.logging.debug("Checking quota %s for project [%s,%s]", quota_name,  project['perun_id'],project['id'])
-                        # use quota_factor on value
-                        value = value * quota_factor
+                        self.logging.debug("Checking quota %s for project [%s,%s]", denbi_quota_name,  project['perun_id'],project['id'])
+                        # use os_quota['factor'] on value
+                        value = value * os_quota['factor']
 
-
-                        current = manager.get_current_quota(quota_name)
+                        current = manager.get_current_quota(os_quota['name'])
                         self.logging.debug("Comparing %s vs %s", current, value)
-                        if manager.check_value(quota_name, value):
-                            if manager.get_current_quota(quota_name) != value:
+                        if manager.check_value(os_quota['name'], value):
+                            if manager.get_current_quota(os_quota['name']) != value:
                                 if self.read_only:
                                     self.logging.info("Would update quota %s for project [%s,%s] to from value %s to value %s",
-                                             quota_name, project['perun_id'], project['id'], current, value)
+                                             denbi_quota_name, project['perun_id'], project['id'], current, value)
                                 else:
                                     self.logging.info("Updating quota %s for project [%s,%s] to from value %s to value %s",
-                                             quota_name, project['perun_id'], project['id'], current, value)
-                                    manager.set_value(quota_name, value)
+                                             denbi_quota_name, project['perun_id'], project['id'], current, value)
+                                    manager.set_value(os_quota['name'], value)
                         else:
                             self.logging.warn("Project [%s,%s] : Unable to set quota %s to %s, would exceed currently used resources",
-                                              project['perun_id'], project['id'], quota_name, value)
+                                              project['perun_id'], project['id'], denbi_quota_name, value)
                     except ValueError as error:
-                        self.logging.error("Project [%s,%s] : Unable to check/set quota %s: %s", project['perun_id'], project['id'], quota_name, str(error))
+                        self.logging.error("Project [%s,%s] : Unable to check/set quota %s: %s", project['perun_id'], project['id'], denbi_quota_name, str(error))

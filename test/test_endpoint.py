@@ -130,7 +130,7 @@ class TestEndpoint(unittest.TestCase):
 
     def test_import_denbi_portal_compute_center(self):
         # initialize endpoint  with 'scim' mode
-        self.endpoint = Endpoint(keystone=self.keystone, mode="denbi_portal_compute_center", support_quotas=False)
+        self.endpoint = Endpoint(keystone=self.keystone, mode="denbi_portal_compute_center", support_quotas=True)
 
         # import 1st test data set
         self.endpoint.import_data(os.path.join(TESTDIR, 'resources', 'denbi_portal_compute_center', 'users.scim'),
