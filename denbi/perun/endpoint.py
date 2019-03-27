@@ -16,8 +16,6 @@ import logging
 from denbi.perun.keystone import KeyStone
 
 
-
-
 def import_json(path):
     """
     Read path as json and return as object
@@ -44,36 +42,36 @@ class Endpoint(object):
     # - a factor factorize the de.NBI quota value (1 - no factorize - in most cases)
     # - some de.NBI quotas are deprecated, but may still be in use in older projects
     DENBI_OPENSTACK_QUOTA_MAPPING = {  # denbiProjectDiskSpace is the old. deprecated name
-                           'denbiProjectDiskSpace': { 'name' : 'gigabytes', 'factor' : 1 },
-                           'denbiProjectVolumeLimit': { 'name' : 'gigabytes', 'factor' : 1 },
+        'denbiProjectDiskSpace': {'name': 'gigabytes', 'factor': 1},
+        'denbiProjectVolumeLimit': {'name': 'gigabytes', 'factor': 1},
 
-                           # this is a deprecated setting without a real
-                           # openstack equivalent...
-                           'denbiProjectRamPerVm': None,
+        # this is a deprecated setting without a real
+        # openstack equivalent...
+        'denbiProjectRamPerVm': None,
 
-                           # custom denbi quotas to control access to object
-                           # storage and fpga/gpu hardware. no implementation yet
-                           'denbiProjectObjectStorage': None,
-                           'denbiProjectSpecialPurposeHardware': None,
+        # custom denbi quotas to control access to object
+        # storage and fpga/gpu hardware. no implementation yet
+        'denbiProjectObjectStorage': None,
+        'denbiProjectSpecialPurposeHardware': None,
 
-                           'denbiProjectNumberOfVms': { 'name' : 'instances', 'factor' : 1 },
-                           'denbiRAMLimit': { 'name' : 'ram', 'factor' : 1024 },
-                           # old and new quota for vCPUs
-                           'denbiProjectNumberOfCpus': { 'name' : 'cores', 'factor' : 1 },
-                           'denbiCoresLimit': { 'name' : 'cores', 'factor' : 1 },
+        'denbiProjectNumberOfVms': {'name': 'instances', 'factor': 1},
+        'denbiRAMLimit': {'name': 'ram', 'factor': 1024},
+        # old and new quota for vCPUs
+        'denbiProjectNumberOfCpus': {'name': 'cores', 'factor': 1},
+        'denbiCoresLimit': {'name': 'cores', 'factor': 1},
 
-                           # assume that all sites are using neutron....
-                           'denbiNrOfFloatingIPs': { 'name' : 'floatingip', 'factor' : 1 },
+        # assume that all sites are using neutron....
+        'denbiNrOfFloatingIPs': {'name': 'floatingip', 'factor': 1},
 
-                           # these were present in the first quota code,
-                           # but aren't registered with perun or set by the
-                           # portal...
-                           # 'denbiProjectNumberOfNetworks': { 'name' : 'network', 'factor' : 1 },
-                           # 'denbiProjectNumberOfSubnets': { 'name' : 'subnet', 'factor' : 1 },
-                           # 'denbiProjectNumberOfRouter': { 'name' : 'router', 'factor' : 1024 },
+        # these were present in the first quota code,
+        # but aren't registered with perun or set by the
+        # portal...
+        # 'denbiProjectNumberOfNetworks': { 'name' : 'network', 'factor' : 1 },
+        # 'denbiProjectNumberOfSubnets': { 'name' : 'subnet', 'factor' : 1 },
+        # 'denbiProjectNumberOfRouter': { 'name' : 'router', 'factor' : 1024 },
 
-                           'denbiProjectNumberOfSnapshots': { 'name' : 'snapshots', 'factor' : 1 },
-                           'denbiProjectVolumeCounter': { 'name' : 'volumes', 'factor' : 1 }}
+        'denbiProjectNumberOfSnapshots': {'name': 'snapshots', 'factor': 1},
+        'denbiProjectVolumeCounter': {'name': 'volumes', 'factor': 1}}
 
     def __init__(self, keystone=None, mode="scim", store_email=True,
                  support_quotas=True, read_only=False, logging_domain="denbi"):
@@ -99,7 +97,6 @@ class Endpoint(object):
         self.support_quotas = bool(support_quotas)
         self.read_only = read_only
         self.logging = logging.getLogger(logging_domain)
-
 
     def import_data(self, users_path, groups_path):
         '''
@@ -322,11 +319,11 @@ class Endpoint(object):
                 os_quota = self.DENBI_OPENSTACK_QUOTA_MAPPING[denbi_quota_name]
                 # if factor is None ignore it
                 if os_quota is None:
-                    self.logging.info("Skipping quota %s for project [%s,%s], not supported yet", denbi_quota_name, project['perun_id'],project['id'])
+                    self.logging.info("Skipping quota %s for project [%s,%s], not supported yet", denbi_quota_name, project['perun_id'], project['id'])
                 else:
 
                     try:
-                        self.logging.debug("Checking quota %s for project [%s,%s]", denbi_quota_name,  project['perun_id'],project['id'])
+                        self.logging.debug("Checking quota %s for project [%s,%s]", denbi_quota_name, project['perun_id'], project['id'])
                         # use os_quota['factor'] on value
                         value = value * os_quota['factor']
 
@@ -336,10 +333,10 @@ class Endpoint(object):
                             if manager.get_current_quota(os_quota['name']) != value:
                                 if self.read_only:
                                     self.logging.info("Would update quota %s for project [%s,%s] to from value %s to value %s",
-                                             denbi_quota_name, project['perun_id'], project['id'], current, value)
+                                                      denbi_quota_name, project['perun_id'], project['id'], current, value)
                                 else:
                                     self.logging.info("Updating quota %s for project [%s,%s] to from value %s to value %s",
-                                             denbi_quota_name, project['perun_id'], project['id'], current, value)
+                                                      denbi_quota_name, project['perun_id'], project['id'], current, value)
                                     manager.set_value(os_quota['name'], value)
                         else:
                             self.logging.warn("Project [%s,%s] : Unable to set quota %s to %s, would exceed currently used resources",

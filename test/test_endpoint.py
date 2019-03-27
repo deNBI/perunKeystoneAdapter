@@ -21,6 +21,7 @@ TESTDIR = os.path.dirname(os.path.realpath(__file__))
 
 logging.basicConfig(level=logging.INFO)
 
+
 class TestEndpoint(unittest.TestCase):
     """Unit test for class endpoint.
 

@@ -21,6 +21,7 @@ from keystoneauth1 import session
 from keystoneclient.v3 import client
 from keystoneauth1.exceptions import Unauthorized
 
+
 class KeyStone:
     """
     Keystone simplifies the communication with Openstack. Offers shortcuts for common functions and also
@@ -211,31 +212,32 @@ class KeyStone:
 
         # default to shell environment if no specific one was given
         if environ is None:
-            clouds_yaml_file =  None
+            clouds_yaml_file = None
+            clouds_yaml_file = None
             if os.path.isfile('{}/.config/clouds.yaml'.format(os.environ['HOME'])):
-                clouds_yaml_file =  '{}/.config/clouds.yaml'.format(os.environ['HOME'])
+                clouds_yaml_file = '{}/.config/clouds.yaml'.format(os.environ['HOME'])
             elif os.path.isfile('/etc/openstack/clouds.yaml'):
                 clouds_yaml_file = '/etc/openstack/clouds.yaml'
 
             if clouds_yaml_file:
                 with (open('{}/.config/clouds.yaml'.format(os.environ['HOME']))) as stream:
                     try:
-                       clouds_yaml = yaml.load(stream)
-                       environ={}
-                       environ['OS_AUTH_URL'] = clouds_yaml['clouds']['openstack']['auth']['auth_url']
-                       environ['OS_USERNAME'] = clouds_yaml['clouds']['openstack']['auth']['username']
-                       environ['OS_PASSWORD'] = clouds_yaml['clouds']['openstack']['auth']['password']
+                        clouds_yaml = yaml.load(stream)
+                        environ = {}
+                        environ['OS_AUTH_URL'] = clouds_yaml['clouds']['openstack']['auth']['auth_url']
+                        environ['OS_USERNAME'] = clouds_yaml['clouds']['openstack']['auth']['username']
+                        environ['OS_PASSWORD'] = clouds_yaml['clouds']['openstack']['auth']['password']
 
-                       environ['OS_PROJECT_NAME'] = clouds_yaml['clouds']['openstack']['auth']['project_name']
-                       environ['OS_USER_DOMAIN_NAME'] = clouds_yaml['clouds']['openstack']['auth']['user_domain_name']
+                        environ['OS_PROJECT_NAME'] = clouds_yaml['clouds']['openstack']['auth']['project_name']
+                        environ['OS_USER_DOMAIN_NAME'] = clouds_yaml['clouds']['openstack']['auth']['user_domain_name']
 
-                       # cloud admin
-                       environ['OS_PROJECT_DOMAIN_NAME'] = clouds_yaml['clouds']['openstack']['auth']['project_domain_name']  if 'project_domain_name' in clouds_yaml['clouds']['openstack']['auth'] else clouds_yaml['clouds']['openstack']['auth']['user_domain_name']
-                       # domain admin
-                       environ['OS_DOMAIN_NAME'] = clouds_yaml['clouds']['openstack']['auth']['domain_name']  if 'domain_name' in clouds_yaml['clouds']['openstack']['auth'] else None
+                        # cloud admin
+                        environ['OS_PROJECT_DOMAIN_NAME'] = clouds_yaml['clouds']['openstack']['auth']['project_domain_name'] if 'project_domain_name' in clouds_yaml['clouds']['openstack']['auth'] else clouds_yaml['clouds']['openstack']['auth']['user_domain_name']
+                        # domain admin
+                        environ['OS_DOMAIN_NAME'] = clouds_yaml['clouds']['openstack']['auth']['domain_name'] if 'domain_name' in clouds_yaml['clouds']['openstack']['auth'] else None
 
                     except Exception as e:
-                        raise Exception("Error parsing/reading clouds.yaml (%s)." % clouds_yaml_file,e)
+                        raise Exception("Error parsing/reading clouds.yaml (%s)." % clouds_yaml_file, e)
 
             else:
                 environ = os.environ
@@ -314,7 +316,7 @@ class KeyStone:
                           'email': str(email),
                           'deleted': False}
 
-        self.logger.info("Create user [%s,%s,%s].",denbi_user['elixir_id'],denbi_user['perun_id'],denbi_user['id'])
+        self.logger.info("Create user [%s,%s,%s].", denbi_user['elixir_id'], denbi_user['perun_id'], denbi_user['id'])
 
         self.__user_id2perun_id__[denbi_user['id']] = denbi_user['perun_id']
         self.denbi_user_map[denbi_user['perun_id']] = denbi_user
@@ -347,7 +349,7 @@ class KeyStone:
             if not self.ro:
                 self.keystone.users.delete(denbi_user['id'])
 
-            self.logger.info("Terminate user [%s,%s,%s]",denbi_user['elixir_id'],denbi_user['perun_id'],denbi_user['id'])
+            self.logger.info("Terminate user [%s,%s,%s]", denbi_user['elixir_id'], denbi_user['perun_id'], denbi_user['id'])
 
             # remove entry from map
             del(self.denbi_user_map[perun_id])
@@ -390,7 +392,7 @@ class KeyStone:
 
             self.denbi_user_map[denbi_user['perun_id']] = denbi_user
 
-            self.logger.info("Update user [%s,%s,%s] as deleted = %s",denbi_user['elixir_id'],denbi_user['perun_id'],denbi_user['id'],str(deleted))
+            self.logger.info("Update user [%s,%s,%s] as deleted = %s", denbi_user['elixir_id'], denbi_user['perun_id'], denbi_user['id'], str(deleted))
 
             return denbi_user
         else:
@@ -470,7 +472,7 @@ class KeyStone:
                              'scratched': False,
                              'members': []}
 
-        self.logger.info("Create project [%s,%s].",denbi_project['perun_id'],denbi_project['id'])
+        self.logger.info("Create project [%s,%s].", denbi_project['perun_id'], denbi_project['id'])
 
         self.denbi_project_map[denbi_project['perun_id']] = denbi_project
         self.__project_id2perun_id__[denbi_project['id']] = denbi_project['perun_id']
@@ -523,8 +525,7 @@ class KeyStone:
             project['enabled'] = bool(enabled)
             project['scratched'] = bool(scratched)
 
-            self.logger.info("Update project [%s,%s].",project['perun_id'],project['id'])
-
+            self.logger.info("Update project [%s,%s].", project['perun_id'], project['id'])
 
         # update memberslist
         if members:
@@ -553,7 +554,6 @@ class KeyStone:
         """
         self.projects_update(perun_id, scratched=True)
 
-
     def projects_terminate(self, perun_id):
         """
         Terminate a tagged as deleted project. Raise an exception (ValueError) of invalid perun_id and termination
@@ -573,7 +573,7 @@ class KeyStone:
                 if not self.ro:
                     self.keystone.projects.delete(denbi_project['id'])
 
-                self.logger.info("Terminate project [%s,%s].",denbi_project['perun_id'],denbi_project['id'])
+                self.logger.info("Terminate project [%s,%s].", denbi_project['perun_id'], denbi_project['id'])
 
                 # delete project from project map
                 del(self.denbi_project_map[denbi_project['perun_id']])
@@ -648,7 +648,7 @@ class KeyStone:
 
         self.denbi_project_map[project_id]['members'].append(user_id)
 
-        self.logger.info("Append user %s to project %s.",user_id,project_id)
+        self.logger.info("Append user %s to project %s.", user_id, project_id)
 
     def projects_remove_user(self, project_id, user_id):
         """
@@ -678,7 +678,7 @@ class KeyStone:
 
         self.denbi_project_map[project_id]['members'].remove(user_id)
 
-        self.logger.info("Remove user %s from project %s.",user_id,project_id)
+        self.logger.info("Remove user %s from project %s.", user_id, project_id)
 
     def projects_memberlist(self, perun_id):
         """

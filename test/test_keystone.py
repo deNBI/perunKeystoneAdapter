@@ -19,6 +19,7 @@ from denbi.perun.keystone import KeyStone
 
 logging.basicConfig(level=logging.INFO)
 
+
 class TestKeystone(unittest.TestCase):
     """Unit test for class Keystone.
 
