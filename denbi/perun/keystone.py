@@ -1,12 +1,25 @@
-import os
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
 
+import os
+import itertools
+import logging
+import yaml
+
+from denbi.perun.quotas import manager as quotas
 from keystoneauth1.identity import v3
 from keystoneauth1 import session
 from keystoneclient.v3 import client
-from keystoneauth1.exceptions import Forbidden
-from keystoneauth1.exceptions import NotFound
 from keystoneauth1.exceptions import Unauthorized
-import logging
 
 
 class KeyStone:
@@ -21,18 +34,20 @@ class KeyStone:
     denbi_project = ``{id: string, perun_id: string, enabled: boolean, members: [denbi_user]}``
     """
 
-    def __init__(self, environ=None, default_role="_member",
+    def __init__(self, environ=None, default_role="_member_",
                  create_default_role=False, flag="perun_propagation",
-                 support_quotas=True, target_domain_name=None, read_only=False,
-                 logging_domain='denbi'):
+                 target_domain_name=None, read_only=False,
+                 logging_domain='denbi', nested=False, cloud_admin=True):
         """
-        Create a new Openstack Keystone session using the system environment.
+        Create a new Openstack Keystone session reading clouds.yml in ~/.config/clouds.yaml
+        or /etc/openstack or using the system environment.
         The following variables are considered:
         - OS_AUTH_URL
         - OS_USERNAME
         - OS_PASSWORD
         - OS_PROJECT_NAME
         - OS_USER_DOMAIN_NAME
+        - OS_DOMAIN_NAME        (for domain scoped access)
 
         Instead of the system variables a "local" enviroment (a dict) can be explicitly set
 
@@ -40,59 +55,92 @@ class KeyStone:
         :param default_role: default role used for all users (default is "_member_")
         :param create_default_role: create a default role if it not exists (default is False)
         :param flag: value used to mark users/projects (default is perun_propagation)
-        :param support_quotas: support project quotas  (needs a complete openstack setup)
         :param target_domain_name: domain where all users & projects are created, will be created if it not exists
         :param read_only: do not make any changes to the keystone
+        :param nested: use nested projects instead of cloud/domain admin accesss
+        :param cloud_admin: credentials are cloud admin credentials
 
         """
         self.ro = read_only
+        self.nested = nested
         self.logger = logging.getLogger(logging_domain)
 
-        if environ is None:  # use os enviroment settings if no explicit environ is given
-            auth = self._create_auth(os.environ)
+        if cloud_admin:
+            # working as cloud admin requires setting a target domain
+            if target_domain_name is None:
+                raise Exception("You need to set a target domain if working with cloud admin credentials.")
+            # with cloud admin credentials we do not need multiple sessions
+            auth = self._create_auth(environ, False)
+            project_session = session.Session(auth=auth)
+
+            # create session
+            self._project_keystone = client.Client(session=project_session)
+            self._domain_keystone = self._project_keystone
+
+            try:
+                self.target_domain_id = self._project_keystone.domains.list(name=target_domain_name)[0].id
+            except IndexError:
+                raise Exception("Unknown domain {}".format(target_domain_name))
 
         else:
-            auth = self._create_auth(environ)
+            # use two separate sessions for domain and project access
+            domain_auth = self._create_auth(environ, True)
+            project_auth = self._create_auth(environ, False)
+            domain_session = session.Session(auth=domain_auth)
+            project_session = session.Session(auth=project_auth)
 
-        sess = session.Session(auth=auth)
-        self.keystone = client.Client(session=sess)
+            # we have both session, now check the credentials
+            # by authenticating to keystone. we also need the AccessInfo
+            # instances to retrieve project and domain ids for later
 
-        self.target_domain_name = str(target_domain_name)
-
-        # If target_domain_name not set
-        if not(self.target_domain_name):
-            self.target_domain_name = str(self.domain_name)
-
-        try:
-            self.target_domain_id = str(self.keystone.domains.list(name=self.target_domain_name)[0].id)
-        except Unauthorized:
-            raise Exception("Authorization failed, wrong credentials?")
-        except IndexError:
-            # target_domain_name does not exist
-            if not self.ro:
-                self.target_domain_id = str(self.keystone.domains.create(name=self.target_domain_name, description="Created by perun_endpoint ...").id)
-        except Forbidden:
-            # authenticated user is not allowed to list domains
-            # try to get the domain using the given value as domain id (which
-            # which does not require a domain listing)
             try:
-                domain = self.keystone.domains.get(self.target_domain_name)
-
-                if domain is not None:
-                    # use the name as id
-                    self.target_domain_id = self.target_domain_name
+                domain_access = domain_auth.get_access(domain_session)
+            except Unauthorized:
+                raise Exception("Authorization for domain session failed, wrong credentials / role?")
+            try:
+                if domain_session is not project_session:
+                    project_access = project_auth.get_access(project_session)
                 else:
-                    raise Exception("'%s' is neither a valid domain name or a valid domain id" % self.target_domain_name)
-            except Forbidden:
-                raise Exception("Unable to list domains while searching for domain '%s'" % self.target_domain_name)
-            except NotFound:
-                raise Exception("Unable to list domains or '%s' is neither a valid domain name or a valid domain id" % self.target_domain_name)
+                    project_access = domain_access
+            except Unauthorized:
+                raise Exception("Authorization for project session failed, wrong credentials / role?")
 
-        self.logger.debug("Working on domain %s", self.target_domain_id)
+            # store both session for later use
+            self._domain_keystone = client.Client(session=domain_session)
+            self._project_keystone = client.Client(session=project_session)
+
+            # override the domain name if necessary
+            # we need to check that a correct value is given if a different
+            # domain is used
+            # TODO: the check might need to be improved if we need to differentiate
+            #       between domain name syntax and uuid syntax
+            if (target_domain_name
+               and target_domain_name != domain_access.domain_name
+               and target_domain_name != domain_access.domain_id):
+                # valide the different domain name
+                # the credentials should be cloud admin credentials in this case
+                self.target_domain_id = self._resolve_domain(target_domain_name)
+            else:
+                if target_domain_name:
+                    self.logger.debug("Overridden domain name is same as project domain, ignoring value.")
+
+                # use project domain
+                self.target_domain_id = domain_access.domain_id
+
+            self.logger.debug("Working on domain %s", self.target_domain_id)
+
+            if nested:
+                self.parent_project_id = project_access.project_id
+                self.logger.debug("Using nested project %s (id %s)",
+                                  project_access.project_name,
+                                  self.parent_project_id)
+            else:
+                self.parent_project_id = None
+
         # Check if role exists ...
         self.default_role = str(default_role)
         self.default_role_id = None
-        for role in self.keystone.roles.list():
+        for role in self.domain_keystone.roles.list():
             if str(role.name) == self.default_role:
                 self.default_role_id = str(role.id)
                 break
@@ -101,7 +149,7 @@ class KeyStone:
         if not(self.default_role_id):
             if create_default_role:
                 if not self.ro:
-                    role = self.keystone.roles.create(self.default_role)
+                    role = self.domain_keystone.roles.create(self.default_role)
                     self.default_role_id = str(role.id)
                     self.logger.debug('Created default role %s (id %s)', role.name, role.id)
                 else:
@@ -114,35 +162,94 @@ class KeyStone:
 
         self.flag = flag
 
-        self.support_quotas = support_quotas
-
         # initialize user and project map
         self.denbi_user_map = {}
         self.__user_id2perun_id__ = {}
         self.denbi_project_map = {}
         self.__project_id2perun_id__ = {}
 
-    def _create_auth(self, environ):
+        # initialize the quota factory
+        self._quota_factory = quotas.QuotaFactory(project_session)
+
+    @property
+    def domain_keystone(self):
+        return self._domain_keystone
+
+    @property
+    def project_keystone(self):
+        return self._project_keystone
+
+    @property
+    def keystone(self, want_domain=True):
+        if want_domain:
+            return self.domain_keystone
+        else:
+            return self.project_keystone
+
+    @property
+    def quota_factory(self):
+        return self._quota_factory
+
+    def _create_auth(self, environ, auth_at_domain=False):
         """
         Helper method to create the auth object for keystone, depending on the
-        given environment.
+        given environment (Explicite environment, clouds.yaml or os environment
+        are supported.
 
         This method supports authentication via project scoped tokens for
         project and cloud admins, and domain scoped tokens for domain admins.
+        The auth_at_domain flag indicates which kind of authentication is
+        requested.
 
         In case of project scoped tokens, the user domain name is also used
         for the project if no separate project domain name is given.
 
         :param environ: dicts to take auth information from
+        :param auth_at_domain: create domain scoped token
 
-        :return: the auth object to be used for contacting keystone
+        :returns: the auth object to be used for contacting keystone
         """
 
-        # in case of a domain scoped tokes, we do not pass project information
-        # to the password constructor. in case of project scoped tokens,
-        # we need to pass the project name and project domain name:
+        # default to shell environment if no specific one was given
+        if environ is None:
+            clouds_yaml_file = None
+            clouds_yaml_file = None
+            if os.path.isfile('{}/.config/clouds.yaml'.format(os.environ['HOME'])):
+                clouds_yaml_file = '{}/.config/clouds.yaml'.format(os.environ['HOME'])
+            elif os.path.isfile('/etc/openstack/clouds.yaml'):
+                clouds_yaml_file = '/etc/openstack/clouds.yaml'
 
-        if 'OS_PROJECT_NAME' in environ:
+            if clouds_yaml_file:
+                with (open('{}/.config/clouds.yaml'.format(os.environ['HOME']))) as stream:
+                    try:
+                        clouds_yaml = yaml.load(stream)
+                        environ = {}
+                        environ['OS_AUTH_URL'] = clouds_yaml['clouds']['openstack']['auth']['auth_url']
+                        environ['OS_USERNAME'] = clouds_yaml['clouds']['openstack']['auth']['username']
+                        environ['OS_PASSWORD'] = clouds_yaml['clouds']['openstack']['auth']['password']
+
+                        environ['OS_PROJECT_NAME'] = clouds_yaml['clouds']['openstack']['auth']['project_name']
+                        environ['OS_USER_DOMAIN_NAME'] = clouds_yaml['clouds']['openstack']['auth']['user_domain_name']
+
+                        # cloud admin
+                        environ['OS_PROJECT_DOMAIN_NAME'] = clouds_yaml['clouds']['openstack']['auth']['project_domain_name'] if 'project_domain_name' in clouds_yaml['clouds']['openstack']['auth'] else clouds_yaml['clouds']['openstack']['auth']['user_domain_name']
+                        # domain admin
+                        environ['OS_DOMAIN_NAME'] = clouds_yaml['clouds']['openstack']['auth']['domain_name'] if 'domain_name' in clouds_yaml['clouds']['openstack']['auth'] else None
+
+                    except Exception as e:
+                        raise Exception("Error parsing/reading clouds.yaml (%s)." % clouds_yaml_file, e)
+
+            else:
+                environ = os.environ
+        if auth_at_domain:
+            # create a domain scoped token
+            auth = v3.Password(auth_url=environ['OS_AUTH_URL'],
+                               username=environ['OS_USERNAME'],
+                               password=environ['OS_PASSWORD'],
+                               domain_name=environ['OS_DOMAIN_NAME'],
+                               user_domain_name=environ['OS_USER_DOMAIN_NAME'])
+        else:
+            # create a project scoped token
             project_domain_name = environ['OS_PROJECT_DOMAIN_NAME'] if 'OS_PROJECT_DOMAIN_NAME' in environ else environ['OS_USER_DOMAIN_NAME']
             auth = v3.Password(auth_url=environ['OS_AUTH_URL'],
                                username=environ['OS_USERNAME'],
@@ -150,17 +257,26 @@ class KeyStone:
                                project_name=environ['OS_PROJECT_NAME'],
                                user_domain_name=environ['OS_USER_DOMAIN_NAME'],
                                project_domain_name=project_domain_name)
-            self.domain_name = environ['OS_PROJECT_DOMAIN_NAME']
-        elif 'OS_DOMAIN_NAME' in environ:
-            auth = v3.Password(auth_url=environ['OS_AUTH_URL'],
-                               username=environ['OS_USERNAME'],
-                               password=environ['OS_PASSWORD'],
-                               domain_name=environ['OS_DOMAIN_NAME'],
-                               user_domain_name=environ['OS_USER_DOMAIN_NAME'])
-            self.domain_name = environ['OS_DOMAIN_NAME']
-        else:
-            raise Exception("Neither project nor domain name given")
         return auth
+
+    def _resolve_domain(self, target_domain):
+        """
+        Helper method to check whether the given domain is accessible and
+        to return the ID of that domain
+
+        :param target_domain: name or id of the domain to check
+
+        :returns: the keystone id of the given domain if the domain
+                  is accessible
+        """
+        # start by enumerating all domains the current sessions have access to
+        for domain in itertools.chain(self.domain_keystone.auth.domains(),
+                                      self.project_keystone.auth.domains()):
+            # compare domain to target and return id on match
+            if (domain.id == target_domain or domain.name == target_domain):
+                return domain.id
+        # no matching domain found....
+        raise Exception("Unknown or inaccessible domain %s" % target_domain)
 
     def users_create(self, elixir_id, perun_id, email=None, enabled=True):
         """
@@ -200,6 +316,8 @@ class KeyStone:
                           'email': str(email),
                           'deleted': False}
 
+        self.logger.info("Create user [%s,%s,%s].", denbi_user['elixir_id'], denbi_user['perun_id'], denbi_user['id'])
+
         self.__user_id2perun_id__[denbi_user['id']] = denbi_user['perun_id']
         self.denbi_user_map[denbi_user['perun_id']] = denbi_user
 
@@ -230,6 +348,9 @@ class KeyStone:
             # delete user
             if not self.ro:
                 self.keystone.users.delete(denbi_user['id'])
+
+            self.logger.info("Terminate user [%s,%s,%s]", denbi_user['elixir_id'], denbi_user['perun_id'], denbi_user['id'])
+
             # remove entry from map
             del(self.denbi_user_map[perun_id])
         else:
@@ -271,6 +392,8 @@ class KeyStone:
 
             self.denbi_user_map[denbi_user['perun_id']] = denbi_user
 
+            self.logger.info("Update user [%s,%s,%s] as deleted = %s", denbi_user['elixir_id'], denbi_user['perun_id'], denbi_user['id'], str(deleted))
+
             return denbi_user
         else:
             raise ValueError('User with perun_id %s not found in user_map' % perun_id)
@@ -294,7 +417,6 @@ class KeyStone:
                               'perun_id': str(os_user.perun_id),  # str
                               'elixir_id': str(os_user.name),  # str
                               'enabled': bool(os_user.enabled),  # boolean
-                              # TODO(hxr): prod did not have os_user.deleted, why?
                               'deleted': bool(getattr(os_user, 'deleted', False))}  # boolean
                 # check for optional attribute email
                 if hasattr(os_user, 'email'):
@@ -332,7 +454,8 @@ class KeyStone:
                                                        description=description,
                                                        enabled=bool(enabled),
                                                        scratched=False,
-                                                       flag=self.flag)
+                                                       flag=self.flag,
+                                                       parent=self.parent_project_id if self.nested else None)
             denbi_project = {'id': str(os_project.id),
                              'name': str(os_project.name),
                              'perun_id': str(os_project.perun_id),
@@ -349,6 +472,8 @@ class KeyStone:
                              'scratched': False,
                              'members': []}
 
+        self.logger.info("Create project [%s,%s].", denbi_project['perun_id'], denbi_project['id'])
+
         self.denbi_project_map[denbi_project['perun_id']] = denbi_project
         self.__project_id2perun_id__[denbi_project['id']] = denbi_project['perun_id']
 
@@ -359,30 +484,8 @@ class KeyStone:
 
         return denbi_project
 
-    def project_quota(self,
-                      perun_id,
-                      number_of_vms=None,
-                      disk_space=None,
-                      special_purpose_hardware=None,
-                      ram_per_vm=None,
-                      object_storage=None):
-        """
-        Set/Update quota for project
-
-        :param number_of_vms:
-        :param disk_space: in GB
-        :param special_purpose_hardware: supported values GPU, FPGA
-        :param ram_per_vm: in GB
-        :param object_storage: in GB
-
-        :return:
-        """
-        perun_id = str(perun_id)
-        if self.support_quotas:
-            # project = self.denbi_project_map[perun_id]
-            raise NotImplementedError
-
-    def projects_update(self, perun_id, members=None, name=None, description=None, enabled=None, scratched=False):
+    def projects_update(self, perun_id, members=None, name=None,
+                        description=None, enabled=None, scratched=False):
         """
         Update  a project
 
@@ -401,7 +504,6 @@ class KeyStone:
 
         project = self.denbi_project_map[perun_id]
 
-        # TODO(hxr): removed enabled is none due to update having blank enabled
         if (name is not None or description is not None or enabled is not None or project['scratched'] != scratched):
             if name is None:
                 name = project['name']
@@ -422,6 +524,8 @@ class KeyStone:
             project['description'] = description
             project['enabled'] = bool(enabled)
             project['scratched'] = bool(scratched)
+
+            self.logger.info("Update project [%s,%s].", project['perun_id'], project['id'])
 
         # update memberslist
         if members:
@@ -449,9 +553,6 @@ class KeyStone:
         :return:
         """
         self.projects_update(perun_id, scratched=True)
-        # TODO(hxr): implement real-delete mode?
-        # project = self.denbi_project_map[perun_id]
-        # print('deleting', project['id'])
 
     def projects_terminate(self, perun_id):
         """
@@ -471,8 +572,12 @@ class KeyStone:
                 # delete project by id in keystone database
                 if not self.ro:
                     self.keystone.projects.delete(denbi_project['id'])
+
+                self.logger.info("Terminate project [%s,%s].", denbi_project['perun_id'], denbi_project['id'])
+
                 # delete project from project map
                 del(self.denbi_project_map[denbi_project['perun_id']])
+
             else:
                 raise ValueError('Project with perun_id %s must be tagged as deleted before terminate!' % perun_id)
         else:
@@ -498,8 +603,7 @@ class KeyStone:
                     'description': os_project.description,  #
                     'enabled': bool(os_project.enabled),  # bool
                     'scratched': bool(os_project.scratched),  # bool
-                    'members': [],
-                    'quotas': {}
+                    'members': []
                 }
                 # create entry in maps
                 self.__project_id2perun_id__[denbi_project['id']] = denbi_project['perun_id']
@@ -513,10 +617,6 @@ class KeyStone:
                     if role.user['id'] in self.__user_id2perun_id__:
                         self.logger.debug('Found user %s as member in project %s', role.user['id'], os_project.name)
                         denbi_project['members'].append(self.__user_id2perun_id__[role.user['id']])
-
-        # Check for project specific quota
-        if self.support_quotas:
-            raise NotImplementedError
 
         return self.denbi_project_map
 
@@ -548,6 +648,8 @@ class KeyStone:
 
         self.denbi_project_map[project_id]['members'].append(user_id)
 
+        self.logger.info("Append user %s to project %s.", user_id, project_id)
+
     def projects_remove_user(self, project_id, user_id):
         """
         Remove an user from a project (revoke default_role from user/project)
@@ -575,6 +677,8 @@ class KeyStone:
             self.keystone.roles.revoke(role=self.default_role_id, user=uid, project=pid)
 
         self.denbi_project_map[project_id]['members'].remove(user_id)
+
+        self.logger.info("Remove user %s from project %s.", user_id, project_id)
 
     def projects_memberlist(self, perun_id):
         """

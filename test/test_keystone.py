@@ -1,41 +1,48 @@
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+
+
+import logging
 import unittest
 import uuid
-import logging  # NOQA
 
 from denbi.perun.keystone import KeyStone
 
-# If you want detailed logs of what is going on, uncomment this.
-# logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO)
 
 
 class TestKeystone(unittest.TestCase):
-    """
-        Unit test for class Keystone
+    """Unit test for class Keystone.
 
-        Attention: The unit test does currently not support project quotas test.
-        The used monasca/keystone container for test  purposes has only support
-        for keystone, but not for nova (compute resources), neutron (network resources)
-        or  glance (image resources)
-
+    You need a full functional Openstack setup to make the test run properly.
     """
 
     def setUp(self):
-        environ = {'OS_AUTH_URL': 'http://localhost:5000/v3/',
-                   'OS_PROJECT_NAME': 'admin',
-                   'OS_USER_DOMAIN_NAME': 'Default',
-                   'OS_USERNAME': 'admin',
-                   'OS_PASSWORD': 's3cr3t'}
+        """Setup test environment.
 
-        self.ks = KeyStone(environ, default_role="user", create_default_role=True, support_quotas=False, target_domain_name='elixir')
+        Lets keystone search for clouds.yml in ~/.config/openstack or /etc/openstack.
+        See https://docs.openstack.org/python-openstackclient/pike/configuration/index.html for a description.
+        """
+
+        self.ks = KeyStone(environ=None, default_role="user", create_default_role=True, target_domain_name='elixir', cloud_admin=True)
 
     def __uuid(self):
         return str(uuid.uuid4())
 
     def test_user_create_list_delete(self):
-        '''
-        Test the methods users_create users_list and users_delete from KeyStone object.
+        """Test the methods users_create users_list and users_delete from KeyStone object.
+
         :return:
-        '''
+        """
 
         print("Run 'test_user_create_list_delete'")
 
@@ -73,10 +80,10 @@ class TestKeystone(unittest.TestCase):
         self.assertFalse(perunid in denbi_user_map, "User with PerunId does exists.")
 
     def test_project_create_list_delete(self):
-        '''
-        Test the methods project_create, project_list and project_delete from KeyStone object.
+        """Test the methods project_create, project_list and project_delete from KeyStone object.
+
         :return:
-        '''
+        """
 
         print("Run 'test_project_create_list_delete'")
 
@@ -111,14 +118,103 @@ class TestKeystone(unittest.TestCase):
         denbi_project_map = self.ks.projects_map()
         self.assertFalse(perunid in denbi_project_map, "Project with PerunId '" + perunid + "' does exists.")
 
-    def test_all(self):
-        '''
-        Test a typically scenario, create two project (a, b), create two users (a, b, c), users ab are members of project a,
-        and users abc are members of project b. Check the projects memberlist and clean up everything.
+    def test_project_set_and_get_quotas(self):
+        """Test project_set and get_quotas.
+        - setting project quotas using the method project_quota
+        - get results to compare quotas with method projects_map from KeyStone object
 
         :return:
-        '''
+        """
 
+        print("Run 'test_project_quota'")
+
+        denbi_project = self.ks.projects_create(self.__uuid())
+
+        # get quota_factory
+        quota_mgr = self.ks.quota_factory.get_manager(denbi_project['id'])
+
+        # set (non-deprecated) NOVA quotas
+        quota_mgr.set_value('cores', 111)
+        self.assertEqual(111, quota_mgr.get_current_quota('cores'))
+
+        quota_mgr.set_value('instances', 33)
+        self.assertEqual(33, quota_mgr.get_current_quota('instances'))
+
+        quota_mgr.set_value('key_pairs', 34)
+        self.assertEqual(34, quota_mgr.get_current_quota('key_pairs'))
+
+        quota_mgr.set_value('metadata_items', 35)
+        self.assertEqual(35, quota_mgr.get_current_quota('metadata_items'))
+
+        quota_mgr.set_value('ram', 200000)
+        self.assertEqual(200000, quota_mgr.get_current_quota('ram'))
+
+        # set (non-deprecated) CINDER quotas
+        quota_mgr.set_value('volumes', 36)
+        self.assertEqual(36, quota_mgr.get_current_quota('volumes'))
+
+        quota_mgr.set_value('snapshots', 37)
+        self.assertEqual(37, quota_mgr.get_current_quota('snapshots'))
+
+        quota_mgr.set_value('backups', 38)
+        self.assertEqual(38, quota_mgr.get_current_quota('backups'))
+
+        quota_mgr.set_value('groups', 39)
+        self.assertEqual(39, quota_mgr.get_current_quota('groups'))
+
+        quota_mgr.set_value('per_volume_gigabytes', 40)
+        self.assertEqual(40, quota_mgr.get_current_quota('per_volume_gigabytes'))
+
+        quota_mgr.set_value('gigabytes', 41)
+        self.assertEqual(41, quota_mgr.get_current_quota('gigabytes'))
+
+        quota_mgr.set_value('backup_gigabytes', 42)
+        self.assertEqual(42, quota_mgr.get_current_quota('backup_gigabytes'))
+
+        # set (non-deprecated) neutron quotas
+        quota_mgr.set_value('floatingip', 43)
+        self.assertEqual(43, quota_mgr.get_current_quota('floatingip'))
+
+        quota_mgr.set_value('rbac_policy', 44)
+        self.assertEqual(44, quota_mgr.get_current_quota('rbac_policy'))
+
+        quota_mgr.set_value('subnet', 45)
+        self.assertEqual(45, quota_mgr.get_current_quota('subnet'))
+
+        quota_mgr.set_value('subnetpool', 46)
+        self.assertEqual(46, quota_mgr.get_current_quota('subnetpool'))
+
+        quota_mgr.set_value('security_group_rule', 47)
+        self.assertEqual(47, quota_mgr.get_current_quota('security_group_rule'))
+
+        quota_mgr.set_value('security_group', 48)
+        self.assertEqual(48, quota_mgr.get_current_quota('security_group'))
+
+        quota_mgr.set_value('port', 49)
+        self.assertEqual(49, quota_mgr.get_current_quota('port'))
+
+        quota_mgr.set_value('router', 50)
+        self.assertEqual(50, quota_mgr.get_current_quota('router'))
+
+        quota_mgr.set_value('network', 51)
+        self.assertEqual(51, quota_mgr.get_current_quota('network'))
+
+        # tag previous created project as deleted
+        self.ks.projects_delete(denbi_project['perun_id'])
+
+        # terminate previous marked project
+        self.ks.projects_terminate(denbi_project['perun_id'])
+
+    def test_all(self):
+        """Test a typically scenario.
+        - create two project (a, b)
+        - create two users (a, b, c)
+          - users (a,b) are members of project a
+          - users abc are members of project b.
+        - check the projects memberlist and clean up everything.
+
+        :return:
+        """
         print("Run 'test_all'")
 
         count_projects = len(self.ks.projects_map().keys())

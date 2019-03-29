@@ -1,33 +1,35 @@
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+
 import os
 import unittest
+import logging
 
 from denbi.perun.endpoint import Endpoint
 from denbi.perun.keystone import KeyStone
 
 TESTDIR = os.path.dirname(os.path.realpath(__file__))
 
+logging.basicConfig(level=logging.INFO)
+
 
 class TestEndpoint(unittest.TestCase):
-    """
-    Unit test for class endpoint.
+    """Unit test for class endpoint.
 
-    Perquisites : Running monasca/keystone with default credentials for admin user.
-
-    Start the container:
-    $ docker run -d -p 5000:5000 -p 35357:35357 monasca/keystone
-
-    see test/keystone/README.md for a more detailed documentation
-
+    You need a full functional Openstack setup to make the test run properly.
     """
 
     def setUp(self):
-        environ = {'OS_AUTH_URL': 'http://localhost:5000/v3/',
-                   'OS_PROJECT_NAME': 'admin',
-                   'OS_USER_DOMAIN_NAME': 'Default',
-                   'OS_USERNAME': 'admin',
-                   'OS_PASSWORD': 's3cr3t'}
-
-        self.keystone = KeyStone(environ, default_role="user", create_default_role=True, support_quotas=False, target_domain_name='elixir')
+        self.keystone = KeyStone(environ=None, default_role="user", create_default_role=True, target_domain_name='elixir', cloud_admin=True)
 
     def _test_user(self, denbiuser, perun_id, elixir_id, email, enabled, deleted=False):
         self.assertEqual(denbiuser['perun_id'], perun_id)
@@ -129,7 +131,7 @@ class TestEndpoint(unittest.TestCase):
 
     def test_import_denbi_portal_compute_center(self):
         # initialize endpoint  with 'scim' mode
-        self.endpoint = Endpoint(keystone=self.keystone, mode="denbi_portal_compute_center", support_quotas=False)
+        self.endpoint = Endpoint(keystone=self.keystone, mode="denbi_portal_compute_center", support_quotas=True)
 
         # import 1st test data set
         self.endpoint.import_data(os.path.join(TESTDIR, 'resources', 'denbi_portal_compute_center', 'users.scim'),
