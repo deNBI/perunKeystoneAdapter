@@ -42,7 +42,7 @@ class Endpoint(object):
     # - a factor factorize the de.NBI quota value (1 - no factorize - in most cases)
     # - some de.NBI quotas are deprecated, but may still be in use in older projects
     DENBI_OPENSTACK_QUOTA_MAPPING = {  # denbiProjectDiskSpace is the old. deprecated name
-        'denbiProjectDiskSpace': {'name': 'gigabytes', 'factor': 1},
+        'denbiProjectDiskSpace': None,
         'denbiProjectVolumeLimit': {'name': 'gigabytes', 'factor': 1},
 
         # this is a deprecated setting without a real
@@ -57,11 +57,11 @@ class Endpoint(object):
         'denbiProjectNumberOfVms': {'name': 'instances', 'factor': 1},
         'denbiRAMLimit': {'name': 'ram', 'factor': 1024},
         # old and new quota for vCPUs
-        'denbiProjectNumberOfCpus': {'name': 'cores', 'factor': 1},
+        'denbiProjectNumberOfCpus': None,
         'denbiCoresLimit': {'name': 'cores', 'factor': 1},
 
-        # assume that all sites are using neutron....
-        'denbiNrOfFloatingIPs': {'name': 'floatingip', 'factor': 1},
+        # assume that all sites are using neutron...  not used by the portal
+        'denbiNrOfFloatingIPs': None,
 
         # these were present in the first quota code,
         # but aren't registered with perun or set by the
@@ -70,7 +70,8 @@ class Endpoint(object):
         # 'denbiProjectNumberOfSubnets': { 'name' : 'subnet', 'factor' : 1 },
         # 'denbiProjectNumberOfRouter': { 'name' : 'router', 'factor' : 1024 },
 
-        'denbiProjectNumberOfSnapshots': {'name': 'snapshots', 'factor': 1},
+        # Not used by the portal ...
+        'denbiProjectNumberOfSnapshots': None,
         'denbiProjectVolumeCounter': {'name': 'volumes', 'factor': 1}}
 
     def __init__(self, keystone=None, mode="scim", store_email=True,
@@ -319,7 +320,7 @@ class Endpoint(object):
                 os_quota = self.DENBI_OPENSTACK_QUOTA_MAPPING[denbi_quota_name]
                 # if factor is None ignore it
                 if os_quota is None:
-                    self.logging.info("Skipping quota %s for project [%s,%s], not supported yet", denbi_quota_name, project['perun_id'], project['id'])
+                    self.logging.debug("Skipping quota %s for project [%s,%s], not supported yet", denbi_quota_name, project['perun_id'], project['id'])
                 else:
 
                     try:
@@ -339,7 +340,7 @@ class Endpoint(object):
                                                       denbi_quota_name, project['perun_id'], project['id'], current, value)
                                     manager.set_value(os_quota['name'], value)
                         else:
-                            self.logging.warn("Project [%s,%s] : Unable to set quota %s to %s, would exceed currently used resources",
+                            self.logging.warning("Project [%s,%s] : Unable to set quota %s to %s, would exceed currently used resources",
                                               project['perun_id'], project['id'], denbi_quota_name, value)
                     except ValueError as error:
                         self.logging.error("Project [%s,%s] : Unable to check/set quota %s: %s", project['perun_id'], project['id'], denbi_quota_name, str(error))

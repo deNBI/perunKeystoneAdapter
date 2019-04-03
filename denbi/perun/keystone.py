@@ -392,7 +392,7 @@ class KeyStone:
 
             self.denbi_user_map[denbi_user['perun_id']] = denbi_user
 
-            self.logger.info("Update user [%s,%s,%s] as deleted = %s", denbi_user['elixir_id'], denbi_user['perun_id'], denbi_user['id'], str(deleted))
+            self.logger.debug("Update user [%s,%s,%s] as deleted = %s", denbi_user['elixir_id'], denbi_user['perun_id'], denbi_user['id'], str(deleted))
 
             return denbi_user
         else:
