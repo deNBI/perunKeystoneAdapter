@@ -25,17 +25,17 @@ class QuotaComponentFactory:
     """
 
     @staticmethod
-    def get_component(client, project_id):
+    def get_component(client, project_id, logger_domain):
         """
         Return a quota management component for the given client to be
         used with the given project.
         """
         if isinstance(client, neutronClient.Client):
-            return NeutronQuotaComponent(client, project_id)
+            return NeutronQuotaComponent(client, project_id, logger_domain)
         elif isinstance(client, cinderClient.Client):
-            return CinderQuotaComponent(client, project_id)
+            return CinderQuotaComponent(client, project_id, logger_domain)
         elif isinstance(client, novaClient.Client):
-            return NovaQuotaComponent(client, project_id)
+            return NovaQuotaComponent(client, project_id, logger_domain)
         else:
             raise ValueError("Unsupport client " + str(client))
 
@@ -52,16 +52,16 @@ class QuotaComponent:
 
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self, client, project_id):
+    def __init__(self, client, project_id = None, logger_domain="denbi" ):
         """
         Initializes the quota component instance
 
         :param client: the openstack client to use, e.g. an instance of novaclient
-        :param name: name of the quota to manage
         :param project_id: project to query quotas for
+        :param logger_domain : domain where logs are logged (default is "denbi")
         """
 
-        self.logger = logging.getLogger('denbi')
+        self.log = logging.getLogger(logger_domain)
         self._client = client
         self._project_id = project_id
         self._quota_cache = None
@@ -137,7 +137,6 @@ class QuotaComponent:
 
         if value == -1:
             # -1 is unrestricted quota.
-            # TODO: do we want to support setting this?
             return True
 
         if value > current_quota:
@@ -150,7 +149,7 @@ class QuotaComponent:
 
         # we need to check whether the currently used resources
         # exceed the new value
-        self.logger.debug("Currently in use for quota %s: %d", name, self.get_in_use(name))
+        self.log.debug("Currently in use for quota %s: %d", name, self.get_in_use(name))
         return self.get_in_use(name) <= value
 
     def set_quota(self, name, value):
@@ -167,13 +166,13 @@ class QuotaComponent:
         """
         if value is None:
             return
-        self.logger.debug("Attempt to set quota value %s for quota %s in component %s",
-                          value, name, self._client)
+        self.log.debug("Attempt to set quota value %s for quota %s in component %s",
+                       value, name, self._client)
         if self.check_value(name, value):
             if self.get_value(name) != value:
                 self._set_new_quota(name, value)
-                self.logger.info("Set quota value %s for quota %s in component %s",
-                                 value, name, self._client)
+                self.log.info("Set quota value %s for quota %s in component %s",
+                              value, name, type(self._client))
                 self._quota_cache[name]['limit'] = value
         else:
             raise ValueError("New quota of %s for %s exceed currently used resource amount".format(value, name))

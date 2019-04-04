@@ -37,7 +37,7 @@ class QuotaFactory:
         self._cinder = cinderClient.Client(2, session=session, endpoint_type="public")
         self._neutron = neutronClient.Client(session=session, endpoint_type="public")
 
-    def get_manager(self, project_id):
+    def get_manager(self, project_id, logger_domain="denbi"):
         """
         Constructs a quota manager for the given projectself.
 
@@ -110,7 +110,7 @@ class QuotaManager:
 
                      'strange_denbi_quota': None}
 
-    def __init__(self, project_id, nova, cinder, neutron):
+    def __init__(self, project_id, nova, cinder, neutron, logger_domain="denbi"):
         """
         Initializes a quota manager for the given project
 
@@ -118,11 +118,12 @@ class QuotaManager:
         :param nova: nova client instance
         :param cinder: cinder client instance
         :param neutron: neutron client instance
+        :param logger_domain: default is "denbi"
 
         """
-        self._components = {self.NOVA: component.QuotaComponentFactory.get_component(nova, project_id),
-                            self.CINDER: component.QuotaComponentFactory.get_component(cinder, project_id),
-                            self.NEUTRON: component.QuotaComponentFactory.get_component(neutron, project_id)}
+        self._components = {self.NOVA: component.QuotaComponentFactory.get_component(nova, project_id, logger_domain),
+                            self.CINDER: component.QuotaComponentFactory.get_component(cinder, project_id, logger_domain),
+                            self.NEUTRON: component.QuotaComponentFactory.get_component(neutron, project_id, logger_domain)}
 
     def _map_to_component(self, name):
         if name in self.QUOTA_MAPPING:

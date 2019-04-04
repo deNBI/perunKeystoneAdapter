@@ -37,7 +37,7 @@ class KeyStone:
     def __init__(self, environ=None, default_role="_member_",
                  create_default_role=False, flag="perun_propagation",
                  target_domain_name=None, read_only=False,
-                 logging_domain='denbi', nested=False, cloud_admin=True):
+                 logging_domain='denbi', logging_domain_update='update', nested=False, cloud_admin=True):
         """
         Create a new Openstack Keystone session reading clouds.yml in ~/.config/clouds.yaml
         or /etc/openstack or using the system environment.
@@ -57,13 +57,16 @@ class KeyStone:
         :param flag: value used to mark users/projects (default is perun_propagation)
         :param target_domain_name: domain where all users & projects are created, will be created if it not exists
         :param read_only: do not make any changes to the keystone
+        :param logging_domain: domain where "standard" logs are logged (default is "denbi")
+        :param logging_domain_update: domain where "update" logs are logged (default is "update"), updates are logged in level debug
         :param nested: use nested projects instead of cloud/domain admin accesss
         :param cloud_admin: credentials are cloud admin credentials
 
         """
         self.ro = read_only
         self.nested = nested
-        self.logger = logging.getLogger(logging_domain)
+        self.log = logging.getLogger(logging_domain)
+        self.log2 = logging.getLogger(logging_domain_update)
 
         if cloud_admin:
             # working as cloud admin requires setting a target domain
@@ -122,18 +125,18 @@ class KeyStone:
                 self.target_domain_id = self._resolve_domain(target_domain_name)
             else:
                 if target_domain_name:
-                    self.logger.debug("Overridden domain name is same as project domain, ignoring value.")
+                    self.log.debug("Overridden domain name is same as project domain, ignoring value.")
 
                 # use project domain
                 self.target_domain_id = domain_access.domain_id
 
-            self.logger.debug("Working on domain %s", self.target_domain_id)
+            self.log.debug("Working on domain %s", self.target_domain_id)
 
             if nested:
                 self.parent_project_id = project_access.project_id
-                self.logger.debug("Using nested project %s (id %s)",
-                                  project_access.project_name,
-                                  self.parent_project_id)
+                self.log.debug("Using nested project %s (id %s)",
+                               project_access.project_name,
+                               self.parent_project_id)
             else:
                 self.parent_project_id = None
 
@@ -151,14 +154,14 @@ class KeyStone:
                 if not self.ro:
                     role = self.domain_keystone.roles.create(self.default_role)
                     self.default_role_id = str(role.id)
-                    self.logger.debug('Created default role %s (id %s)', role.name, role.id)
+                    self.log.debug('Created default role %s (id %s)', role.name, role.id)
                 else:
                     self.default_role_id = 'read-only'
-                    self.logger.debug('Read-only mode, not creating default role')
+                    self.log.debug('Read-only mode, not creating default role')
             else:
                 raise Exception("Default role %s does not exists and should not be created!" % default_role)
         else:
-            self.logger.debug('Using existing default role %s (id %s)', default_role, self.default_role_id)
+            self.log.debug('Using existing default role %s (id %s)', default_role, self.default_role_id)
 
         self.flag = flag
 
@@ -316,7 +319,8 @@ class KeyStone:
                           'email': str(email),
                           'deleted': False}
 
-        self.logger.info("Create user [%s,%s,%s].", denbi_user['elixir_id'], denbi_user['perun_id'], denbi_user['id'])
+        # Log keystone update
+        self.log2.debug("Create user [%s,%s,%s].", denbi_user['elixir_id'], denbi_user['perun_id'], denbi_user['id'])
 
         self.__user_id2perun_id__[denbi_user['id']] = denbi_user['perun_id']
         self.denbi_user_map[denbi_user['perun_id']] = denbi_user
@@ -349,7 +353,8 @@ class KeyStone:
             if not self.ro:
                 self.keystone.users.delete(denbi_user['id'])
 
-            self.logger.info("Terminate user [%s,%s,%s]", denbi_user['elixir_id'], denbi_user['perun_id'], denbi_user['id'])
+            # Log keystone update
+            self.log2.debug("Terminate user [%s,%s,%s]", denbi_user['elixir_id'], denbi_user['perun_id'], denbi_user['id'])
 
             # remove entry from map
             del(self.denbi_user_map[perun_id])
@@ -392,7 +397,8 @@ class KeyStone:
 
             self.denbi_user_map[denbi_user['perun_id']] = denbi_user
 
-            self.logger.debug("Update user [%s,%s,%s] as deleted = %s", denbi_user['elixir_id'], denbi_user['perun_id'], denbi_user['id'], str(deleted))
+            # Log Keystone update
+            self.log2.debug("Update user [%s,%s,%s] -> %s %s", denbi_user['elixir_id'], denbi_user['perun_id'], denbi_user['id'], "enabled" if denbi_user['enabled'] else "disabled", "and deleted" if denbi_user['deleted'] else "")
 
             return denbi_user
         else:
@@ -471,8 +477,8 @@ class KeyStone:
                              'enabled': enabled,
                              'scratched': False,
                              'members': []}
-
-        self.logger.info("Create project [%s,%s].", denbi_project['perun_id'], denbi_project['id'])
+        # Log keystone update
+        self.log2.debug("Create project [%s,%s].", denbi_project['perun_id'], denbi_project['id'])
 
         self.denbi_project_map[denbi_project['perun_id']] = denbi_project
         self.__project_id2perun_id__[denbi_project['id']] = denbi_project['perun_id']
@@ -525,7 +531,8 @@ class KeyStone:
             project['enabled'] = bool(enabled)
             project['scratched'] = bool(scratched)
 
-            self.logger.info("Update project [%s,%s].", project['perun_id'], project['id'])
+            # log keystone update
+            self.log2.debug("Update project [%s,%s] -> %s %s", project['perun_id'], project['id'], "enabled" if project['enabled'] else "disabled", "and scratched" if project['scratched'] else "")
 
         # update memberslist
         if members:
@@ -573,7 +580,8 @@ class KeyStone:
                 if not self.ro:
                     self.keystone.projects.delete(denbi_project['id'])
 
-                self.logger.info("Terminate project [%s,%s].", denbi_project['perun_id'], denbi_project['id'])
+                # Log keystone update
+                self.log2.info("Terminate project [%s,%s].", denbi_project['perun_id'], denbi_project['id'])
 
                 # delete project from project map
                 del(self.denbi_project_map[denbi_project['perun_id']])
@@ -594,8 +602,8 @@ class KeyStone:
 
         for os_project in self.keystone.projects.list(domain=self.target_domain_id):
             if hasattr(os_project, 'flag') and os_project.flag == self.flag:
-                self.logger.debug('Found denbi associated project %s (id %s)',
-                                  os_project.name, os_project.id)
+                self.log.debug('Found denbi associated project %s (id %s)',
+                               os_project.name, os_project.id)
                 denbi_project = {
                     'id': str(os_project.id),  # str
                     'name': str(os_project.name),  # str
@@ -615,7 +623,7 @@ class KeyStone:
                 # allow domain role assignment querie
                 for role in self.keystone.role_assignments.list(project=os_project.id, include_subtree=True):
                     if role.user['id'] in self.__user_id2perun_id__:
-                        self.logger.debug('Found user %s as member in project %s', role.user['id'], os_project.name)
+                        self.log.debug('Found user %s as member in project %s', role.user['id'], os_project.name)
                         denbi_project['members'].append(self.__user_id2perun_id__[role.user['id']])
 
         return self.denbi_project_map
@@ -648,7 +656,7 @@ class KeyStone:
 
         self.denbi_project_map[project_id]['members'].append(user_id)
 
-        self.logger.info("Append user %s to project %s.", user_id, project_id)
+        self.log2.debug("Append user %s to project %s.", user_id, project_id)
 
     def projects_remove_user(self, project_id, user_id):
         """
@@ -678,7 +686,7 @@ class KeyStone:
 
         self.denbi_project_map[project_id]['members'].remove(user_id)
 
-        self.logger.info("Remove user %s from project %s.", user_id, project_id)
+        self.log2.debug("Remove user %s from project %s.", user_id, project_id)
 
     def projects_memberlist(self, perun_id):
         """
