@@ -37,7 +37,7 @@ class KeyStone:
     def __init__(self, environ=None, default_role="_member_",
                  create_default_role=False, flag="perun_propagation",
                  target_domain_name=None, read_only=False,
-                 logging_domain='denbi', logging_domain_update='update', nested=False, cloud_admin=True):
+                 logging_domain='denbi', logging_domain_report='report', nested=False, cloud_admin=True):
         """
         Create a new Openstack Keystone session reading clouds.yml in ~/.config/clouds.yaml
         or /etc/openstack or using the system environment.
@@ -58,7 +58,7 @@ class KeyStone:
         :param target_domain_name: domain where all users & projects are created, will be created if it not exists
         :param read_only: do not make any changes to the keystone
         :param logging_domain: domain where "standard" logs are logged (default is "denbi")
-        :param logging_domain_update: domain where "update" logs are logged (default is "update"), updates are logged in level debug
+        :param logging_domain_report: domain where "update" logs are reported (default is "report")
         :param nested: use nested projects instead of cloud/domain admin accesss
         :param cloud_admin: credentials are cloud admin credentials
 
@@ -66,7 +66,7 @@ class KeyStone:
         self.ro = read_only
         self.nested = nested
         self.log = logging.getLogger(logging_domain)
-        self.log2 = logging.getLogger(logging_domain_update)
+        self.log2 = logging.getLogger(logging_domain_report)
 
         if cloud_admin:
             # working as cloud admin requires setting a target domain
@@ -354,7 +354,7 @@ class KeyStone:
                 self.keystone.users.delete(denbi_user['id'])
 
             # Log keystone update
-            self.log2.debug("Terminate user [%s,%s,%s]", denbi_user['elixir_id'], denbi_user['perun_id'], denbi_user['id'])
+            self.log2.debug("user [%s,%s]: terminate", denbi_user['perun_id'], denbi_user['elixir_id'])
 
             # remove entry from map
             del(self.denbi_user_map[perun_id])
@@ -398,7 +398,7 @@ class KeyStone:
             self.denbi_user_map[denbi_user['perun_id']] = denbi_user
 
             # Log Keystone update
-            self.log2.debug("Update user [%s,%s,%s] -> %s %s", denbi_user['elixir_id'], denbi_user['perun_id'], denbi_user['id'], "enabled" if denbi_user['enabled'] else "disabled", "and deleted" if denbi_user['deleted'] else "")
+            self.log2.debug("user [%s,%s]:  %s %s", denbi_user['perun_id'], denbi_user['elixir_id'], "enabled" if denbi_user['enabled'] else "disabled", "and deleted" if denbi_user['deleted'] else "")
 
             return denbi_user
         else:
@@ -478,7 +478,7 @@ class KeyStone:
                              'scratched': False,
                              'members': []}
         # Log keystone update
-        self.log2.debug("Create project [%s,%s].", denbi_project['perun_id'], denbi_project['id'])
+        self.log2.debug("project [%s,%s]: created", denbi_project['perun_id'], denbi_project['id'])
 
         self.denbi_project_map[denbi_project['perun_id']] = denbi_project
         self.__project_id2perun_id__[denbi_project['id']] = denbi_project['perun_id']
@@ -532,7 +532,7 @@ class KeyStone:
             project['scratched'] = bool(scratched)
 
             # log keystone update
-            self.log2.debug("Update project [%s,%s] -> %s %s", project['perun_id'], project['id'], "enabled" if project['enabled'] else "disabled", "and scratched" if project['scratched'] else "")
+            self.log2.debug("project [%s,%s]: %s %s", project['perun_id'], project['id'], "enabled" if project['enabled'] else "disabled", "and scratched" if project['scratched'] else "")
 
         # update memberslist
         if members:
@@ -581,7 +581,7 @@ class KeyStone:
                     self.keystone.projects.delete(denbi_project['id'])
 
                 # Log keystone update
-                self.log2.info("Terminate project [%s,%s].", denbi_project['perun_id'], denbi_project['id'])
+                self.log2.info("project [%s,%s]: terminate", denbi_project['perun_id'], denbi_project['name'])
 
                 # delete project from project map
                 del(self.denbi_project_map[denbi_project['perun_id']])
@@ -656,7 +656,7 @@ class KeyStone:
 
         self.denbi_project_map[project_id]['members'].append(user_id)
 
-        self.log2.debug("Append user %s to project %s.", user_id, project_id)
+        self.log2.debug("project [%s]: append user %s.", project_id, user_id)
 
     def projects_remove_user(self, project_id, user_id):
         """
@@ -686,7 +686,7 @@ class KeyStone:
 
         self.denbi_project_map[project_id]['members'].remove(user_id)
 
-        self.log2.debug("Remove user %s from project %s.", user_id, project_id)
+        self.log2.debug("project [%s]: remove user %s", project_id, user_id)
 
     def projects_memberlist(self, perun_id):
         """

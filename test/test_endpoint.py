@@ -19,6 +19,7 @@ from denbi.perun.keystone import KeyStone
 
 TESTDIR = os.path.dirname(os.path.realpath(__file__))
 
+# configure logger
 logging.basicConfig(level=logging.INFO)
 
 
