@@ -225,7 +225,7 @@ class KeyStone:
             if clouds_yaml_file:
                 with (open('{}/.config/clouds.yaml'.format(os.environ['HOME']))) as stream:
                     try:
-                        clouds_yaml = yaml.load(stream)
+                        clouds_yaml = yaml.load(stream, Loader=yaml.FullLoader)
                         environ = {}
                         environ['OS_AUTH_URL'] = clouds_yaml['clouds']['openstack']['auth']['auth_url']
                         environ['OS_USERNAME'] = clouds_yaml['clouds']['openstack']['auth']['username']
