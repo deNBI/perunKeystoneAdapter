@@ -52,7 +52,7 @@ class QuotaComponent:
 
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self, client, project_id = None, logger_domain="denbi" ):
+    def __init__(self, client, project_id=None, logger_domain="denbi"):
         """
         Initializes the quota component instance
 

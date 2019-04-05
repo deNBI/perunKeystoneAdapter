@@ -200,12 +200,12 @@ class Endpoint(object):
                         # Update project ...
                         self.keystone.projects_update(perun_id, members)
                         # ... and log to update log
-                        self.log2.info("Update project [%s,%s] with members(%s)", name, perun_id,",".join(members))
+                        self.log2.info("Update project [%s,%s] with members(%s)", name, perun_id, ",".join(members))
                 else:
                     # Create project ...
                     self.keystone.projects_create(perun_id, name=name, members=members)
                     # ... and log to update log
-                    self.log2.info("Create project [%s,%s] with members(%s)",name, perun_id,",".join(members))
+                    self.log2.info("Create project [%s,%s] with members(%s)", name, perun_id, ",".join(members))
 
                 project_ids.append(perun_id)
 
@@ -219,7 +219,7 @@ class Endpoint(object):
             # Delete project ...
             self.keystone.projects_delete(id)
             # ... log to update log
-            self.log.info("Delete project %s", id)
+            self.log2.info("Delete project %s", id)
 
     def __import_dpcc_userdata__(self, json_obj):
         # get current user_map from keystone
@@ -251,7 +251,6 @@ class Endpoint(object):
                         # ... and log to update log
                         self.log2.info("Update user [%s,%s] -> %s", elixir_id, perun_id, "enabled" if enabled else "disabled")
 
-
                 else:
                     # register user ...
                     self.keystone.users_create(elixir_id, perun_id, email=email, enabled=enabled)
@@ -271,7 +270,7 @@ class Endpoint(object):
             # delete user ...
             self.keystone.users_delete(id)
             # ... and log to update log
-            self.log.info("Delete user %s", id)
+            self.log2.info("Delete user %s", id)
 
     def __import_dpcc_projectdata__(self, json_obj):
         # get current project_map from keystone
@@ -301,7 +300,7 @@ class Endpoint(object):
                         # Update project ...
                         self.keystone.projects_update(perun_id, members)
                         # ... and log to update logger
-                        self.log2.info("Update project [%s,%s] with (%s)", name, perun_id,",".join(members))
+                        self.log2.info("Update project [%s,%s] with (%s)", name, perun_id, ",".join(members))
 
                     # check for quotas and update it if possible
                     if self.support_quotas:
@@ -313,7 +312,7 @@ class Endpoint(object):
                     # create project ...
                     project = self.keystone.projects_create(perun_id, name=name, description=description, members=members)
                     # ... and log to update logger
-                    self.log2.info("Create project [%s,%s] with (%s)", name, perun_id,",".join(members))
+                    self.log2.info("Create project [%s,%s] with (%s)", name, perun_id, ",".join(members))
 
                     # check for quotas and update it if possible
                     if self.support_quotas:
@@ -367,7 +366,7 @@ class Endpoint(object):
                                     manager.set_value(os_quota['name'], value)
                                     # ... and log to update logger
                                     self.log2.info("Update quota %s for project [%s,%s] to from value %s to value %s",
-                                                  denbi_quota_name, project['name'], project['perun_id'], current, value)
+                                                   denbi_quota_name, project['name'], project['perun_id'], current, value)
                         else:
                             self.log.warning("Project [%s,%s] : Unable to set quota %s to %s, would exceed currently used resources",
                                              project['perun_id'], project['id'], denbi_quota_name, value)
