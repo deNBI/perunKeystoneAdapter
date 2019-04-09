@@ -61,7 +61,7 @@ log_ch = logging.FileHandler("pka.log")
 log_ch.setLevel(logging.Error)
 log_ch.setFormatter(fmt)
 
-# set log level for logger_domain using default name
+# configure logger for logger_domain using default name
 denbi = logging.getLogger('denbi')
 denbi.setLevel(logging.ERROR)
 denbi.addHandler(log_ch)
