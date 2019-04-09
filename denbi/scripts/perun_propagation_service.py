@@ -39,7 +39,33 @@ from flask import request
 app = Flask(__name__)
 app.config['cleanup'] = True
 app.config['keystone_read_only'] = os.environ.get('KEYSTONE_READ_ONLY', 'False').lower() == 'true'
-logging.basicConfig(level=getattr(logging, os.environ.get('PERUN_LOG_LEVEL', 'WARN')))
+
+#  configure basic logger
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s -%(message)s')
+
+# logging formatter
+fmt = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s -%(message)s')
+
+# create a FileHandler for reporting
+report_ch = logging.FileHandler("report.log")
+report_ch.setLevel(logging.INFO)
+report_ch.setFormatter(fmt)
+
+# configure logger for report_domain using default name
+report = logging.getLogger('report')
+report.setLevel(logging.INFO)
+report.addHandler(report_ch)
+
+# create a FileHandler for logging
+log_ch = logging.FileHandler("pka.log")
+log_ch.setLevel(logging.Error)
+log_ch.setFormatter(fmt)
+
+# set log level for logger_domain using default name
+denbi = logging.getLogger('denbi')
+denbi.setLevel(logging.ERROR)
+denbi.addHandler(log_ch)
+
 
 executor = ThreadPoolExecutor(max_workers=1)
 

@@ -75,7 +75,7 @@ class Endpoint(object):
         'denbiProjectVolumeCounter': {'name': 'volumes', 'factor': 1}}
 
     def __init__(self, keystone=None, mode="scim", store_email=True,
-                 support_quotas=True, read_only=False, logging_domain="denbi", logging_domain_report="report"):
+                 support_quotas=True, read_only=False, logging_domain="denbi", report_domain="report"):
         '''
 
         :param keystone: initialized keystone object
@@ -84,7 +84,7 @@ class Endpoint(object):
         :param support_quotas : should quotas supported
         :param read_only: test mode
         :param logging_domain: domain where "standard" logs are logged (default is "denbi")
-        :param logging_domain_report: domain where "update" logs are reported (default is "report")
+        :param report_domain: domain where "update" logs are reported (default is "report")
         '''
 
         if keystone:
@@ -99,7 +99,7 @@ class Endpoint(object):
         self.support_quotas = bool(support_quotas)
         self.read_only = read_only
         self.log = logging.getLogger(logging_domain)
-        self.log2 = logging.getLogger(logging_domain_report)
+        self.log2 = logging.getLogger(report_domain)
 
     def import_data(self, users_path, groups_path):
         '''

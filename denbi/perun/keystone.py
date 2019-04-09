@@ -37,7 +37,7 @@ class KeyStone:
     def __init__(self, environ=None, default_role="_member_",
                  create_default_role=False, flag="perun_propagation",
                  target_domain_name=None, read_only=False,
-                 logging_domain='denbi', logging_domain_report='report', nested=False, cloud_admin=True):
+                 logging_domain='denbi', report_domain='report', nested=False, cloud_admin=True):
         """
         Create a new Openstack Keystone session reading clouds.yml in ~/.config/clouds.yaml
         or /etc/openstack or using the system environment.
@@ -58,7 +58,7 @@ class KeyStone:
         :param target_domain_name: domain where all users & projects are created, will be created if it not exists
         :param read_only: do not make any changes to the keystone
         :param logging_domain: domain where "standard" logs are logged (default is "denbi")
-        :param logging_domain_report: domain where "update" logs are reported (default is "report")
+        :param report_domain: domain where "update" logs are reported (default is "report")
         :param nested: use nested projects instead of cloud/domain admin accesss
         :param cloud_admin: credentials are cloud admin credentials
 
@@ -66,7 +66,7 @@ class KeyStone:
         self.ro = read_only
         self.nested = nested
         self.log = logging.getLogger(logging_domain)
-        self.log2 = logging.getLogger(logging_domain_report)
+        self.log2 = logging.getLogger(report_domain)
 
         if cloud_admin:
             # working as cloud admin requires setting a target domain

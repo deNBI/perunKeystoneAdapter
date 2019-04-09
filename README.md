@@ -94,6 +94,14 @@ $ gunicorn --workers 1 --bind 127.0.0.1:5000 denbi.scripts.perun_propagation_ser
 
 There are [additional deployment options available](http://flask.pocoo.org/docs/0.12/deploying/) if you prefer to run WSGI applications with Apache, or other setups.
 
+### Logging 
+The Library supports two different logger domains, which can be configured when instantiate the Keystone/Endpoint class (default "denbi" and "report").
+All changes concerning the Openstack database (project, identity and quotas) are logged to report domain, everything else 
+is logged to the logger domain. The logger are standard Python logger, therefore all possibilities of Python's logging API 
+are supported.
+See [service script](denbi/scripts/perun_propagation_service.py) for an example  how to configure logging. 
+
+
 ## Development
 
 ### Unit tests
