@@ -22,6 +22,7 @@ method shouldn't run parallel.
 import logging
 import os
 import shutil
+import sys
 import tarfile
 import tempfile
 
@@ -47,7 +48,10 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s -%(message)s'
 fmt = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s -%(message)s')
 
 # create a FileHandler for reporting
-report_ch = logging.FileHandler("report.log")
+# report_ch = logging.FileHandler("report.log")
+
+# create a StreamHandler for reporting
+report_ch = logging.StreamHandler(sys.stdout)
 report_ch.setLevel(logging.INFO)
 report_ch.setFormatter(fmt)
 
@@ -58,7 +62,7 @@ report.addHandler(report_ch)
 
 # create a FileHandler for logging
 log_ch = logging.FileHandler("pka.log")
-log_ch.setLevel(logging.Error)
+log_ch.setLevel(logging.ERROR)
 log_ch.setFormatter(fmt)
 
 # configure logger for logger_domain using default name
@@ -77,7 +81,7 @@ def process_tarball(tarball_path, base_dir=tempfile.mkdtemp(), read_only=False, 
     dir = base_dir + "/" + str(d.year) + "_" + str(d.month) + "_" + str(d.day) + "-" + str(d.hour) + ":" + str(d.minute) + ":" + str(d.second) + "." + str(d.microsecond)
     os.mkdir(dir)
 
-    logging.info("Processing data uploaded by Perun: %s" % tarball_path)
+    report.info("Processing data uploaded by Perun: %s" % tarball_path)
 
     # extract tar file
     tar = tarfile.open(tarball_path, "r:gz")
@@ -92,7 +96,7 @@ def process_tarball(tarball_path, base_dir=tempfile.mkdtemp(), read_only=False, 
     endpoint = Endpoint(keystone=keystone, mode="denbi_portal_compute_center",
                         support_quotas=support_quota)
     endpoint.import_data(dir + '/users.scim', dir + '/groups.scim')
-    logging.info("Finished processing %s" % tarball_path)
+    report.info("Finished processing %s" % tarball_path)
 
     # Cleanup
     shutil.rmtree(dir)
