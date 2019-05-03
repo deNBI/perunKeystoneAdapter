@@ -19,6 +19,7 @@ from denbi.perun.keystone import KeyStone
 
 TESTDIR = os.path.dirname(os.path.realpath(__file__))
 
+# configure logger
 logging.basicConfig(level=logging.INFO)
 
 
@@ -28,7 +29,20 @@ class TestEndpoint(unittest.TestCase):
     You need a full functional Openstack setup to make the test run properly.
     """
 
+    global log_domain, report_domain
+    log_domain = "denbi"
+    report_domain = "report"
+
     def setUp(self):
+        # update logger format
+        logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s -%(message)s')
+        # set log level for logger_domain
+        denbi = logging.getLogger(log_domain)
+        denbi.setLevel(logging.ERROR)
+        # set log level for report_domain
+        report = logging.getLogger(report_domain)
+        report.setLevel(logging.INFO)
+
         self.keystone = KeyStone(environ=None, default_role="user", create_default_role=True, target_domain_name='elixir', cloud_admin=True)
 
     def _test_user(self, denbiuser, perun_id, elixir_id, email, enabled, deleted=False):
