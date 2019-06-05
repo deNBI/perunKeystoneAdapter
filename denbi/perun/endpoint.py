@@ -41,9 +41,10 @@ class Endpoint(object):
     # - a value is a  map containing  the corresponding openstack quota name and a factor.
     # - a factor factorize the de.NBI quota value (1 - no factorize - in most cases)
     # - some de.NBI quotas are deprecated, but may still be in use in older projects
-    DENBI_OPENSTACK_QUOTA_MAPPING = {  # denbiProjectDiskSpace is the old. deprecated name
+    DENBI_OPENSTACK_QUOTA_MAPPING = {
+        # denbiProjectDiskSpace is the old. deprecated name
         'denbiProjectDiskSpace': None,
-        'denbiProjectVolumeLimit': {'name': 'gigabytes', 'factor': 1},
+        'denbiVolumeLimit': {'name': 'gigabytes', 'factor': 1},
 
         # this is a deprecated setting without a real
         # openstack equivalent...
@@ -72,7 +73,7 @@ class Endpoint(object):
 
         # Not used by the portal ...
         'denbiProjectNumberOfSnapshots': None,
-        'denbiProjectVolumeCounter': {'name': 'volumes', 'factor': 1}}
+        'denbiVolumeCounter': {'name': 'volumes', 'factor': 1}}
 
     def __init__(self, keystone=None, mode="scim", store_email=True,
                  support_quotas=True, read_only=False, logging_domain="denbi", report_domain="report"):
