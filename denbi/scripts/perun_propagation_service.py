@@ -24,17 +24,14 @@ import os
 import shutil
 import tarfile
 import tempfile
-
 from concurrent.futures import ThreadPoolExecutor
-
 from datetime import datetime
-
-from denbi.perun.endpoint import Endpoint
-from denbi.perun.keystone import KeyStone
 
 from flask import Flask
 from flask import request
 
+from denbi.perun.endpoint import Endpoint
+from denbi.perun.keystone import KeyStone
 
 app = Flask(__name__)
 app.config['cleanup'] = True
@@ -47,15 +44,16 @@ executor = ThreadPoolExecutor(max_workers=1)
 def process_tarball(tarball_path, base_dir=tempfile.mkdtemp(), read_only=False, target_domain_name='elixir',
                     default_role='user', nested=False, support_quota=False, cloud_admin=True):
     """Process Perun tarball."""
-    d = datetime.today()
-    dir = base_dir + "/" + str(d.year) + "_" + str(d.month) + "_" + str(d.day) + "-" + str(d.hour) + ":" + str(d.minute) + ":" + str(d.second) + "." + str(d.microsecond)
-    os.mkdir(dir)
+    today = datetime.today()
+    data_dir = base_dir + "/" + str(today.year) + "_" + str(today.month) + "_" + str(today.day) + "-" + str(
+        today.hour) + ":" + str(today.minute) + ":" + str(today.second) + "." + str(today.microsecond)
+    os.mkdir(data_dir)
 
-    logging.info("Processing data uploaded by Perun: %s" % tarball_path)
+    logging.info("Processing data uploaded by Perun: %s", tarball_path)
 
     # extract tar file
     tar = tarfile.open(tarball_path, "r:gz")
-    tar.extractall(path=dir)
+    tar.extractall(path=data_dir)
     tar.close()
 
     # import into keystone
@@ -65,11 +63,11 @@ def process_tarball(tarball_path, base_dir=tempfile.mkdtemp(), read_only=False, 
 
     endpoint = Endpoint(keystone=keystone, mode="denbi_portal_compute_center",
                         support_quotas=support_quota)
-    endpoint.import_data(dir + '/users.scim', dir + '/groups.scim')
-    logging.info("Finished processing %s" % tarball_path)
+    endpoint.import_data(data_dir + '/users.scim', data_dir + '/groups.scim')
+    logging.info("Finished processing %s", tarball_path)
 
     # Cleanup
-    shutil.rmtree(dir)
+    shutil.rmtree(data_dir)
 
 
 @app.route("/upload", methods=['PUT'])

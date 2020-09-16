@@ -1,3 +1,4 @@
+"""Quota definition in an OpenStack component"""
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at
@@ -10,12 +11,13 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from neutronclient.v2_0 import client as neutronClient
-from cinderclient.v3 import client as cinderClient
-from novaclient.v2 import client as novaClient
-import threading
-import logging
 import abc
+import logging
+import threading
+
+from cinderclient.v3 import client as cinderClient
+from neutronclient.v2_0 import client as neutronClient
+from novaclient.v2 import client as novaClient
 
 
 class QuotaComponentFactory:
@@ -32,12 +34,11 @@ class QuotaComponentFactory:
         """
         if isinstance(client, neutronClient.Client):
             return NeutronQuotaComponent(client, project_id)
-        elif isinstance(client, cinderClient.Client):
+        if isinstance(client, cinderClient.Client):
             return CinderQuotaComponent(client, project_id)
-        elif isinstance(client, novaClient.Client):
+        if isinstance(client, novaClient.Client):
             return NovaQuotaComponent(client, project_id)
-        else:
-            raise ValueError("Unsupport client " + str(client))
+        raise ValueError("Unsupport client " + str(client))
 
 
 class QuotaComponent:
@@ -109,8 +110,7 @@ class QuotaComponent:
         self.get_value(name)
         if consider_reserved:
             return self._quota_cache[name]['in_use'] + self._quota_cache[name]['reserved']
-        else:
-            return self._quota_cache[name]['in_use']
+        return self._quota_cache[name]['in_use']
 
     def check_value(self, name, value):
         """
@@ -176,7 +176,7 @@ class QuotaComponent:
                                  value, name, self._client)
                 self._quota_cache[name]['limit'] = value
         else:
-            raise ValueError("New quota of %s for %s exceed currently used resource amount".format(value, name))
+            raise ValueError("New quota of {} for {} exceed currently used resource amount".format(value, name))
 
     @abc.abstractmethod
     def _set_new_quota(self, name, value):
@@ -185,7 +185,7 @@ class QuotaComponent:
         """
         return
 
-    def _set_neutron_quota(self, name, value):
+    def _set_neutron_quota(self, name, value):  # pylint: disable=no-self-use
         raise Exception("Not implemented yet")
 
     def flush(self):
@@ -208,20 +208,25 @@ class SimpleQuotaComponent(QuotaComponent):
         #       how do we do this correctly with the new calls?
         self._client.quotas.update(self._project_id, **{name: value})
 
+    def _get_cache(self):
+        return None
+
 
 class NovaQuotaComponent(SimpleQuotaComponent):
+    """Nova quota component"""
     def _get_cache(self):
         return self._client.quotas.get(self._project_id, detail=True).to_dict()
 
 
 class CinderQuotaComponent(SimpleQuotaComponent):
+    """Cinder quota component"""
     def _get_cache(self):
         return self._client.quotas.get(self._project_id, usage=True).to_dict()
 
 
 class NeutronQuotaComponent(QuotaComponent):
     """
-    Neutron client has a different APIs, and thus requires a more complex
+    Neutron client has a different API, and thus requires a more complex
     quota implementation.
     """
 

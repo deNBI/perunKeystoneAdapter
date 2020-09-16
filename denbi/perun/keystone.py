@@ -1,3 +1,4 @@
+"""Keystone abstraction layer"""
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at
@@ -10,16 +11,17 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import os
 import itertools
 import logging
+import os
+
 import yaml
+from keystoneauth1 import session
+from keystoneauth1.exceptions import Unauthorized
+from keystoneauth1.identity import v3
+from keystoneclient.v3 import client
 
 from denbi.perun.quotas import manager as quotas
-from keystoneauth1.identity import v3
-from keystoneauth1 import session
-from keystoneclient.v3 import client
-from keystoneauth1.exceptions import Unauthorized
 
 
 class KeyStone:
@@ -61,16 +63,18 @@ class KeyStone:
         :param cloud_admin: credentials are cloud admin credentials
 
         """
-        self.ro = read_only
+        self.read_only = read_only
         self.nested = nested
         self.logger = logging.getLogger(logging_domain)
+
+        self.__project_id2perun_id_ = {}
 
         if cloud_admin:
             # working as cloud admin requires setting a target domain
             if target_domain_name is None:
                 raise Exception("You need to set a target domain if working with cloud admin credentials.")
             # with cloud admin credentials we do not need multiple sessions
-            auth = self._create_auth(environ, False)
+            auth = _create_auth(environ, False)
             project_session = session.Session(auth=auth)
 
             # create session
@@ -79,13 +83,13 @@ class KeyStone:
 
             try:
                 self.target_domain_id = self._project_keystone.domains.list(name=target_domain_name)[0].id
-            except IndexError:
-                raise Exception("Unknown domain {}".format(target_domain_name))
+            except IndexError as index_error:
+                raise Exception("Unknown domain {}".format(target_domain_name)) from index_error
 
         else:
             # use two separate sessions for domain and project access
-            domain_auth = self._create_auth(environ, True)
-            project_auth = self._create_auth(environ, False)
+            domain_auth = _create_auth(environ, True)
+            project_auth = _create_auth(environ, False)
             domain_session = session.Session(auth=domain_auth)
             project_session = session.Session(auth=project_auth)
 
@@ -93,6 +97,8 @@ class KeyStone:
             # by authenticating to keystone. we also need the AccessInfo
             # instances to retrieve project and domain ids for later
 
+            # pylint: disable=raise-missing-from
+            # (because Unauthorized is not recognized an exception by pylint)
             try:
                 domain_access = domain_auth.get_access(domain_session)
             except Unauthorized:
@@ -104,6 +110,7 @@ class KeyStone:
                     project_access = domain_access
             except Unauthorized:
                 raise Exception("Authorization for project session failed, wrong credentials / role?")
+            # pylint: enable=raise-missing-from
 
             # store both session for later use
             self._domain_keystone = client.Client(session=domain_session)
@@ -115,8 +122,8 @@ class KeyStone:
             # TODO: the check might need to be improved if we need to differentiate
             #       between domain name syntax and uuid syntax
             if (target_domain_name
-               and target_domain_name != domain_access.domain_name
-               and target_domain_name != domain_access.domain_id):
+                    and target_domain_name != domain_access.domain_name
+                    and target_domain_name != domain_access.domain_id):
                 # valide the different domain name
                 # the credentials should be cloud admin credentials in this case
                 self.target_domain_id = self._resolve_domain(target_domain_name)
@@ -146,9 +153,9 @@ class KeyStone:
                 break
 
         # create it if wished
-        if not(self.default_role_id):
+        if not self.default_role_id:
             if create_default_role:
-                if not self.ro:
+                if not self.read_only:
                     role = self.domain_keystone.roles.create(self.default_role)
                     self.default_role_id = str(role.id)
                     self.logger.debug('Created default role %s (id %s)', role.name, role.id)
@@ -183,81 +190,11 @@ class KeyStone:
     def keystone(self, want_domain=True):
         if want_domain:
             return self.domain_keystone
-        else:
-            return self.project_keystone
+        return self.project_keystone
 
     @property
     def quota_factory(self):
         return self._quota_factory
-
-    def _create_auth(self, environ, auth_at_domain=False):
-        """
-        Helper method to create the auth object for keystone, depending on the
-        given environment (Explicite environment, clouds.yaml or os environment
-        are supported.
-
-        This method supports authentication via project scoped tokens for
-        project and cloud admins, and domain scoped tokens for domain admins.
-        The auth_at_domain flag indicates which kind of authentication is
-        requested.
-
-        In case of project scoped tokens, the user domain name is also used
-        for the project if no separate project domain name is given.
-
-        :param environ: dicts to take auth information from
-        :param auth_at_domain: create domain scoped token
-
-        :returns: the auth object to be used for contacting keystone
-        """
-
-        # default to shell environment if no specific one was given
-        if environ is None:
-            clouds_yaml_file = None
-            clouds_yaml_file = None
-            if os.path.isfile('{}/.config/clouds.yaml'.format(os.environ['HOME'])):
-                clouds_yaml_file = '{}/.config/clouds.yaml'.format(os.environ['HOME'])
-            elif os.path.isfile('/etc/openstack/clouds.yaml'):
-                clouds_yaml_file = '/etc/openstack/clouds.yaml'
-
-            if clouds_yaml_file:
-                with (open('{}/.config/clouds.yaml'.format(os.environ['HOME']))) as stream:
-                    try:
-                        clouds_yaml = yaml.load(stream)
-                        environ = {}
-                        environ['OS_AUTH_URL'] = clouds_yaml['clouds']['openstack']['auth']['auth_url']
-                        environ['OS_USERNAME'] = clouds_yaml['clouds']['openstack']['auth']['username']
-                        environ['OS_PASSWORD'] = clouds_yaml['clouds']['openstack']['auth']['password']
-
-                        environ['OS_PROJECT_NAME'] = clouds_yaml['clouds']['openstack']['auth']['project_name']
-                        environ['OS_USER_DOMAIN_NAME'] = clouds_yaml['clouds']['openstack']['auth']['user_domain_name']
-
-                        # cloud admin
-                        environ['OS_PROJECT_DOMAIN_NAME'] = clouds_yaml['clouds']['openstack']['auth']['project_domain_name'] if 'project_domain_name' in clouds_yaml['clouds']['openstack']['auth'] else clouds_yaml['clouds']['openstack']['auth']['user_domain_name']
-                        # domain admin
-                        environ['OS_DOMAIN_NAME'] = clouds_yaml['clouds']['openstack']['auth']['domain_name'] if 'domain_name' in clouds_yaml['clouds']['openstack']['auth'] else None
-
-                    except Exception as e:
-                        raise Exception("Error parsing/reading clouds.yaml (%s)." % clouds_yaml_file, e)
-
-            else:
-                environ = os.environ
-        if auth_at_domain:
-            # create a domain scoped token
-            auth = v3.Password(auth_url=environ['OS_AUTH_URL'],
-                               username=environ['OS_USERNAME'],
-                               password=environ['OS_PASSWORD'],
-                               domain_name=environ['OS_DOMAIN_NAME'],
-                               user_domain_name=environ['OS_USER_DOMAIN_NAME'])
-        else:
-            # create a project scoped token
-            project_domain_name = environ['OS_PROJECT_DOMAIN_NAME'] if 'OS_PROJECT_DOMAIN_NAME' in environ else environ['OS_USER_DOMAIN_NAME']
-            auth = v3.Password(auth_url=environ['OS_AUTH_URL'],
-                               username=environ['OS_USERNAME'],
-                               password=environ['OS_PASSWORD'],
-                               project_name=environ['OS_PROJECT_NAME'],
-                               user_domain_name=environ['OS_USER_DOMAIN_NAME'],
-                               project_domain_name=project_domain_name)
-        return auth
 
     def _resolve_domain(self, target_domain):
         """
@@ -273,7 +210,7 @@ class KeyStone:
         for domain in itertools.chain(self.domain_keystone.auth.domains(),
                                       self.project_keystone.auth.domains()):
             # compare domain to target and return id on match
-            if (domain.id == target_domain or domain.name == target_domain):
+            if target_domain in (domain.id, domain.name):
                 return domain.id
         # no matching domain found....
         raise Exception("Unknown or inaccessible domain %s" % target_domain)
@@ -289,7 +226,7 @@ class KeyStone:
 
         :return: a denbi_user hash {id:string, elixir_id:string, perun_id:string, email:string, enabled: boolean}
         """
-        if not self.ro:
+        if not self.read_only:
             os_user = self.keystone.users.create(name=str(elixir_id),  # str
                                                  domain=str(self.target_domain_id),  # str
                                                  email=str(email),  # str
@@ -346,13 +283,14 @@ class KeyStone:
         if perun_id in self.denbi_user_map:
             denbi_user = self.denbi_user_map[perun_id]
             # delete user
-            if not self.ro:
+            if not self.read_only:
                 self.keystone.users.delete(denbi_user['id'])
 
-            self.logger.info("Terminate user [%s,%s,%s]", denbi_user['elixir_id'], denbi_user['perun_id'], denbi_user['id'])
+            self.logger.info("Terminate user [%s,%s,%s]", denbi_user['elixir_id'], denbi_user['perun_id'],
+                             denbi_user['id'])
 
             # remove entry from map
-            del(self.denbi_user_map[perun_id])
+            del self.denbi_user_map[perun_id]
         else:
             raise ValueError('User with perun_id %s not found in user_map' % perun_id)
 
@@ -378,7 +316,7 @@ class KeyStone:
             if enabled is None:
                 enabled = denbi_user['enabled']
 
-            if not self.ro:
+            if not self.read_only:
                 os_user = self.keystone.users.update(denbi_user['id'],  # str
                                                      name=str(elixir_id),  # str
                                                      email=str(email),  # str
@@ -392,17 +330,18 @@ class KeyStone:
 
             self.denbi_user_map[denbi_user['perun_id']] = denbi_user
 
-            self.logger.info("Update user [%s,%s,%s] as deleted = %s", denbi_user['elixir_id'], denbi_user['perun_id'], denbi_user['id'], str(deleted))
+            self.logger.info("Update user [%s,%s,%s] as deleted = %s", denbi_user['elixir_id'], denbi_user['perun_id'],
+                             denbi_user['id'], str(deleted))
 
             return denbi_user
-        else:
-            raise ValueError('User with perun_id %s not found in user_map' % perun_id)
+        raise ValueError('User with perun_id %s not found in user_map' % perun_id)
 
     def users_map(self):
         """
         Return a  de.NBI user map {elixir-id -> denbi_user }
 
-        :return: a denbi_user map ``{elixir-id: {id:string, elixir_id:string, perun_id:string, email:string, enabled: boolean}}``
+        :return: a denbi_user map ``{elixir-id: {id:string, elixir_id:string, perun_id:string, email:string,
+                 enabled: boolean}}``
         """
         self.denbi_user_map = {}  # clear previous project list
         self.__user_id2perun_id__ = {}
@@ -411,7 +350,7 @@ class KeyStone:
             # any other checks (like for name or perun_id are then not neccessary ...
             if hasattr(os_user, "flag") and str(os_user.flag) == self.flag:
                 if not hasattr(os_user, 'perun_id'):
-                    raise Exception("User ID %s should have perun_id" % (os_user.id, ))
+                    raise Exception("User ID %s should have perun_id" % (os_user.id,))
 
                 denbi_user = {'id': str(os_user.id),  # str
                               'perun_id': str(os_user.perun_id),  # str
@@ -447,7 +386,7 @@ class KeyStone:
         if name is None:
             name = perun_id
 
-        if not self.ro:
+        if not self.read_only:
             os_project = self.keystone.projects.create(name=str(name),
                                                        perun_id=perun_id,
                                                        domain=self.target_domain_id,
@@ -499,8 +438,8 @@ class KeyStone:
         :return:
         """
         perun_id = str(perun_id)
-        add = []
-        rem = []
+        members_to_be_added = []
+        members_to_be_removed = []
 
         project = self.denbi_project_map[perun_id]
 
@@ -514,7 +453,7 @@ class KeyStone:
             if scratched:
                 enabled = False
 
-            if not self.ro:
+            if not self.read_only:
                 self.keystone.projects.update(project['id'],
                                               name=str(name),
                                               description=description,
@@ -530,24 +469,25 @@ class KeyStone:
         # update memberslist
         if members:
             # search for member to be removed or added
-            for m in set(members) ^ set(project["members"]):
-                if m in project["members"]:
+            for member in set(members) ^ set(project["members"]):
+                if member in project["members"]:
                     # members to remove
-                    rem.append(m)
+                    members_to_be_removed.append(member)
                 else:
                     # members to add
-                    add.append(m)
+                    members_to_be_added.append(member)
 
-            for m in rem:
-                self.projects_remove_user(perun_id, m)
+            for member in members_to_be_removed:
+                self.projects_remove_user(perun_id, member)
 
-            for m in add:
-                self.projects_append_user(perun_id, m)
+            for member in members_to_be_added:
+                self.projects_append_user(perun_id, member)
 
     def projects_delete(self, perun_id):
         """
         Disable and tag project as deleted. Since it is dangerous to delete a project completly, the function just
-        disable the project and tag it as deleted. To remove a project from keystone use the function projects_terminate.
+        disable the project and tag it as deleted. To remove a project from keystone use the function
+        projects_terminate.
 
         :param perun_id: perun_id of project to be deleted
         :return:
@@ -570,13 +510,13 @@ class KeyStone:
 
             if denbi_project['scratched']:
                 # delete project by id in keystone database
-                if not self.ro:
+                if not self.read_only:
                     self.keystone.projects.delete(denbi_project['id'])
 
                 self.logger.info("Terminate project [%s,%s].", denbi_project['perun_id'], denbi_project['id'])
 
                 # delete project from project map
-                del(self.denbi_project_map[denbi_project['perun_id']])
+                del self.denbi_project_map[denbi_project['perun_id']]
 
             else:
                 raise ValueError('Project with perun_id %s must be tagged as deleted before terminate!' % perun_id)
@@ -587,10 +527,10 @@ class KeyStone:
         """
         Return a map of projects
 
-        :return: a map of denbi projects ``{perun_id: {id: string, perun_id: string, enabled: boolean, members: [denbi_users]}}``
+        :return: a map of denbi projects ``{perun_id: {id: string, perun_id: string, enabled: boolean,
+                 members: [denbi_users]}}``
         """
         self.denbi_project_map = {}
-        self.__project_id2perun_id_ = {}
 
         for os_project in self.keystone.projects.list(domain=self.target_domain_id):
             if hasattr(os_project, 'flag') and os_project.flag == self.flag:
@@ -633,17 +573,17 @@ class KeyStone:
         user_id = str(user_id)
 
         # check if project/user exists
-        if not(project_id in self.denbi_project_map):
+        if project_id not in self.denbi_project_map:
             raise ValueError('A project with perun_id: %s does not exists!' % project_id)
 
-        if not(user_id in self.denbi_user_map):
+        if user_id not in self.denbi_user_map:
             raise ValueError('A user with perun_id: %s does not exists!' % user_id)
 
         # get keystone id for user and project
         pid = self.denbi_project_map[project_id]['id']
         uid = self.denbi_user_map[user_id]['id']
 
-        if not self.ro:
+        if not self.read_only:
             self.keystone.roles.grant(role=self.default_role_id, user=uid, project=pid)
 
         self.denbi_project_map[project_id]['members'].append(user_id)
@@ -663,17 +603,17 @@ class KeyStone:
         project_id = str(project_id)
         user_id = str(user_id)
         # check if project/user exists
-        if not(project_id in self.denbi_project_map):
+        if project_id not in self.denbi_project_map:
             raise ValueError('A project with perun_id: %s does not exists!' % project_id)
 
-        if not(user_id in self.denbi_user_map):
+        if user_id not in self.denbi_user_map:
             raise ValueError('A user with perun_id: %s does not exists!' % user_id)
 
         # get keystone id for user and project
         pid = self.denbi_project_map[project_id]['id']
         uid = self.denbi_user_map[user_id]['id']
 
-        if not self.ro:
+        if not self.read_only:
             self.keystone.roles.revoke(role=self.default_role_id, user=uid, project=pid)
 
         self.denbi_project_map[project_id]['members'].remove(user_id)
@@ -689,3 +629,77 @@ class KeyStone:
         :return: Return a list of members
         """
         return self.denbi_project_map[perun_id]['members']
+
+
+def _create_auth(environ, auth_at_domain=False):
+    """
+    Helper method to create the auth object for keystone, depending on the
+    given environment (Explicite environment, clouds.yaml or os environment
+    are supported.
+
+    This method supports authentication via project scoped tokens for
+    project and cloud admins, and domain scoped tokens for domain admins.
+    The auth_at_domain flag indicates which kind of authentication is
+    requested.
+
+    In case of project scoped tokens, the user domain name is also used
+    for the project if no separate project domain name is given.
+
+    :param environ: dicts to take auth information from
+    :param auth_at_domain: create domain scoped token
+
+    :returns: the auth object to be used for contacting keystone
+    """
+
+    # default to shell environment if no specific one was given
+    if environ is None:
+        clouds_yaml_file = None
+        clouds_yaml_file = None
+        if os.path.isfile('{}/.config/clouds.yaml'.format(os.environ['HOME'])):
+            clouds_yaml_file = '{}/.config/clouds.yaml'.format(os.environ['HOME'])
+        elif os.path.isfile('/etc/openstack/clouds.yaml'):
+            clouds_yaml_file = '/etc/openstack/clouds.yaml'
+
+        if clouds_yaml_file:
+            with (open('{}/.config/clouds.yaml'.format(os.environ['HOME']))) as stream:
+                try:
+                    clouds_yaml = yaml.load(stream)
+                    environ = {}
+                    environ['OS_AUTH_URL'] = clouds_yaml['clouds']['openstack']['auth']['auth_url']
+                    environ['OS_USERNAME'] = clouds_yaml['clouds']['openstack']['auth']['username']
+                    environ['OS_PASSWORD'] = clouds_yaml['clouds']['openstack']['auth']['password']
+
+                    environ['OS_PROJECT_NAME'] = clouds_yaml['clouds']['openstack']['auth']['project_name']
+                    environ['OS_USER_DOMAIN_NAME'] = clouds_yaml['clouds']['openstack']['auth']['user_domain_name']
+
+                    # cloud admin
+                    environ['OS_PROJECT_DOMAIN_NAME'] = clouds_yaml['clouds']['openstack']['auth'][
+                        'project_domain_name'] if 'project_domain_name' in clouds_yaml['clouds']['openstack'][
+                        'auth'] else clouds_yaml['clouds']['openstack']['auth']['user_domain_name']
+                    # domain admin
+                    environ['OS_DOMAIN_NAME'] = clouds_yaml['clouds']['openstack']['auth'][
+                        'domain_name'] if 'domain_name' in clouds_yaml['clouds']['openstack']['auth'] else None
+
+                except Exception as error:
+                    raise Exception("Error parsing/reading clouds.yaml (%s)." % clouds_yaml_file, error) from error
+
+        else:
+            environ = os.environ
+    if auth_at_domain:
+        # create a domain scoped token
+        auth = v3.Password(auth_url=environ['OS_AUTH_URL'],
+                           username=environ['OS_USERNAME'],
+                           password=environ['OS_PASSWORD'],
+                           domain_name=environ['OS_DOMAIN_NAME'],
+                           user_domain_name=environ['OS_USER_DOMAIN_NAME'])
+    else:
+        # create a project scoped token
+        project_domain_name = environ['OS_PROJECT_DOMAIN_NAME'] if 'OS_PROJECT_DOMAIN_NAME' in environ else environ[
+            'OS_USER_DOMAIN_NAME']
+        auth = v3.Password(auth_url=environ['OS_AUTH_URL'],
+                           username=environ['OS_USERNAME'],
+                           password=environ['OS_PASSWORD'],
+                           project_name=environ['OS_PROJECT_NAME'],
+                           user_domain_name=environ['OS_USER_DOMAIN_NAME'],
+                           project_domain_name=project_domain_name)
+    return auth

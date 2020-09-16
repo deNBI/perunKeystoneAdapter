@@ -23,7 +23,6 @@ import tempfile
 from denbi.perun.endpoint import Endpoint
 from denbi.perun.keystone import KeyStone
 
-
 logging.basicConfig(level=logging.WARN)
 
 

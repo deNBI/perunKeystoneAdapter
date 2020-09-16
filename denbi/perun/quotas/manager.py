@@ -1,3 +1,4 @@
+"""OpenStack quota manager"""
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at
@@ -10,10 +11,11 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from novaclient import client as novaClient
 from cinderclient.v3 import client as cinderClient
 from neutronclient.v2_0 import client as neutronClient
-from denbi.perun.quotas import component as component
+from novaclient import client as novaClient
+
+from denbi.perun.quotas import component
 
 
 class QuotaFactory:
@@ -129,8 +131,7 @@ class QuotaManager:
             if self.QUOTA_MAPPING[name] is None:
                 return None
             return self._components[self.QUOTA_MAPPING[name]]
-        else:
-            raise ValueError("Quota name %s is invalid" % name)
+        raise ValueError("Quota name %s is invalid" % name)
 
     def get_current_quota(self, name):
         """
@@ -140,9 +141,9 @@ class QuotaManager:
         thrown. If the name refers to an unimplemented quota
         like special de.NBI quotas, None is returned.
         """
-        component = self._map_to_component(name)
-        if component is not None:
-            return component.get_value(name)
+        quota_component = self._map_to_component(name)
+        if quota_component is not None:
+            return quota_component.get_value(name)
         return None
 
     def get_current_in_use(self, name):
@@ -151,9 +152,9 @@ class QuotaManager:
 
         :param name: name of the quota to check
         """
-        component = self._map_to_component(name)
-        if component is not None:
-            return component.get_in_use(name)
+        quota_component = self._map_to_component(name)
+        if quota_component is not None:
+            return quota_component.get_in_use(name)
         return None
 
     def check_value(self, name, value):
@@ -172,11 +173,10 @@ class QuotaManager:
 
         :returns: boolean to indicate whether value is suitable
         """
-        component = self._map_to_component(name)
-        if component is None:
+        quota_component = self._map_to_component(name)
+        if quota_component is None:
             return True
-        else:
-            return component.check_value(name, value)
+        return quota_component.check_value(name, value)
 
     def set_value(self, name, value):
         """
@@ -188,8 +188,8 @@ class QuotaManager:
         the named quota left unchanged
 
         :param name: name of the quota to set
-        :param quota: new value of the quota
+        :param value: new value of the quota
         """
-        component = self._map_to_component(name)
-        if component is not None and value is not None:
-            component.set_quota(name, value)
+        quota_component = self._map_to_component(name)
+        if quota_component is not None and value is not None:
+            quota_component.set_quota(name, value)
