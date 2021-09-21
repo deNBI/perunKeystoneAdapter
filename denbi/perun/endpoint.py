@@ -22,7 +22,7 @@ def import_json(path):
     :param path: json file to read
     :return: json object
     """
-    with open(path, 'r') as json_file:
+    with open(path, 'r', encoding='utf-8') as json_file:
         json_obj = json.loads(json_file.read())
     return json_obj
 
