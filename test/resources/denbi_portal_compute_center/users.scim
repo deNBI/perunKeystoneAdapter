@@ -2,6 +2,7 @@
    {
       "blacklisted" : null,
       "status" : "VALID",
+      "login-namespace:elixir" : "user1",
       "login-namespace:elixir-persistent" : "d877b2f6-3b90-4483-89ce-91eab1bdba99__@elixir-europe.org",
       "denbiVmsRunning" : null,
       "id" : 50000,
@@ -11,6 +12,7 @@
    {
       "blacklisted" : null,
       "status" : "VALID",
+      "login-namespace:elixir" : "user2",
       "login-namespace:elixir-persistent" : "b3d216a7-8696-451a-9cbf-b8d5e17a6ec2__@elixir-europe.org",
       "denbiVmsRunning" : null,
       "id" : 50001,
@@ -22,6 +24,7 @@
    {
       "blacklisted" : null,
       "status" : "VALID",
+      "login-namespace:elixir" : "user3",
       "login-namespace:elixir-persistent" : "bb01cabe-eae7-4e46-955f-b35db6e3d552__@elixir-europe.org",
       "denbiVmsRunning" : null,
       "id" : 50002,
@@ -31,6 +34,7 @@
    {
      "blacklisted" : null,
      "status" : "VALID",
+     "login-namespace:elixir" : "user4",
      "login-namespace:elixir-persistent" : "ce317030-288f-4712-9e5c-922539777c62__@elixir-europe.org",
      "denbiVmsRunning" : null,
      "id" : 50003,
@@ -40,6 +44,7 @@
    {
      "blacklisted" : null,
      "status" : "INVALID",
+     "login-namespace:elixir" : "user5",
      "login-namespace:elixir-persistent" : "60420cf9-eb3e-45f4-8e1b-f8a2b317b042__@elixir-europe.org",
      "denbiVmsRunning" : null,
      "id" : 50004,
