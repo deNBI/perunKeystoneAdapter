@@ -278,12 +278,13 @@ class KeyStone:
         # no matching domain found....
         raise Exception("Unknown or inaccessible domain %s" % target_domain)
 
-    def users_create(self, elixir_id, perun_id, email=None, enabled=True):
+    def users_create(self, elixir_id, perun_id, elixir_name=None, email=None, enabled=True):
         """
         Create a new user and updates internal user list
 
         :param elixir_id: elixir_id of the user to be created
         :param perun_id: perun_id of the user to be created
+        :param elixir_name: elixir_name of the user to be created (optional, default is None)
         :param email: email of the user to be created (optional, default is None)
         :param enabled: status of the user (optional, default is None)
 
@@ -296,6 +297,7 @@ class KeyStone:
                                                  perun_id=str(perun_id),  # str
                                                  enabled=enabled,  # bool
                                                  deleted=False,  # bool
+                                                 elixir_name=str(elixir_name),
                                                  flag=self.flag)  # str
             denbi_user = {'id': str(os_user.id),
                           'elixir_id': str(os_user.name),
@@ -307,6 +309,11 @@ class KeyStone:
                 denbi_user['email'] = str(os_user.email)
             else:
                 denbi_user['email'] = str(None)
+
+            if hasattr(os_user, 'elixir-name'):
+                denbi_user['elixir_name'] = str(os_user.elixir_name)
+            else:
+                denbi_user['elixir_name'] = str(None)
         else:
             # Read-only
             denbi_user = {'id': 'read-only',
@@ -356,12 +363,13 @@ class KeyStone:
         else:
             raise ValueError('User with perun_id %s not found in user_map' % perun_id)
 
-    def users_update(self, perun_id, elixir_id=None, email=None, enabled=None, deleted=False):
+    def users_update(self, perun_id, elixir_id=None, elixir_name=None, email=None, enabled=None, deleted=False):
         """
         Update an existing user entry.
 
 
         :param elixir_id: elixir id
+        :param elixir_name: elixir name
         :param email: email
         :param enabled: status
 
@@ -373,17 +381,20 @@ class KeyStone:
 
             if elixir_id is None:
                 elixir_id = denbi_user['elixir_id']
+            if elixir_name is None:
+                elixir_name = denbi_user['elixir_name']
             if email is None:
                 email = denbi_user['email']
             if enabled is None:
                 enabled = denbi_user['enabled']
 
             if not self.ro:
-                os_user = self.keystone.users.update(denbi_user['id'],  # str
-                                                     name=str(elixir_id),  # str
-                                                     email=str(email),  # str
-                                                     enabled=bool(enabled),  # bool
-                                                     deleted=bool(deleted))  # bool
+                os_user = self.keystone.users.update(denbi_user['id'],              # str
+                                                     name=str(elixir_id),           # str
+                                                     email=str(email),              # str
+                                                     enabled=bool(enabled),         # bool
+                                                     elixir_name=str(elixir_name),  # str
+                                                     deleted=bool(deleted))         # bool
 
                 denbi_user['elixir-id'] = str(os_user.name)
                 denbi_user['enabled'] = bool(os_user.enabled)
@@ -408,21 +419,29 @@ class KeyStone:
         self.__user_id2perun_id__ = {}
         for os_user in self.keystone.users.list(domain=self.target_domain_id):
             # consider only correct flagged user
-            # any other checks (like for name or perun_id are then not neccessary ...
+            # any other checks (like for name or perun_id are then not necessary ...
             if hasattr(os_user, "flag") and str(os_user.flag) == self.flag:
                 if not hasattr(os_user, 'perun_id'):
                     raise Exception("User ID %s should have perun_id" % (os_user.id, ))
 
-                denbi_user = {'id': str(os_user.id),  # str
-                              'perun_id': str(os_user.perun_id),  # str
-                              'elixir_id': str(os_user.name),  # str
-                              'enabled': bool(os_user.enabled),  # boolean
+                denbi_user = {'id': str(os_user.id),                    # str
+                              'perun_id': str(os_user.perun_id),        # str
+                              'elixir_id': str(os_user.name),           # str
+                              'elixir_name': str(os_user.elixir_name),  # str
+                              'enabled': bool(os_user.enabled),         # boolean
                               'deleted': bool(getattr(os_user, 'deleted', False))}  # boolean
+
                 # check for optional attribute email
                 if hasattr(os_user, 'email'):
                     denbi_user['email'] = str(os_user.email)  # str
                 else:
                     denbi_user['email'] = str(None)  # str
+
+                # check for optional attribute elixir_name
+                if not hasattr(os_user,'elixir_name'):
+                    denbi_user['elixir_name'] = str(os_user.elixir_name)
+                else:
+                    denbi_user['elixir_name'] = str(None)
 
                 # create entry in maps
                 self.denbi_user_map[denbi_user['perun_id']] = denbi_user

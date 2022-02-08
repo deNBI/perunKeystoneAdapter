@@ -235,15 +235,16 @@ class Endpoint(object):
                     user = user_map[perun_id]
                     if not (user['perun_id'] == perun_id
                             and user['elixir_id'] == elixir_id
+                            and user['elixir_name'] == elixir_name
                             and user['email'] == email
                             and user['enabled'] == enabled):
                         # update user
                         self.logging.info("Updating user %s elixir_id=%s email=%s enabled=%s", perun_id, elixir_id, email, enabled)
-                        self.keystone.users_update(perun_id, elixir_id, email, enabled)
+                        self.keystone.users_update(perun_id, elixir_id, elixir_name, email, enabled)
                 else:
                     # register user in keystone
                     self.logging.info("Creating user %s elixir_id=%s email=%s, enabled=%s", perun_id, elixir_id, email, enabled)
-                    self.keystone.users_create(elixir_id, perun_id, email=email, enabled=enabled)
+                    self.keystone.users_create(elixir_id, perun_id, elixir_name=elixir_name, email=email, enabled=enabled)
 
                 # add perun_id to temporary list
                 user_ids.append(perun_id)
