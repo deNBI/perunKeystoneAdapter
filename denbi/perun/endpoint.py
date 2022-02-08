@@ -131,7 +131,7 @@ class Endpoint(object):
         # convert scim json to keystone compatible hash
         for scim_user in json_obj:
 
-            # check for mandantory fields (id, login, status)
+            # check for mandatory fields (id, login, status)
             if 'id' in scim_user and 'login' in scim_user and 'status' in scim_user:
                 perun_id = str(scim_user['id'])
                 elixir_id = str(scim_user['login'])
@@ -223,6 +223,7 @@ class Endpoint(object):
             if 'id' in dpcc_user and 'login-namespace:elixir-persistent' in dpcc_user and 'status' in dpcc_user:
                 perun_id = str(dpcc_user['id'])
                 elixir_id = str(dpcc_user['login-namespace:elixir-persistent'])
+                elixir_name = str(dpcc_user['login-namespace:elixir'])
                 enabled = str(dpcc_user['status']) == 'VALID'
                 email = None
                 if self.store_email and 'preferredMail' in dpcc_user:
