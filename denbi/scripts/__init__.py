@@ -1,10 +1,11 @@
 import os
 from keystoneauth1.identity import v3
 from keystoneauth1 import session
-from keystoneclient.v3 import client
+import keystoneclient.v3
+import novaclient
 
 
-def obtain_keystone():
+def obtain_keyston_session():
     auth = v3.Password(
         auth_url=os.environ['OS_AUTH_URL'],
         username=os.environ['OS_USERNAME'],
@@ -13,6 +14,10 @@ def obtain_keystone():
         user_domain_name=os.environ['OS_USER_DOMAIN_NAME'],
         project_domain_name=os.environ['OS_USER_DOMAIN_NAME']
     )
-    sess = session.Session(auth=auth)
-    keystone = client.Client(session=sess, interface="public")
-    return keystone
+    return session.Session(auth=auth)
+
+def obtain_keystone():
+    return keystoneclient.v3.Client(session=obtain_keyston_session(), interface="public")
+
+def obtain_nova():
+    return novaclient.Client(2,session=obtain_keyston_session())
