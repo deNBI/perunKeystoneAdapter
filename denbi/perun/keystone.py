@@ -18,8 +18,10 @@ import yaml
 from denbi.perun.quotas import manager as quotas
 from keystoneauth1.identity import v3
 from keystoneauth1 import session
-from keystoneclient.v3 import client
+from keystoneclient.v3 import client as keystone
 from keystoneauth1.exceptions import Unauthorized
+
+from novaclient import client as nova
 
 
 class KeyStone:
@@ -49,7 +51,7 @@ class KeyStone:
         - OS_USER_DOMAIN_NAME
         - OS_DOMAIN_NAME        (for domain scoped access)
 
-        Instead of the system variables a "local" enviroment (a dict) can be explicitly set
+        Instead of the system variables a "local" environment (a dict) can be explicitly set
 
         :param environ: local environ used instead of system environment
         :param default_role: default role used for all users (default is "_member_")
@@ -57,7 +59,7 @@ class KeyStone:
         :param flag: value used to mark users/projects (default is perun_propagation)
         :param target_domain_name: domain where all users & projects are created, will be created if it not exists
         :param read_only: do not make any changes to the keystone
-        :param nested: use nested projects instead of cloud/domain admin accesss
+        :param nested: use nested projects instead of cloud/domain admin accesses
         :param cloud_admin: credentials are cloud admin credentials
 
         """
@@ -74,7 +76,7 @@ class KeyStone:
             project_session = session.Session(auth=auth)
 
             # create session
-            self._project_keystone = client.Client(session=project_session)
+            self._project_keystone = keystone.Client(session=project_session)
             self._domain_keystone = self._project_keystone
 
             try:
@@ -106,8 +108,8 @@ class KeyStone:
                 raise Exception("Authorization for project session failed, wrong credentials / role?")
 
             # store both session for later use
-            self._domain_keystone = client.Client(session=domain_session)
-            self._project_keystone = client.Client(session=project_session)
+            self._domain_keystone = keystone.Client(session=domain_session)
+            self._project_keystone = keystone.Client(session=project_session)
 
             # override the domain name if necessary
             # we need to check that a correct value is given if a different
@@ -171,6 +173,9 @@ class KeyStone:
         # initialize the quota factory
         self._quota_factory = quotas.QuotaFactory(project_session)
 
+        # initialize keystone client
+        self._nova = nova
+
     @property
     def domain_keystone(self):
         return self._domain_keystone
@@ -189,6 +194,10 @@ class KeyStone:
     @property
     def quota_factory(self):
         return self._quota_factory
+
+    @property
+    def nova(self):
+        return self._nova
 
     def _create_auth(self, environ, auth_at_domain=False):
         """
@@ -278,7 +287,7 @@ class KeyStone:
         # no matching domain found....
         raise Exception("Unknown or inaccessible domain %s" % target_domain)
 
-    def users_create(self, elixir_id, perun_id, elixir_name=None, email=None, enabled=True):
+    def users_create(self, elixir_id, perun_id, elixir_name=None, ssh_key=None, email=None, enabled=True):
         """
         Create a new user and updates internal user list
 
@@ -288,17 +297,18 @@ class KeyStone:
         :param email: email of the user to be created (optional, default is None)
         :param enabled: status of the user (optional, default is None)
 
-        :return: a denbi_user hash {id:string, elixir_id:string, perun_id:string, email:string, enabled: boolean}
+        :return: a denbi_user hash {id: string, elixir_id: string, perun_id: string, email: string, enabled: boolean}
         """
         if not self.ro:
-            os_user = self.keystone.users.create(name=str(elixir_id),  # str
-                                                 domain=str(self.target_domain_id),  # str
-                                                 email=str(email),  # str
-                                                 perun_id=str(perun_id),  # str
-                                                 enabled=enabled,  # bool
-                                                 deleted=False,  # bool
-                                                 elixir_name=str(elixir_name),
-                                                 flag=self.flag)  # str
+            os_user = self.keystone.users.create(name=str(elixir_id),                   # str
+                                                 domain=str(self.target_domain_id),     # str
+                                                 email=str(email),                      # str
+                                                 perun_id=str(perun_id),                # str
+                                                 enabled=enabled,                       # bool
+                                                 deleted=False,                         # bool
+                                                 elixir_name=str(elixir_name),          # str
+                                                 flag=self.flag)                        # str
+
             denbi_user = {'id': str(os_user.id),
                           'elixir_id': str(os_user.name),
                           'perun_id': str(os_user.perun_id),
@@ -314,6 +324,15 @@ class KeyStone:
                 denbi_user['elixir_name'] = str(os_user.elixir_name)
             else:
                 denbi_user['elixir_name'] = str(None)
+
+            # create keypair for user if set
+            if ssh_key:
+                self.nova.keypairs.create(name="denbi_by_perun",
+                                          public_key=ssh_key,
+                                          key_type="ssh",
+                                          user_id=os_user.id)
+            denbi_user['ssh-key'] = str(ssh_key)
+
         else:
             # Read-only
             denbi_user = {'id': 'read-only',
@@ -321,6 +340,7 @@ class KeyStone:
                           'perun_id': perun_id,
                           'enabled': enabled,
                           'email': str(email),
+                          'ssh-key': str(ssh_key),
                           'deleted': False}
 
         self.logger.info("Create user [%s,%s,%s].", denbi_user['elixir_id'], denbi_user['perun_id'], denbi_user['id'])
@@ -332,7 +352,7 @@ class KeyStone:
 
     def users_delete(self, perun_id):
         """
-        Disable the user and tag it as deleted. Since it is dangerous to delete a user completly, the delete function
+        Disable the user and tag it as deleted. Since it is dangerous to delete a user completely, the delete function
         just disable the user and tag it as deleted. To remove an user completely use the function terminate.
 
         :param perun_id: perunid of user to be deleted
@@ -352,8 +372,12 @@ class KeyStone:
         perun_id = str(perun_id)
         if perun_id in self.denbi_user_map:
             denbi_user = self.denbi_user_map[perun_id]
-            # delete user
+
             if not self.ro:
+                # delete keys
+                for keypair in self.nova.keypairs.list(user_id=denbi_user['id']):
+                    self.nova.keypairs.delete(key=keypair, user_id=denbi_user['id'])
+                # delete users
                 self.keystone.users.delete(denbi_user['id'])
 
             self.logger.info("Terminate user [%s,%s,%s]", denbi_user['elixir_id'], denbi_user['perun_id'], denbi_user['id'])
@@ -438,7 +462,7 @@ class KeyStone:
                     denbi_user['email'] = str(None)  # str
 
                 # check for optional attribute elixir_name
-                if not hasattr(os_user,'elixir_name'):
+                if not hasattr(os_user, 'elixir_name'):
                     denbi_user['elixir_name'] = str(os_user.elixir_name)
                 else:
                     denbi_user['elixir_name'] = str(None)
