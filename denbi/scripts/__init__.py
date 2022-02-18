@@ -16,8 +16,10 @@ def obtain_keystone_session():
     )
     return session.Session(auth=auth)
 
+
 def obtain_keystone():
     return keystone.Client(session=obtain_keystone_session(), interface="public")
 
+
 def obtain_nova():
-    return nova.Client(2,session=obtain_keystone_session())
+    return nova.Client(2, session=obtain_keystone_session())
