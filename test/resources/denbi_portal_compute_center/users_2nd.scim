@@ -13,7 +13,7 @@
    },
    {
       "blacklisted" : null,
-      "status" : "VALID",
+      "status" : "INVALID",
       "login-namespace:elixir" : "user3",
       "login-namespace:elixir-persistent" : "bb01cabe-eae7-4e46-955f-b35db6e3d552__@elixir-europe.org",
       "denbiVmsRunning" : null,
