@@ -36,8 +36,8 @@ test_adapter:
 	bash -c 'while true; do docker-compose logs --tail=10 | grep "exited: keystone-bootstrap"; ec=$$?; if ((ec==0)); then break; else echo -n .; sleep 2; fi; done;'
 	# Then start testing
 	curl -T test/resources/perun.tar.gz localhost:8000/upload
-	sleep 5
-	docker-compose logs | grep "INFO:root:Finished processing"
+	sleep 10
+	docker-compose logs | grep "Finished processing"
 	# Cleanup
 	docker-compose kill
 	docker-compose rm -f
