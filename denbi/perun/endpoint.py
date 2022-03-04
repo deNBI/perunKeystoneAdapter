@@ -250,7 +250,7 @@ class Endpoint(object):
                             and user['ssh_key'] == ssh_key):
                         # update user
                         self.logging.info(f"Updating user {perun_id} elixir_id={elixir_id} elixir_name={elixir_name} "
-                                          f"email={email} enabled={enabled}")
+                                          f"email={email} enabled={enabled} ssh_key={ssh_key}")
                         self.keystone.users_update(perun_id, elixir_id=elixir_id, elixir_name=elixir_name,
                                                    ssh_key=ssh_key, email=email, enabled=enabled)
                 else:

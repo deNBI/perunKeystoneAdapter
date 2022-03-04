@@ -422,8 +422,8 @@ class KeyStone:
                                                      elixir_name=str(elixir_name),  # str
                                                      deleted=bool(deleted))         # bool
 
-                denbi_user['elixir-id'] = str(os_user.name)
-                denbi_user['elixir-name'] = str(os_user.elixir_name)
+                denbi_user['elixir_id'] = str(os_user.name)
+                denbi_user['elixir_name'] = str(os_user.elixir_name)
                 denbi_user['enabled'] = bool(os_user.enabled)
                 denbi_user['deleted'] = bool(os_user.deleted)
                 denbi_user['email'] = str(os_user.email)
@@ -442,6 +442,7 @@ class KeyStone:
                                                   public_key=ssh_key,
                                                   key_type="ssh",
                                                   user_id=os_user.id)
+                    denbi_user['ssh_key'] = ssh_key
 
             self.denbi_user_map[denbi_user['perun_id']] = denbi_user
 
