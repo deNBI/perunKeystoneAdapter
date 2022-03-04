@@ -73,14 +73,20 @@ class Endpoint(object):
         'denbiProjectNumberOfSnapshots': {'name': 'snapshots', 'factor': 1},
         'denbiProjectVolumeCounter': {'name': 'volumes', 'factor': 1}}
 
-    def __init__(self, keystone=None, mode="scim", store_email=True,
-                 support_quotas=True, read_only=False, logging_domain="denbi"):
+    def __init__(self, keystone=None, mode="scim",
+                 store_email=True,
+                 support_quotas=True,
+                 support_elixir_name=True,
+                 support_ssh_key=True,
+                 read_only=False,
+                 logging_domain="denbi"):
         '''
 
         :param keystone: initialized keystone object
         :param mode: 'scim' or 'denbi_portal_compute_center'
         :param store_email : should an available email address stored ?
         :param support_quotas : should quotas supported
+        :param support_elixir_name : should an available elixir_name stored ?
         :param read_only: test mode
         :param logging_domain
         '''
@@ -219,7 +225,7 @@ class Endpoint(object):
 
         # convert denbi_portal_compute_center json to keystone compatible hash
         for dpcc_user in json_obj:
-            # check for mandantory fields (id, login, status)
+            # check for mandatory fields (id, login, status)
             if 'id' in dpcc_user and 'login-namespace:elixir-persistent' in dpcc_user and 'status' in dpcc_user:
                 perun_id = str(dpcc_user['id'])
                 elixir_id = str(dpcc_user['login-namespace:elixir-persistent'])
@@ -228,6 +234,9 @@ class Endpoint(object):
                 email = None
                 if self.store_email and 'preferredMail' in dpcc_user:
                     email = str(dpcc_user['preferredMail'])
+                ssh_key = None
+                if 'sshPublicKey' in dpcc_user and dpcc_user['sshPublicKey'] is not None and len(dpcc_user['sshPublicKey']) > 0:
+                    ssh_key = str(dpcc_user['sshPublicKey'][0])
 
                 # user already registered in keystone
                 if perun_id in user_map:
@@ -237,14 +246,19 @@ class Endpoint(object):
                             and user['elixir_id'] == elixir_id
                             and user['elixir_name'] == elixir_name
                             and user['email'] == email
-                            and user['enabled'] == enabled):
+                            and user['enabled'] == enabled
+                            and user['ssh_key'] == ssh_key):
                         # update user
-                        self.logging.info("Updating user %s elixir_id=%s email=%s enabled=%s", perun_id, elixir_id, email, enabled)
-                        self.keystone.users_update(perun_id, elixir_id, elixir_name, email, enabled)
+                        self.logging.info(f"Updating user {perun_id} elixir_id={elixir_id} elixir_name={elixir_name} "
+                                          f"email={email} enabled={enabled}")
+                        self.keystone.users_update(perun_id, elixir_id=elixir_id, elixir_name=elixir_name,
+                                                   ssh_key=ssh_key, email=email, enabled=enabled)
                 else:
                     # register user in keystone
-                    self.logging.info("Creating user %s elixir_id=%s email=%s, enabled=%s", perun_id, elixir_id, email, enabled)
-                    self.keystone.users_create(elixir_id, perun_id, elixir_name=elixir_name, email=email, enabled=enabled)
+                    self.logging.info(f"Creating user {perun_id} elixir_id={elixir_id} elixir_name={elixir_name} "
+                                      f"email={email} enabled={enabled}")
+                    self.keystone.users_create(elixir_id, perun_id, elixir_name=elixir_name, email=email,
+                                               ssh_key=ssh_key, enabled=enabled)
 
                 # add perun_id to temporary list
                 user_ids.append(perun_id)

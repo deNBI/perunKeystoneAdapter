@@ -173,8 +173,8 @@ class KeyStone:
         # initialize the quota factory
         self._quota_factory = quotas.QuotaFactory(project_session)
 
-        # initialize keystone client
-        self._nova = nova
+        # initialize nova client (API version is Train)
+        self._nova = nova.Client(version='2.79', session=project_session)
 
     @property
     def domain_keystone(self):
@@ -202,7 +202,7 @@ class KeyStone:
     def _create_auth(self, environ, auth_at_domain=False):
         """
         Helper method to create the auth object for keystone, depending on the
-        given environment (Explicite environment, clouds.yaml or os environment
+        given environment (Explicit environment, clouds.yaml or os environment
         are supported.
 
         This method supports authentication via project scoped tokens for
@@ -320,7 +320,7 @@ class KeyStone:
             else:
                 denbi_user['email'] = str(None)
 
-            if hasattr(os_user, 'elixir-name'):
+            if hasattr(os_user, 'elixir_name'):
                 denbi_user['elixir_name'] = str(os_user.elixir_name)
             else:
                 denbi_user['elixir_name'] = str(None)
@@ -331,7 +331,7 @@ class KeyStone:
                                           public_key=ssh_key,
                                           key_type="ssh",
                                           user_id=os_user.id)
-            denbi_user['ssh-key'] = str(ssh_key)
+            denbi_user['ssh_key'] = str(ssh_key)
 
         else:
             # Read-only
@@ -340,10 +340,11 @@ class KeyStone:
                           'perun_id': perun_id,
                           'enabled': enabled,
                           'email': str(email),
-                          'ssh-key': str(ssh_key),
+                          'ssh_key': str(ssh_key),
                           'deleted': False}
 
-        self.logger.info("Create user [%s,%s,%s].", denbi_user['elixir_id'], denbi_user['perun_id'], denbi_user['id'])
+        self.logger.info(f"Create user [{denbi_user['perun_id']},{denbi_user['elixir_id']},"
+                         f"{denbi_user['elixir_name']},{denbi_user['id']}].")
 
         self.__user_id2perun_id__[denbi_user['id']] = denbi_user['perun_id']
         self.denbi_user_map[denbi_user['perun_id']] = denbi_user
@@ -387,7 +388,7 @@ class KeyStone:
         else:
             raise ValueError('User with perun_id %s not found in user_map' % perun_id)
 
-    def users_update(self, perun_id, elixir_id=None, elixir_name=None, email=None, enabled=None, deleted=False):
+    def users_update(self, perun_id, elixir_id=None, elixir_name=None, email=None, ssh_key=None, enabled=None, deleted=False):
         """
         Update an existing user entry.
 
@@ -395,6 +396,7 @@ class KeyStone:
         :param elixir_id: elixir id
         :param elixir_name: elixir name
         :param email: email
+        :param ssh_key: ssh_key
         :param enabled: status
 
         :return: the modified denbi_user hash
@@ -421,9 +423,25 @@ class KeyStone:
                                                      deleted=bool(deleted))         # bool
 
                 denbi_user['elixir-id'] = str(os_user.name)
+                denbi_user['elixir-name'] = str(os_user.elixir_name)
                 denbi_user['enabled'] = bool(os_user.enabled)
                 denbi_user['deleted'] = bool(os_user.deleted)
                 denbi_user['email'] = str(os_user.email)
+
+                #  If ssh_key changes, we have to do some extra checks.
+                if ssh_key != denbi_user['ssh_key']:
+                    # if already a ssh_key named 'denbi_by_perun' is located in database,
+                    # we have to remove it beforehand.
+                    for key in self.nova.keypairs.list(user_id=os_user.id):
+                        if key.name == 'denbi_by_perun':
+                            self.nova.keypairs.delete(key,user_id=os_user.id)
+                            break
+                    # if ssh_key is not None, we have to create new keypair
+                    if ssh_key is not None:
+                        self.nova.keypairs.create(name="denbi_by_perun",
+                                                  public_key=ssh_key,
+                                                  key_type="ssh",
+                                                  user_id=os_user.id)
 
             self.denbi_user_map[denbi_user['perun_id']] = denbi_user
 
@@ -461,11 +479,13 @@ class KeyStone:
                 else:
                     denbi_user['email'] = str(None)  # str
 
-                # check for optional attribute elixir_name
-                if not hasattr(os_user, 'elixir_name'):
-                    denbi_user['elixir_name'] = str(os_user.elixir_name)
-                else:
-                    denbi_user['elixir_name'] = str(None)
+                # check for an propagated ssh-key (named denbi_by_perun)
+                keypairs = self._nova.keypairs.list(user_id=os_user.id)
+                denbi_user['ssh_key'] = str(None)
+                if keypairs:
+                    for keypair in keypairs:
+                        if keypair.name == 'denbi_by_perun':
+                            denbi_user['ssh_key'] = keypair.public_key
 
                 # create entry in maps
                 self.denbi_user_map[denbi_user['perun_id']] = denbi_user
