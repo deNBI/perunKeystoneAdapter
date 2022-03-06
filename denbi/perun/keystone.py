@@ -85,7 +85,7 @@ class KeyStone:
             try:
                 self.target_domain_id = self._project_keystone.domains.list(name=target_domain_name)[0].id
             except IndexError:
-                raise Exception("Unknown domain {}".format(target_domain_name))
+                raise Exception(f"Unknown domain {target_domain_name}")
 
         else:
             # use two separate sessions for domain and project access
@@ -132,13 +132,11 @@ class KeyStone:
                 # use project domain
                 self.target_domain_id = domain_access.domain_id
 
-            self.log.debug("Working on domain %s", self.target_domain_id)
+            self.log.debug(f"Working on domain {self.target_domain_id}.")
 
             if nested:
                 self.parent_project_id = project_access.project_id
-                self.log.debug("Using nested project %s (id %s)",
-                               project_access.project_name,
-                               self.parent_project_id)
+                self.log.debug(f"Using nested project {project_access.project_name} (id {self.parent_project_id})")
             else:
                 self.parent_project_id = None
 
@@ -156,14 +154,14 @@ class KeyStone:
                 if not self.ro:
                     role = self.domain_keystone.roles.create(self.default_role)
                     self.default_role_id = str(role.id)
-                    self.log.debug('Created default role %s (id %s)', role.name, role.id)
+                    self.log.debug(f"Created default role {role.name} (id {role.id})")
                 else:
                     self.default_role_id = 'read-only'
                     self.log.debug('Read-only mode, not creating default role')
             else:
-                raise Exception("Default role %s does not exists and should not be created!" % default_role)
+                raise Exception(f"Default role {default_role} does not exists and should not be created!")
         else:
-            self.log.debug('Using existing default role %s (id %s)', default_role, self.default_role_id)
+            self.log.debug(f"Using existing default role {default_role} (id {self.default_role_id})")
 
         self.flag = flag
 
@@ -176,7 +174,7 @@ class KeyStone:
         # initialize the quota factory
         self._quota_factory = quotas.QuotaFactory(project_session)
 
-        # initialize nova client (API version is Train)
+        # initialize nova client (minimum needed API version is Train)
         self._nova = nova.Client(version='2.79', session=project_session)
 
     @property
@@ -249,7 +247,7 @@ class KeyStone:
                         environ['OS_DOMAIN_NAME'] = clouds_yaml['clouds']['openstack']['auth']['domain_name'] if 'domain_name' in clouds_yaml['clouds']['openstack']['auth'] else None
 
                     except Exception as e:
-                        raise Exception("Error parsing/reading clouds.yaml (%s)." % clouds_yaml_file, e)
+                        raise Exception(f"Error parsing/reading clouds.yaml ({clouds_yaml_file}).", e)
 
             else:
                 environ = os.environ
@@ -288,7 +286,7 @@ class KeyStone:
             if (domain.id == target_domain or domain.name == target_domain):
                 return domain.id
         # no matching domain found....
-        raise Exception("Unknown or inaccessible domain %s" % target_domain)
+        raise Exception(f"Unknown or inaccessible domain {target_domain}.")
 
     def users_create(self, elixir_id, perun_id, elixir_name=None, ssh_key=None, email=None, enabled=True):
         """
@@ -347,7 +345,7 @@ class KeyStone:
                           'deleted': False}
 
         # Log keystone update
-        self.log2.debug("Create user [%s,%s,%s].", denbi_user['elixir_id'], denbi_user['perun_id'], denbi_user['id'])
+        self.log2.debug(f"Create user [{denbi_user['elixir_id']},{denbi_user['perun_id']},{denbi_user['id']}].")
 
         self.__user_id2perun_id__[denbi_user['id']] = denbi_user['perun_id']
         self.denbi_user_map[denbi_user['perun_id']] = denbi_user
@@ -385,12 +383,12 @@ class KeyStone:
                 self.keystone.users.delete(denbi_user['id'])
 
             # Log keystone update
-            self.log2.debug("user [%s,%s]: terminate", denbi_user['perun_id'], denbi_user['elixir_id'])
+            self.log2.debug(f"User [{denbi_user['perun_id']},{denbi_user['elixir_id']}] terminated.")
 
             # remove entry from map
             del(self.denbi_user_map[perun_id])
         else:
-            raise ValueError('User with perun_id %s not found in user_map' % perun_id)
+            raise ValueError(f"User with perun_id {perun_id} not found in user_map.")
 
     def users_update(self, perun_id, elixir_id=None, elixir_name=None, email=None, ssh_key=None, enabled=None, deleted=False):
         """
@@ -451,11 +449,13 @@ class KeyStone:
             self.denbi_user_map[denbi_user['perun_id']] = denbi_user
 
             # Log Keystone update
-            self.log2.debug("user [%s,%s]:  %s %s", denbi_user['perun_id'], denbi_user['elixir_id'], "enabled" if denbi_user['enabled'] else "disabled", "and deleted" if denbi_user['deleted'] else "")
+            self.log2.debug(f"user [{denbi_user['perun_id']},{denbi_user['elixir_id']}]: "
+                            f"{'enabled' if denbi_user['enabled'] else 'disabled'} "
+                            f"{'and deleted' if denbi_user['deleted'] else ''}")
 
             return denbi_user
         else:
-            raise ValueError('User with perun_id %s not found in user_map' % perun_id)
+            raise ValueError(f'User with perun_id {perun_id} not found in user_map')
 
     def users_map(self):
         """
@@ -470,7 +470,7 @@ class KeyStone:
             # any other checks (like for name or perun_id are then not necessary ...
             if hasattr(os_user, "flag") and str(os_user.flag) == self.flag:
                 if not hasattr(os_user, 'perun_id'):
-                    raise Exception("User ID %s should have perun_id" % (os_user.id, ))
+                    raise Exception(f"User ID {os_user.id} should have perun_id")
 
                 denbi_user = {'id': str(os_user.id),                    # str
                               'perun_id': str(os_user.perun_id),        # str
@@ -541,7 +541,7 @@ class KeyStone:
                              'scratched': False,
                              'members': []}
         # Log keystone update
-        self.log2.debug("project [%s,%s]: created", denbi_project['perun_id'], denbi_project['id'])
+        self.log2.debug(f"project [{denbi_project['perun_id']},{denbi_project['id']}]: created.")
 
         self.denbi_project_map[denbi_project['perun_id']] = denbi_project
         self.__project_id2perun_id__[denbi_project['id']] = denbi_project['perun_id']

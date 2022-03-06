@@ -61,15 +61,15 @@ class TestEndpoint(unittest.TestCase):
 
         # check for "Jens Mustermann" with perun_id == "1"
         self.assertTrue("1" in after_import_users)
-        self._test_user(after_import_users['1'], perun_id='1', elixir_id='d877b2f6-3b90-4483-89ce-91eab1bdba99@elixir-europe.org', email='jens.mustermann@test.de', enabled=True)
+        test.test_user(self,denbiuser=after_import_users['1'], perun_id='1', elixir_id='d877b2f6-3b90-4483-89ce-91eab1bdba99@elixir-europe.org', email='jens.mustermann@test.de', enabled=True)
 
         # check for "Thomas Mueller" with perun_id == "2"
         self.assertTrue("2" in after_import_users)
-        test.test_user(self,after_import_users['2'], perun_id='2', elixir_id='afec0f6d-acd4-4dff-939d-208bfc272512@elixir-europe.org', email='thomas@mueller.de', enabled=False)
+        test.test_user(self,denbiuser=after_import_users['2'], perun_id='2', elixir_id='afec0f6d-acd4-4dff-939d-208bfc272512@elixir-europe.org', email='thomas@mueller.de', enabled=False)
 
         # check for "Paul Paranoid" with perun_id == "3"
         self.assertTrue("3" in after_import_users)
-        test.test_user(self,after_import_users['3'], perun_id='3', elixir_id='b3d216a7-8696-451a-9cbf-b8d5e17a6ec2@elixir-europe.org', email=None, enabled=True)
+        test.test_user(self,denbiuser=after_import_users['3'], perun_id='3', elixir_id='b3d216a7-8696-451a-9cbf-b8d5e17a6ec2@elixir-europe.org', email=None, enabled=True)
 
         # check for "Test Project" with perun_id =="9845"
         self.assertTrue("9845" in after_import_projects)
@@ -168,6 +168,7 @@ class TestEndpoint(unittest.TestCase):
                         perun_id='50000',
                         elixir_id='d877b2f6-3b90-4483-89ce-91eab1bdba99__@elixir-europe.org',
                         elixir_name='user1',
+                        email='user1@donot.use',
                         enabled=True)
         # user 2 - enabled
         self.assertTrue('50001' in after_import_users)
@@ -175,6 +176,7 @@ class TestEndpoint(unittest.TestCase):
                         perun_id='50001',
                         elixir_id='b3d216a7-8696-451a-9cbf-b8d5e17a6ec2__@elixir-europe.org',
                         elixir_name='user2',
+                        email='user2@donot.use',
                         enabled=True,
                         ssh_key="ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDAVHWAYM0dsLYsW9BRZYWHBgxlmWS1V58jaQLFpUOpS"
                                 "6lRajwoorLcSJu0HOEtNi0JV4K43Sq/zQQsYe49NBxNcwYxmO1mRtA2tuz+azB1AvPLtE4WQHz6W09wMp"
@@ -191,6 +193,7 @@ class TestEndpoint(unittest.TestCase):
                         perun_id='50002',
                         elixir_id='bb01cabe-eae7-4e46-955f-b35db6e3d552__@elixir-europe.org',
                         elixir_name='user3',
+                        email='user3@donotuse',
                         enabled=True)
         # user 4 - enabled
         self.assertTrue('50003' in after_import_users)
@@ -198,6 +201,7 @@ class TestEndpoint(unittest.TestCase):
                         perun_id='50003',
                         elixir_id='ce317030-288f-4712-9e5c-922539777c62__@elixir-europe.org',
                         elixir_name='user4',
+                        email='user4@donotuse',
                         enabled=True)
         # user 5 - disabled
         self.assertTrue('50004' in after_import_users)
@@ -205,6 +209,7 @@ class TestEndpoint(unittest.TestCase):
                         perun_id='50004',
                         elixir_id='60420cf9-eb3e-45f4-8e1b-f8a2b317b042__@elixir-europe.org',
                         elixir_name='user5',
+                        email='user5@donotuse',
                         enabled=False)
 
         # project 1
@@ -219,10 +224,11 @@ class TestEndpoint(unittest.TestCase):
                            perun_id='10000',
                            members=['50003'])
 
-        # import 2nd test data set, which should update the data-sets
+        # import 2nd test data set, which should update the 1st data-set
         self.endpoint.import_data(os.path.join(TESTDIR, 'resources', 'denbi_portal_compute_center', 'users_2nd.scim'),
                                   os.path.join(TESTDIR, 'resources', 'denbi_portal_compute_center', 'groups_2nd.scim'))
 
+        # reread users and project map from database
         after_import_users = self.keystone.users_map()
         after_import_projects = self.keystone.projects_map()
 
@@ -232,45 +238,43 @@ class TestEndpoint(unittest.TestCase):
                         perun_id='50000',
                         elixir_id='d877b2f6-3b90-4483-89ce-91eab1bdba99__@elixir-europe.org',
                         elixir_name='user1',
+                        email='user1@donot.use',
                         enabled=True,
                         ssh_key="ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC580K3zIwR59Ur+A6NkcWYufWTUaSmrDFWiobhtLUXauq"
                                 "QFyYpJHXOfp4ZtPYtnlLDRFhlCdIta1NgYGx2klJa/ySObSmbaasg7gCRClTMRS/6vCOg3Vkw6JbQX1Si8x"
                                 "LVsy1dlpR9rf5PW3o7pPVZ8nRMwDN+qtqLNdFjhzjEmpEsFSFWDvXgGvCqWBEI0Zhutv3xdtb3yBI0oM2pJ"
                                 "gGNbUCr3Hz2X2bVoLIxx0BvjWMjxGztBDDAcxGmaoJS6W0sTqWOX5EagA7fQAY3XTRJ6PMGJWfsdTsztmos"
                                 "BNYfOGtdq6/Gbjo40d/fxCWVY9z/a9o/kyls/XghwLIAZl4h user1@unkown.de")
-        # user 2, now disabled, update ssh-key
+        # user 2, deleted
         self.assertTrue('50001' in after_import_users)
         test.test_user(self,after_import_users['50001'],
                         perun_id='50001',
-                        elixir_id='b3d216a7-8696-451a-9cbf-b8d5e17a6ec2__@elixir-europe.org',
-                        elixir_name='user2',
-                        enabled=False,
-                        ssh_key="ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC580K3zIwR59Ur+A6NkcWYufWTUaSmrDFWiobhtLUXauq"
-                                "QFyYpJHXOfp4ZtPYtnlLDRFhlCdIta1NgYGx2klJa/ySObSmbaasg7gCRClTMRS/6vCOg3Vkw6JbQX1Si8x"
-                                "LVsy1dlpR9rf5PW3o7pPVZ8nRMwDN+qtqLNdFjhzjEmpEsFSFWDvXgGvCqWBEI0Zhutv3xdtb3yBI0oM2pJ"
-                                "gGNbUCr3Hz2X2bVoLIxx0BvjWMjxGztBDDAcxGmaoJS6W0sTqWOX5EagA7fQAY3XTRJ6PMGJWfsdTsztmos"
-                                "BNYfOGtdq6/Gbjo40d/fxCWVY9z/a9o/kyls/XghwLIAZl4h user3@unkown.de")
+                        deleted=True)
         # user 3 - enabled
         self.assertTrue('50002' in after_import_users)
         test.test_user(self,after_import_users['50002'],
                         perun_id='50002',
                         elixir_id='bb01cabe-eae7-4e46-955f-b35db6e3d552__@elixir-europe.org',
                         elixir_name='user3',
-                        enabled=True)
+                        email='user3@donotuse',
+                        ssh_key="ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC580K3zIwR59Ur+A6NkcWYufWTUaSmrDFWiobhtLUXauq"
+                                "QFyYpJHXOfp4ZtPYtnlLDRFhlCdIta1NgYGx2klJa/ySObSmbaasg7gCRClTMRS/6vCOg3Vkw6JbQX1Si8x"
+                                "LVsy1dlpR9rf5PW3o7pPVZ8nRMwDN+qtqLNdFjhzjEmpEsFSFWDvXgGvCqWBEI0Zhutv3xdtb3yBI0oM2pJ"
+                                "gGNbUCr3Hz2X2bVoLIxx0BvjWMjxGztBDDAcxGmaoJS6W0sTqWOX5EagA7fQAY3XTRJ6PMGJWfsdTsztmos"
+                                "BNYfOGtdq6/Gbjo40d/fxCWVY9z/a9o/kyls/XghwLIAZl4h user3@unkown.de",
+                        enabled=False)
         # user 4 - enabled
         self.assertTrue('50003' in after_import_users)
         test.test_user(self,after_import_users['50003'],
                         perun_id='50003',
                         elixir_id='ce317030-288f-4712-9e5c-922539777c62__@elixir-europe.org',
                         elixir_name='user4',
+                        email='user4@donotuse',
                         enabled=True)
         # user 5 - deleted
         self.assertTrue('50004' in after_import_users)
         test.test_user(self,after_import_users['50004'],
                         perun_id='50004',
-                        elixir_id='60420cf9-eb3e-45f4-8e1b-f8a2b317b042__@elixir-europe.org',
-                        elxir_name='user5',
-                        enabled=False,
                         deleted=True)
 
         # project 1
@@ -283,7 +287,6 @@ class TestEndpoint(unittest.TestCase):
         self.assertTrue('10000' in after_import_projects)
         test.test_project(self,after_import_projects['10000'],
                            perun_id='10000',
-                           members=['50003'],
                            deleted=True)
 
         # project 3
