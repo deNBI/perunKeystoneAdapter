@@ -151,9 +151,57 @@ class TestEndpoint(unittest.TestCase):
             self.keystone.projects_delete(perun_id)
             self.keystone.projects_terminate(perun_id)
 
+    def test_import_denbi_portal_compute_center_legacy(self):
+        '''
+        Initialize endpoint  with 'denbi_portal_compute_center' mode and legacy options
+        (no support for email, elixir_name and ssh_key). Test just loads first test set and check
+        first user.
+        '''
+        self.endpoint = Endpoint(keystone=self.keystone,
+                                 mode="denbi_portal_compute_center",
+                                 store_email=False,
+                                 support_elixir_name=False,
+                                 support_ssh_key=False,
+                                 support_quotas=True)
+
+        # import 1st test data set
+        self.endpoint.import_data(os.path.join(TESTDIR, 'resources', 'denbi_portal_compute_center', 'users.scim'),
+                                  os.path.join(TESTDIR, 'resources', 'denbi_portal_compute_center', 'groups.scim'))
+
+
+        after_import_users = self.keystone.users_map()
+
+
+        # check for 2nd user, elixir_name, email and ssh_key must be unset (Null)
+        self.assertTrue('50001' in after_import_users)
+        test.test_user(self,after_import_users['50001'],
+                       perun_id='50001',
+                       elixir_id='b3d216a7-8696-451a-9cbf-b8d5e17a6ec2__@elixir-europe.org',
+                       elixir_name= None,
+                       email=None,
+                       enabled=True,
+                       ssh_key=None)
+
+        # clean up everything
+        ids = set(self.keystone.users_map())
+        for perun_id in ids:
+            self.keystone.users_delete(perun_id)
+            self.keystone.users_terminate(perun_id)
+
+        ids = set(self.keystone.projects_map())
+        for perun_id in ids:
+            self.keystone.projects_delete(perun_id)
+            self.keystone.projects_terminate(perun_id)
+
+
+
     def test_import_denbi_portal_compute_center(self):
-        # initialize endpoint  with 'denbi_portal_compute_center' mode
-        self.endpoint = Endpoint(keystone=self.keystone, mode="denbi_portal_compute_center", support_quotas=True)
+        '''
+        Initialize with 'denbi_portal_compute_center' mode
+        '''
+
+        self.endpoint = Endpoint(keystone=self.keystone,
+                                 mode="denbi_portal_compute_center")
 
         # import 1st test data set
         self.endpoint.import_data(os.path.join(TESTDIR, 'resources', 'denbi_portal_compute_center', 'users.scim'),

@@ -105,6 +105,8 @@ class Endpoint(object):
         self.mode = str(mode)
         self.store_email = bool(store_email)
         self.support_quotas = bool(support_quotas)
+        self.support_elixir_name = bool(support_elixir_name)
+        self.support_ssh_key =  bool(support_ssh_key)
         self.read_only = read_only
         self.log = logging.getLogger(logging_domain)
         self.log2 = logging.getLogger(report_domain)
@@ -142,7 +144,7 @@ class Endpoint(object):
         # convert scim json to keystone compatible hash
         for scim_user in json_obj:
 
-            # check for mandantory fields (id, login, status)
+            # check for mandatory fields (id, login, status)
             if 'id' in scim_user and 'login' in scim_user and 'status' in scim_user:
                 perun_id = str(scim_user['id'])
                 elixir_id = str(scim_user['login'])
@@ -241,13 +243,18 @@ class Endpoint(object):
             if 'id' in dpcc_user and 'login-namespace:elixir-persistent' in dpcc_user and 'status' in dpcc_user:
                 perun_id = str(dpcc_user['id'])
                 elixir_id = str(dpcc_user['login-namespace:elixir-persistent'])
-                elixir_name = str(dpcc_user['login-namespace:elixir'])
+                elixir_name = None
+                if self.support_elixir_name and str(dpcc_user['login-namespace:elixir']):
+                    elixir_name = str(dpcc_user['login-namespace:elixir'])
                 enabled = str(dpcc_user['status']) == 'VALID'
                 email = None
                 if self.store_email and 'preferredMail' in dpcc_user:
                     email = str(dpcc_user['preferredMail'])
                 ssh_key = None
-                if 'sshPublicKey' in dpcc_user and dpcc_user['sshPublicKey'] is not None and len(dpcc_user['sshPublicKey']) > 0:
+                if self.support_ssh_key and \
+                        'sshPublicKey' in dpcc_user and \
+                        dpcc_user['sshPublicKey'] is not None and \
+                        len(dpcc_user['sshPublicKey']) > 0:
                     ssh_key = str(dpcc_user['sshPublicKey'][0])
 
                 # user already registered in keystone
