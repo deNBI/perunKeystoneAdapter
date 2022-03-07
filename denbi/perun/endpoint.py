@@ -106,7 +106,7 @@ class Endpoint(object):
         self.store_email = bool(store_email)
         self.support_quotas = bool(support_quotas)
         self.support_elixir_name = bool(support_elixir_name)
-        self.support_ssh_key =  bool(support_ssh_key)
+        self.support_ssh_key = bool(support_ssh_key)
         self.read_only = read_only
         self.log = logging.getLogger(logging_domain)
         self.log2 = logging.getLogger(report_domain)

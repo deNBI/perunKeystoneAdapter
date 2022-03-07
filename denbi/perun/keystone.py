@@ -436,7 +436,7 @@ class KeyStone:
                     # we have to remove it beforehand.
                     for key in self.nova.keypairs.list(user_id=os_user.id):
                         if key.name == 'denbi_by_perun':
-                            self.nova.keypairs.delete(key,user_id=os_user.id)
+                            self.nova.keypairs.delete(key, user_id=os_user.id)
                             break
                     # if ssh_key is not None, we have to create new keypair
                     if ssh_key is not None:

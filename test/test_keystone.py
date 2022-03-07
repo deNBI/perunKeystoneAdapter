@@ -34,8 +34,8 @@ class TestKeystone(unittest.TestCase):
         See https://docs.openstack.org/python-openstackclient/pike/configuration/index.html for a description.
         """
 
-        self.ks = KeyStone(environ=None, default_role="user", create_default_role=True, target_domain_name='elixir', cloud_admin=True)
-
+        self.ks = KeyStone(environ=None, default_role="user", create_default_role=True, target_domain_name='elixir',
+                           cloud_admin=True)
 
     def __uuid(self):
         return str(uuid.uuid4())
@@ -51,23 +51,23 @@ class TestKeystone(unittest.TestCase):
         perun_id = self.__uuid()
         elixir_id = perun_id + "@elixir-europe.org"
         elixir_name = "juser"
-        ssh_key="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIIBXwgYwPBMDEkSN5opn0mFu488iqtxJBgV5H3yctRi jkrueger@jkrueger-ThinkPad-T14s-Gen-1"
-        email = elixir_name+"@no-mail.nix"
-
+        ssh_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIIBXwgYwPBMDEkSN5opn0mFu488iqtxJBgV5H3yctRi jkrueger@jkrueger-ThinkPad-T14s-Gen-1"
+        email = elixir_name + "@no-mail.nix"
 
         # create a new user
-        self.ks.users_create(elixir_id = elixir_id, perun_id=perun_id,elixir_name=elixir_name,ssh_key=None,email=email)
+        self.ks.users_create(elixir_id=elixir_id, perun_id=perun_id, elixir_name=elixir_name, ssh_key=None, email=email)
 
         # check internal user list
         denbi_user_map = self.ks.denbi_user_map
-        self.assertTrue(perun_id in denbi_user_map, f"User with perun id '{perun_id}' does not exists in local user map.")
+        self.assertTrue(perun_id in denbi_user_map,
+                        f"User with perun id '{perun_id}' does not exists in local user map.")
 
         # ask keystone for a fresh user list
         denbi_user_map = self.ks.users_map()
         # user should also be provided to keystone
         self.assertTrue(perun_id in denbi_user_map, f"User with perun id '{perun_id}' does not exists.")
 
-        test.test_user(self,denbi_user_map[perun_id],
+        test.test_user(self, denbi_user_map[perun_id],
                        perun_id=perun_id,
                        elixir_name=elixir_name,
                        elixir_id=elixir_id,
@@ -75,13 +75,14 @@ class TestKeystone(unittest.TestCase):
                        email=email
                        )
         # update user
-        self.ks.users_update(elixir_id=elixir_id, perun_id=perun_id,elixir_name=elixir_name,ssh_key=ssh_key,email=email)
+        self.ks.users_update(elixir_id=elixir_id, perun_id=perun_id, elixir_name=elixir_name, ssh_key=ssh_key,
+                             email=email)
 
         # ask keystone for a fresh user list ...
         denbi_user_map = self.ks.users_map()
 
         # check updated data
-        test.test_user(self,denbi_user_map[perun_id],
+        test.test_user(self, denbi_user_map[perun_id],
                        perun_id=perun_id,
                        elixir_name=elixir_name,
                        elixir_id=elixir_id,
@@ -121,7 +122,8 @@ class TestKeystone(unittest.TestCase):
 
         # check internal project list
         denbi_project_map = self.ks.denbi_project_map
-        self.assertTrue(perunid in denbi_project_map, "Project with PerunId '" + perunid + "' does not exists in local project map.")
+        self.assertTrue(perunid in denbi_project_map,
+                        "Project with PerunId '" + perunid + "' does not exists in local project map.")
 
         # check keystone project list
         denbi_project_map = self.ks.projects_map()
@@ -133,14 +135,16 @@ class TestKeystone(unittest.TestCase):
         # project should still exists but marked as deleted
         self.assertTrue(perunid in denbi_project_map, "Project with PerunId '" + perunid + "' does not exists.")
         tmp = denbi_project_map[perunid]
-        self.assertTrue(tmp['scratched'], "Project with PerunId '" + perunid + "' not marked as deleted (but should be).")
+        self.assertTrue(tmp['scratched'],
+                        "Project with PerunId '" + perunid + "' not marked as deleted (but should be).")
 
         # terminate previous marked project
         self.ks.projects_terminate(denbi_project['perun_id'])
 
         # check internal project list
         denbi_project_map = self.ks.denbi_project_map
-        self.assertFalse(perunid in denbi_project_map, "Project with PerunId '" + perunid + "' does exists in local project map.")
+        self.assertFalse(perunid in denbi_project_map,
+                         "Project with PerunId '" + perunid + "' does exists in local project map.")
 
         # check keystone project list
         denbi_project_map = self.ks.projects_map()
@@ -278,13 +282,15 @@ class TestKeystone(unittest.TestCase):
         list = project_a['members']
         expected_list = [user_a['perun_id'], user_b['perun_id']]
         self.assertListEqual(list, expected_list,
-                             "Memberlist project_a contains [" + (", ".join(list)) + "] but expected [" + (", ".join(expected_list)) + "]")
+                             "Memberlist project_a contains [" + (", ".join(list)) + "] but expected [" + (
+                                 ", ".join(expected_list)) + "]")
 
         list = project_b['members']
         expected_list = [user_a['perun_id'], user_b['perun_id'], user_c['perun_id']]
 
         self.assertListEqual(list, expected_list,
-                             "Memberlist project_b contains [" + (", ".join(list)) + "] but expected [" + (", ".join(expected_list)) + "]")
+                             "Memberlist project_b contains [" + (", ".join(list)) + "] but expected [" + (
+                                 ", ".join(expected_list)) + "]")
 
         # try to add an user that does not exists
         try:
@@ -326,7 +332,8 @@ class TestKeystone(unittest.TestCase):
         user_map = self.ks.users_map()
 
         self.assertEqual(len(user_map.keys()), count_users,
-                         "Termination of users failed ... count " + str(len(user_map.keys())) + " but expect " + str(count_users) + "!")
+                         "Termination of users failed ... count " + str(len(user_map.keys())) + " but expect " + str(
+                             count_users) + "!")
 
         # tag projects a, b for deletion
         self.ks.projects_delete(project_a['perun_id'])
@@ -340,7 +347,8 @@ class TestKeystone(unittest.TestCase):
         project_map = self.ks.projects_map()
 
         self.assertEqual(len(project_map.keys()), count_projects,
-                         "Termination of projects failed ... count " + str(len(project_map.keys())) + " but expect " + str(count_projects) + "!")
+                         "Termination of projects failed ... count " + str(
+                             len(project_map.keys())) + " but expect " + str(count_projects) + "!")
 
 
 if __name__ == '__main__':

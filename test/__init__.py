@@ -12,6 +12,7 @@ def test_user(test, denbiuser, perun_id=None, elixir_id=None, elixir_name=None, 
         test.assertEqual(denbiuser['ssh_key'], str(ssh_key))
         test.assertEqual(denbiuser['enabled'], enabled)
 
+
 def test_project(test, denbiproject, perun_id=None, members=[], enabled=True, deleted=False):
     """ Test if an given denbi project object conforms with the given values."""
     test.assertEqual(denbiproject['perun_id'], perun_id)
