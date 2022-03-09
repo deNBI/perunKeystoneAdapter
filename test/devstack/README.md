@@ -18,7 +18,7 @@ See the [DevStack](https://docs.openstack.org/devstack/latest/) page on
 [docs.openstack.org](https://docs.openstack.org) for installation manual. From my 
 experiences this work out of box since the Openstack Pike release.
 
-## poor's man ssh-connection 
+## poor man's SSH connection 
 - sshuttle
 - 
 
