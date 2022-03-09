@@ -75,14 +75,21 @@ class Endpoint(object):
         'denbiProjectNumberOfSnapshots': None,
         'denbiVolumeCounter': {'name': 'volumes', 'factor': 1}}
 
-    def __init__(self, keystone=None, mode="scim", store_email=True,
-                 support_quotas=True, read_only=False, logging_domain="denbi", report_domain="report"):
+    def __init__(self, keystone=None, mode="scim",
+                 store_email=True,
+                 support_quotas=True,
+                 support_elixir_name=True,
+                 support_ssh_key=True,
+                 read_only=False,
+                 logging_domain="denbi",
+                 report_domain="report"):
         '''
 
         :param keystone: initialized keystone object
         :param mode: 'scim' or 'denbi_portal_compute_center'
-        :param store_email : should an available email address stored ?
+        :param store_email : should an available email address be stored?
         :param support_quotas : should quotas supported
+        :param support_elixir_name : should an available elixir_name be stored?
         :param read_only: test mode
         :param logging_domain: domain where "standard" logs are logged (default is "denbi")
         :param report_domain: domain where "update" logs are reported (default is "report")
@@ -98,6 +105,8 @@ class Endpoint(object):
         self.mode = str(mode)
         self.store_email = bool(store_email)
         self.support_quotas = bool(support_quotas)
+        self.support_elixir_name = bool(support_elixir_name)
+        self.support_ssh_key = bool(support_ssh_key)
         self.read_only = read_only
         self.log = logging.getLogger(logging_domain)
         self.log2 = logging.getLogger(report_domain)
@@ -135,7 +144,7 @@ class Endpoint(object):
         # convert scim json to keystone compatible hash
         for scim_user in json_obj:
 
-            # check for mandantory fields (id, login, status)
+            # check for mandatory fields (id, login, status)
             if 'id' in scim_user and 'login' in scim_user and 'status' in scim_user:
                 perun_id = str(scim_user['id'])
                 elixir_id = str(scim_user['login'])
@@ -155,12 +164,12 @@ class Endpoint(object):
                         # update user ...
                         self.keystone.users_update(perun_id, elixir_id=elixir_id, email=email, enabled=enabled)
                         # ... and log to update log
-                        self.log2.info("user [%s,%s]: update and  %s", perun_id, elixir_id, "enabled" if enabled else "disabled")
+                        self.log2.info(f"user [{perun_id},{elixir_id}]: update and {'enabled' if enabled else 'disabled'}")
                 else:
                     # register user ...
                     self.keystone.users_create(elixir_id, perun_id, email=email, enabled=enabled)
                     # ... and log to update log
-                    self.log2.info("user [%s,%s]: create and  %s", perun_id, elixir_id, "enabled" if enabled else "disabled")
+                    self.log2.info(f"user [{perun_id},{elixir_id}]: create and {'enabled' if enabled else 'disabled'}")
 
                 # add perun_id to temporary list
                 user_ids.append(perun_id)
@@ -174,7 +183,7 @@ class Endpoint(object):
 
         for id in del_users:
             self.keystone.users_delete(id)
-            self.log2.info("user [%s]: delete", id)
+            self.log2.info(f"user [{id}]: deleted")
 
     def __import_scim_projectdata__(self, json_obj):
 
@@ -201,12 +210,12 @@ class Endpoint(object):
                         # Update project ...
                         self.keystone.projects_update(perun_id, members)
                         # ... and log to update log
-                        self.log2.info("project [%s,%s]: update with members [%s]", perun_id, name, ",".join(members))
+                        self.log2.info(f"project [{perun_id},{name}]: update with members [{','.join(members)}]")
                 else:
                     # Create project ...
                     self.keystone.projects_create(perun_id, name=name, members=members)
                     # ... and log to update log
-                    self.log2.info("project [%s,%s]: create with members [%s]", perun_id, name, ",".join(members))
+                    self.log2.info(f"project [{ perun_id},{name}]: create with members {','.join(members)}")
 
                 project_ids.append(perun_id)
 
@@ -220,7 +229,7 @@ class Endpoint(object):
             # Delete project ...
             self.keystone.projects_delete(id)
             # ... log to update log
-            self.log2.info("project [%s]: delete", id)
+            self.log2.info(f"project [{id}]")
 
     def __import_dpcc_userdata__(self, json_obj):
         # get current user_map from keystone
@@ -230,14 +239,23 @@ class Endpoint(object):
 
         # convert denbi_portal_compute_center json to keystone compatible hash
         for dpcc_user in json_obj:
-            # check for mandantory fields (id, login, status)
+            # check for mandatory fields (id, login, status)
             if 'id' in dpcc_user and 'login-namespace:elixir-persistent' in dpcc_user and 'status' in dpcc_user:
                 perun_id = str(dpcc_user['id'])
                 elixir_id = str(dpcc_user['login-namespace:elixir-persistent'])
+                elixir_name = None
+                if self.support_elixir_name and str(dpcc_user['login-namespace:elixir']):
+                    elixir_name = str(dpcc_user['login-namespace:elixir'])
                 enabled = str(dpcc_user['status']) == 'VALID'
                 email = None
                 if self.store_email and 'preferredMail' in dpcc_user:
                     email = str(dpcc_user['preferredMail'])
+                ssh_key = None
+                if self.support_ssh_key and \
+                        'sshPublicKey' in dpcc_user and \
+                        dpcc_user['sshPublicKey'] is not None and \
+                        len(dpcc_user['sshPublicKey']) > 0:
+                    ssh_key = str(dpcc_user['sshPublicKey'][0])
 
                 # user already registered in keystone
                 if perun_id in user_map:
@@ -245,18 +263,21 @@ class Endpoint(object):
                     user = user_map[perun_id]
                     if not (user['perun_id'] == perun_id
                             and user['elixir_id'] == elixir_id
+                            and user['elixir_name'] == elixir_name
                             and user['email'] == email
-                            and user['enabled'] == enabled):
-                        # update user ...
-                        self.keystone.users_update(perun_id, elixir_id=elixir_id, email=email, enabled=enabled)
+                            and user['enabled'] == enabled
+                            and user['ssh_key'] == ssh_key):
+                        # update user
+                        self.keystone.users_update(perun_id, elixir_id=elixir_id, elixir_name=elixir_name,
+                                                   ssh_key=ssh_key, email=email, enabled=enabled)
                         # ... and log to update log
-                        self.log2.info("user [%s,%s]: update and %s", perun_id, elixir_id, "enabled" if enabled else "disabled")
-
+                        self.log2.info(f"user [{perun_id},{elixir_id}]: update and {'enabled' if enabled else 'disabled'}")
                 else:
                     # register user ...
-                    self.keystone.users_create(elixir_id, perun_id, email=email, enabled=enabled)
+                    self.keystone.users_create(elixir_id, perun_id, elixir_name=elixir_name, email=email,
+                                               ssh_key=ssh_key, enabled=enabled)
                     # ... and log to update log
-                    self.log2.info("user [%s,%s]: create and %s", perun_id, elixir_id, "enabled" if enabled else "disabled")
+                    self.log2.info(f"user [{perun_id},{elixir_id}]: create and {'enabled' if enabled else 'disabled'}")
 
                 # add perun_id to temporary list
                 user_ids.append(perun_id)
@@ -271,7 +292,7 @@ class Endpoint(object):
             # delete user ...
             self.keystone.users_delete(id)
             # ... and log to update log
-            self.log2.info("user [%s]: delete", id)
+            self.log2.info(f"user [{id}]: deleted")
 
     def __import_dpcc_projectdata__(self, json_obj):
         # get current project_map from keystone
@@ -301,24 +322,24 @@ class Endpoint(object):
                         # Update project ...
                         self.keystone.projects_update(perun_id, members)
                         # ... and log to update logger
-                        self.log2.info("project [%s,%s]: update with (%s)", perun_id, name, ",".join(members))
+                        self.log2.info(f"project [{perun_id},{name}]: update with {','.join(members)}")
 
                     # check for quotas and update it if possible
                     if self.support_quotas:
                         if self.read_only:
-                            self.log.info("project [%s,%s]: not setting quotas in  readonly mode", perun_id, name)
+                            self.log.info(f"project [{perun_id},{name}]: not setting quotas in  readonly mode.")
                         else:
                             self._set_quotas(project, dpcc_project)
                 else:
                     # create project ...
                     project = self.keystone.projects_create(perun_id, name=name, description=description, members=members)
                     # ... and log to update logger
-                    self.log2.info("project [%s,%s]: create with members [%s]", perun_id, name, ",".join(members))
+                    self.log2.info(f"project [{perun_id},{name}]: create with members {','.join(members)}")
 
                     # check for quotas and update it if possible
                     if self.support_quotas:
                         if self.read_only:
-                            self.log.info("project [%s,%s]: not setting quotas in  readonly mode", perun_id, name)
+                            self.log.info(f"project [{perun_id},{name}]: not setting quotas in  readonly mode.")
                         else:
                             self._set_quotas(project, dpcc_project)
                 project_ids.append(perun_id)
@@ -333,7 +354,7 @@ class Endpoint(object):
             # Delete project ...
             self.keystone.projects_delete(id)
             # ... and log to update logger
-            self.log2.info("project [%s]: delete ", id)
+            self.log2.info(f"project [{id}]: deleted")
 
     def _set_quotas(self, project, project_definition):
 
@@ -345,31 +366,35 @@ class Endpoint(object):
                 os_quota = self.DENBI_OPENSTACK_QUOTA_MAPPING[denbi_quota_name]
                 # if factor is None ignore it
                 if os_quota is None:
-                    self.log.debug("project [%s,%s]: skipping quota %s, not supported yet", project['perun_id'], project['name'], denbi_quota_name)
+                    self.log.debug(f"project [{project['perun_id']},{project['name']}]:"
+                                   f" skipping quota {denbi_quota_name}, not supported yet")
                 else:
 
                     try:
-                        self.log.debug("project [%s,%s]: checking quota %s ", project['perun_id'], project['name'], denbi_quota_name)
+                        self.log.debug(f"project [{project['perun_id']},{project['name']}]:"
+                                       f" checking quota {denbi_quota_name}")
 
                         # use os_quota['factor'] on value
                         value = value * os_quota['factor']
 
                         current = manager.get_current_quota(os_quota['name'])
-                        self.log.debug("project [%s,%s]: comparing %s vs %s", project['perun_id'], project['name'], current, value)
+                        self.log.debug(f"project [{project['perun_id']},{project['name']}]:"
+                                       f" comparing %s vs %s", project['perun_id'], project['name'], current, value)
                         if manager.check_value(os_quota['name'], value):
                             if manager.get_current_quota(os_quota['name']) != value:
                                 if self.read_only:
                                     # Log to update logger.
-                                    self.log.info("project [%s,%s]: would update quota %s from value %s to value %s",
-                                                  project['perun_id'], project['name'], denbi_quota_name, current, value)
+                                    self.log.info(f"project [{project['perun_id']},{project['name']}]:"
+                                                  f" would update quota {denbi_quota_name} from value {current} to value {value}")
                                 else:
                                     # Update quota ...
                                     manager.set_value(os_quota['name'], value)
                                     # ... and log to update logger
-                                    self.log2.info("project [%s,%s]: update quota %s from value %s to value %s",
-                                                   project['perun_id'], project['name'], denbi_quota_name, current, value)
+                                    self.log2.info(f"project [{project['perun_id']},{project['name']}]:"
+                                                   f" update quota {denbi_quota_name} from value {current} to value {value}")
                         else:
-                            self.log.warning("project [%s,%s]: unable to set quota %s to %s, would exceed currently used resources",
-                                             project['perun_id'], project['name'], denbi_quota_name, value)
+                            self.log.warning(f"project [{project['perun_id']},{project['name']}]:"
+                                             f" unable to set quota {denbi_quota_name}s to {value}, would exceed currently used resources,")
                     except ValueError as error:
-                        self.log.error("project [%s,%s]: unable to check/set quota %s: %s", project['perun_id'], project['name              '], denbi_quota_name, str(error))
+                        self.log.error(f"project [{project['perun_id']},{project['name']}]:"
+                                       f" unable to check/set quota {denbi_quota_name}:{str(error)}")

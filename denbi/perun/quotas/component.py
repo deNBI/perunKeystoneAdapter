@@ -175,7 +175,7 @@ class QuotaComponent:
                               value, name, type(self._client))
                 self._quota_cache[name]['limit'] = value
         else:
-            raise ValueError("New quota of %s for %s exceed currently used resource amount".format(value, name))
+            raise ValueError("New quota of {} for {} exceed currently used resource amount".format(value, name))
 
     @abc.abstractmethod
     def _set_new_quota(self, name, value):
