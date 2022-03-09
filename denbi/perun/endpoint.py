@@ -292,7 +292,7 @@ class Endpoint(object):
             # delete user ...
             self.keystone.users_delete(id)
             # ... and log to update log
-            self.log2.info(f"user {id}: deleted")
+            self.log2.info(f"user [{id}]: deleted")
 
     def __import_dpcc_projectdata__(self, json_obj):
         # get current project_map from keystone
