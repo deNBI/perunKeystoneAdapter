@@ -183,7 +183,7 @@ class Endpoint(object):
 
         for id in del_users:
             self.keystone.users_delete(id)
-            self.log2.info(f"user {id}: deleted")
+            self.log2.info(f"user [{id}]: deleted")
 
     def __import_scim_projectdata__(self, json_obj):
 
