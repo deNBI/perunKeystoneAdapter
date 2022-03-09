@@ -87,7 +87,7 @@ class Endpoint(object):
 
         :param keystone: initialized keystone object
         :param mode: 'scim' or 'denbi_portal_compute_center'
-        :param store_email : should an available email address stored ?
+        :param store_email : should an available email address be stored?
         :param support_quotas : should quotas supported
         :param support_elixir_name : should an available elixir_name stored ?
         :param read_only: test mode
