@@ -475,7 +475,6 @@ class KeyStone:
                 denbi_user = {'id': str(os_user.id),                    # str
                               'perun_id': str(os_user.perun_id),        # str
                               'elixir_id': str(os_user.name),           # str
-                              'elixir_name': str(os_user.elixir_name),  # str
                               'enabled': bool(os_user.enabled),         # boolean
                               'deleted': bool(getattr(os_user, 'deleted', False))}  # boolean
 
@@ -484,6 +483,12 @@ class KeyStone:
                     denbi_user['email'] = str(os_user.email)  # str
                 else:
                     denbi_user['email'] = str(None)  # str
+
+                # check for elixir_name (not used until 10/2022)
+                if hasattr(os_user,'elixir_name'):
+                    denbi_user['elixir_name'] = str(os_user.elixir_name)
+                else:
+                    denbi_user['elixir_name'] = str(None)
 
                 # check for an propagated ssh-key (named denbi_by_perun)
                 keypairs = self._nova.keypairs.list(user_id=os_user.id)
