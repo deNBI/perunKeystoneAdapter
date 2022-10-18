@@ -1,6 +1,6 @@
-FROM python:3.6-alpine
+FROM python:3.9-alpine
 
-RUN apk --no-cache add musl-dev gcc linux-headers libffi-dev openssl-dev
+RUN apk add --no-cache build-base musl-dev gcc linux-headers libffi-dev openssl-dev
 
 RUN mkdir -p /pka/
 

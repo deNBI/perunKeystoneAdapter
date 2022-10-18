@@ -353,3 +353,7 @@ class TestEndpoint(unittest.TestCase):
         for perun_id in ids:
             self.keystone.projects_delete(perun_id)
             self.keystone.projects_terminate(perun_id)
+
+
+if __name__ == '__main__':
+    unittest.main()
