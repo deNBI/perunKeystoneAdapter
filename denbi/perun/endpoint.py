@@ -89,7 +89,7 @@ class Endpoint(object):
         :param mode: 'scim' or 'denbi_portal_compute_center'
         :param store_email : should an available email address be stored?
         :param support_quotas : should quotas supported
-        :param support_elixir_name : should an available elixir_name be stored?
+        :param support_elixir_name : should an available elixir_name be stored ?
         :param read_only: test mode
         :param logging_domain: domain where "standard" logs are logged (default is "denbi")
         :param report_domain: domain where "update" logs are reported (default is "report")
@@ -183,7 +183,7 @@ class Endpoint(object):
 
         for id in del_users:
             self.keystone.users_delete(id)
-            self.log2.info(f"user [{id}]: deleted")
+            self.log2.info(f"user {id}: deleted")
 
     def __import_scim_projectdata__(self, json_obj):
 
@@ -292,7 +292,9 @@ class Endpoint(object):
             # delete user ...
             self.keystone.users_delete(id)
             # ... and log to update log
+
             self.log2.info(f"user [{id}]: deleted")
+
 
     def __import_dpcc_projectdata__(self, json_obj):
         # get current project_map from keystone
