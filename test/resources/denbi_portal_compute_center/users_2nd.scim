@@ -2,24 +2,31 @@
    {
       "blacklisted" : null,
       "status" : "VALID",
+      "login-namespace:elixir" : "user1",
       "login-namespace:elixir-persistent" : "d877b2f6-3b90-4483-89ce-91eab1bdba99__@elixir-europe.org",
       "denbiVmsRunning" : null,
       "id" : 50000,
       "preferredMail" : "user1@donot.use",
-      "sshPublicKey" : null
+      "sshPublicKey" : [
+         "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC580K3zIwR59Ur+A6NkcWYufWTUaSmrDFWiobhtLUXauqQFyYpJHXOfp4ZtPYtnlLDRFhlCdIta1NgYGx2klJa/ySObSmbaasg7gCRClTMRS/6vCOg3Vkw6JbQX1Si8xLVsy1dlpR9rf5PW3o7pPVZ8nRMwDN+qtqLNdFjhzjEmpEsFSFWDvXgGvCqWBEI0Zhutv3xdtb3yBI0oM2pJgGNbUCr3Hz2X2bVoLIxx0BvjWMjxGztBDDAcxGmaoJS6W0sTqWOX5EagA7fQAY3XTRJ6PMGJWfsdTsztmosBNYfOGtdq6/Gbjo40d/fxCWVY9z/a9o/kyls/XghwLIAZl4h user1@unkown.de"
+      ]
    },
    {
       "blacklisted" : null,
-      "status" : "VALID",
+      "status" : "INVALID",
+      "login-namespace:elixir" : "user3",
       "login-namespace:elixir-persistent" : "bb01cabe-eae7-4e46-955f-b35db6e3d552__@elixir-europe.org",
       "denbiVmsRunning" : null,
       "id" : 50002,
       "preferredMail" : "user3@donotuse",
-      "sshPublicKey" : null
+      "sshPublicKey" : [
+               "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC580K3zIwR59Ur+A6NkcWYufWTUaSmrDFWiobhtLUXauqQFyYpJHXOfp4ZtPYtnlLDRFhlCdIta1NgYGx2klJa/ySObSmbaasg7gCRClTMRS/6vCOg3Vkw6JbQX1Si8xLVsy1dlpR9rf5PW3o7pPVZ8nRMwDN+qtqLNdFjhzjEmpEsFSFWDvXgGvCqWBEI0Zhutv3xdtb3yBI0oM2pJgGNbUCr3Hz2X2bVoLIxx0BvjWMjxGztBDDAcxGmaoJS6W0sTqWOX5EagA7fQAY3XTRJ6PMGJWfsdTsztmosBNYfOGtdq6/Gbjo40d/fxCWVY9z/a9o/kyls/XghwLIAZl4h user3@unkown.de"
+            ]
    },
    {
      "blacklisted" : null,
      "status" : "VALID",
+     "login-namespace:elixir" : "user4",
      "login-namespace:elixir-persistent" : "ce317030-288f-4712-9e5c-922539777c62__@elixir-europe.org",
      "denbiVmsRunning" : null,
      "id" : 50003,
