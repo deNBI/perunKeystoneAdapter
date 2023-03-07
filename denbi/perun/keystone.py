@@ -483,9 +483,8 @@ class KeyStone:
                 else:
                     denbi_user['email'] = str(None)  # str
 
-
                 # check for elixir_name (not used until 10/2022)
-                if hasattr(os_user,'elixir_name'):
+                if hasattr(os_user, 'elixir_name'):
                     denbi_user['elixir_name'] = str(os_user.elixir_name)
                 else:
                     denbi_user['elixir_name'] = str(None)

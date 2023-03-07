@@ -55,8 +55,7 @@ app = Flask(__name__)
 
 # Load configuration from file
 if "CONFIG_PATH" not in os.environ:
-    os.environ['CONFIG_PATH'] = os.getcwd()+"/perun_propagation_service.cfg"
-
+    os.environ['CONFIG_PATH'] = f"{os.getcwd()}/perun_propagation_service.cfg"
 
 if os.path.exists(os.environ['CONFIG_PATH']):
     report.info(f"Loading configuration from {os.environ['CONFIG_PATH']}.")
@@ -65,7 +64,7 @@ else:
     report.info(f"Configuration file {os.environ['CONFIG_PATH']} not found. Using defaults.")
 
 # create a FileHandler for logging
-log_ch = logging.FileHandler(app.config.get("LOG_DIR","")+"pka.log")
+log_ch = logging.FileHandler(app.config.get("LOG_DIR", "") + "/pka.log")
 log_ch.setLevel(logging.INFO)
 log_ch.setFormatter(fmt)
 
@@ -82,7 +81,6 @@ def process_tarball(tarball_path, base_dir=tempfile.mkdtemp(), read_only=False, 
                     default_role='user', nested=False, support_quota=False, cloud_admin=True, cleanup=False):
     """Process Perun tarball."""
     d = datetime.today()
-    #dir = base_dir + "/" + str(d.year) + "_" + str(d.month) + "_" + str(d.day) + "-" + str(d.hour) + ":" + str(d.minute) + ":" + str(d.second) + "." + str(d.microsecond)
     dir = f"{base_dir}/{d.year}_{d.month}_{d.day}_{d.hour}:{d.minute}:{d.second}.{d.microsecond}"
     os.mkdir(dir)
 
@@ -124,25 +122,26 @@ def upload():
 
     # execute task
     result = executor.submit(process_tarball, file.name, read_only=app.config.get('KEYSTONE_READ_ONLY', False),
-                    target_domain_name=app.config.get('TARGET_DOMAIN_NAME', 'elixir'),
-                    default_role=app.config.get('DEFAULT_ROLE', 'user'),
-                    nested=app.config.get('NESTED', False),
-                    cloud_admin=app.config.get('CLOUD_ADMIN', True),
-                    base_dir=app.config.get('BASE_DIR', tempfile.mkdtemp()),
-                    support_quota=app.config.get('SUPPORT_QUOTA', False),
-                    cleanup=app.config.get('CLEANUP',False))
+                             target_domain_name=app.config.get('TARGET_DOMAIN_NAME', 'elixir'),
+                             default_role=app.config.get('DEFAULT_ROLE', 'user'),
+                             nested=app.config.get('NESTED', False),
+                             cloud_admin=app.config.get('CLOUD_ADMIN', True),
+                             base_dir=app.config.get('BASE_DIR', tempfile.mkdtemp()),
+                             support_quota=app.config.get('SUPPORT_QUOTA', False),
+                             cleanup=app.config.get('CLEANUP', False))
 
     # if task fails with an exception, the thread pool catches the exception,
     # stores it, then re-raises it when we call the result() function.
     try:
         result.result()
-    except Exception as e:
+    except Exception:
         traceback.print_exc()
 
     if app.config.get('CLEANUP', False):
         os.unlink(file)
 
     return ""
+
 
 if __name__ == "__main__":
     app.run(host=app.config['HOST'], port=app.config['PORT'])

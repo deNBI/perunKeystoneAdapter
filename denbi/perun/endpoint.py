@@ -116,7 +116,7 @@ class Endpoint(object):
         Import data (in the given mode) into Keystone
 
         :param users_path: Path to user data (must be in json format)
-        :param groups_path: Path to projet data (must be in json format)
+        :param groups_path: Path to project data (must be in json format)
         :return:
         '''
 
@@ -294,7 +294,6 @@ class Endpoint(object):
             # ... and log to update log
 
             self.log2.info(f"user [{id}]: deleted")
-
 
     def __import_dpcc_projectdata__(self, json_obj):
         # get current project_map from keystone
