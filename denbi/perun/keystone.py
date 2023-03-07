@@ -223,7 +223,6 @@ class KeyStone:
         # default to shell environment if no specific one was given
         if environ is None:
             clouds_yaml_file = None
-            clouds_yaml_file = None
             if os.path.isfile('{}/.config/clouds.yaml'.format(os.environ['HOME'])):
                 clouds_yaml_file = '{}/.config/clouds.yaml'.format(os.environ['HOME'])
             elif os.path.isfile('/etc/openstack/clouds.yaml'):
@@ -484,9 +483,8 @@ class KeyStone:
                 else:
                     denbi_user['email'] = str(None)  # str
 
-
                 # check for elixir_name (not used until 10/2022)
-                if hasattr(os_user,'elixir_name'):
+                if hasattr(os_user, 'elixir_name'):
                     denbi_user['elixir_name'] = str(os_user.elixir_name)
                 else:
                     denbi_user['elixir_name'] = str(None)

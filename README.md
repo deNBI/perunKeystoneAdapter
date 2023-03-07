@@ -92,12 +92,56 @@ For running this in production it is easy to use `gunicorn` as follows:
 $ gunicorn --workers 1 --bind 127.0.0.1:5000 denbi.scripts.perun_propagation_service:app
 ```
 
-There are [additional deployment options available](http://flask.pocoo.org/docs/0.12/deploying/) if you prefer to run WSGI applications with Apache, or other setups.
+### Docker
+
+Build docker container.
+
+```docker build -t denbi/pka .```
+
+Create configuration file (`pka.cfg`), for example (with cloud admin credentials) :
+
+```
+OS_REGION_NAME="XXX"
+OS_PROJECT_DOMAIN_ID="XXX"
+OS_INTERFACE="public"
+OS_AUTH_URL="https://XXX"
+OS_USERNAME="admin"
+OS_PROJECT_ID="XXX"
+OS_USER_DOMAIN_NAME="Default"
+OS_PROJECT_NAME="admin"
+OS_PASSWORD="XXX"
+OS_IDENTITY_API_VERSION="3"
+
+# Domain to create users and projects in, defaults to 'elixir'
+TARGET_DOMAIN_NAME="elixir"
+# Decides if Cloud admin or domain admin should be used
+CLOUD_ADMIN=True
+# Do not make any modifications to keystone
+KEYSTONE_READ_ONLY=False
+# Default role to assign to new users, defaults to 'user'
+DEFAULT_ROLE="member"
+# Use nested project instead of cloud/domain admin
+NESTED=False
+# Set quotas for projects
+SUPPORT_QUOTA=False
+# base dir for storing uploaded perun files
+BASE_DIR="/perun/upload/"
+# log dir
+LOG_DIR="/perun/log/"
+# clean up uploaded data
+CLEANUP=False
+```
+
+and  run container:
+
+```docker run -v $(pwd)/pka.cfg:/perun_propagation_sevice.cfg -v $(pwd)/perun/upload:/perun/upload -v $(pwd)/perun/log:/perun/log denbi/pka```
+
+There are [additional deployment options available](https://flask.palletsprojects.com/en/1.1.x/deploying/) if you prefer to run WSGI applications with Apache, or other setups.
 
 ### Logging 
 The Library supports two different logger domains, which can be configured when instantiating the Keystone/Endpoint class (default "denbi" and "report").
-All changes concerning the Openstack database (project, identity and quotas) are logged to the report domain, everything else 
-is logged to the logger domain. The logger are standard Python logger, therefore all possibilities of Python's logging API 
+All changes concerning the Openstack database (project, identity and quotas) are logged to the logging domain, everything else 
+is logged to the report domain. The loggers are standard Python logger, therefore all possibilities of Python's logging API 
 are supported.
 See [service script](denbi/scripts/perun_propagation_service.py) for an example  how to configure logging. 
 
@@ -111,8 +155,10 @@ The library comes with a set of unit tests - a full functional keystone is requi
 For testing the user/project management only a running keystone is enough. The `Makefile` included with 
 the project runs a docker container for providing a keystone server. 
 
-In every case it is **not** recommended to use your production keystone/setup .
+It is recommended to configure and use a [DevStack](https://docs.openstack.org/devstack/latest/) installation
+to test all functionalities.
 
+In any case it is **not** recommended to use your production keystone/setup .
 
 
 ### Linting
@@ -122,3 +168,4 @@ $ make lint
 ```
 
 will run flake8 on the source code directories.
+
