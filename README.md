@@ -158,7 +158,7 @@ the project runs a docker container for providing a keystone server.
 It is recommended to configure and use a [DevStack](https://docs.openstack.org/devstack/latest/) installation
 to test all functionalities.
 
-In every case it is **not** recommended to use your production keystone/setup .
+In any case it is **not** recommended to use your production keystone/setup .
 
 
 ### Linting
@@ -169,10 +169,3 @@ $ make lint
 
 will run flake8 on the source code directories.
 
-### DevStack
-
-- Install Devstack in 
-- optional: use sshuttle to connect
-- add admin endpoint for identity service
-- build docker container
-- run docker container 
