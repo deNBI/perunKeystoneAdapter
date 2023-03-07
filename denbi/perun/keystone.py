@@ -223,7 +223,6 @@ class KeyStone:
         # default to shell environment if no specific one was given
         if environ is None:
             clouds_yaml_file = None
-            clouds_yaml_file = None
             if os.path.isfile('{}/.config/clouds.yaml'.format(os.environ['HOME'])):
                 clouds_yaml_file = '{}/.config/clouds.yaml'.format(os.environ['HOME'])
             elif os.path.isfile('/etc/openstack/clouds.yaml'):
