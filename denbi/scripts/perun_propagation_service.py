@@ -78,8 +78,11 @@ executor = ThreadPoolExecutor(max_workers=1)
 
 
 def process_tarball(tarball_path, base_dir=tempfile.mkdtemp(), read_only=False, target_domain_name='elixir',
-                    default_role='user', nested=False, support_quota=False, cloud_admin=True, cleanup=False):
+                    default_role='user', nested=False, support_quota=False, cloud_admin=True, cleanup=False,
+                    ssh_key_blocklist=None):
     """Process Perun tarball."""
+    if ssh_key_blocklist is None:
+        ssh_key_blocklist = []
     d = datetime.today()
     dir = f"{base_dir}/{d.year}_{d.month}_{d.day}_{d.hour}:{d.minute}:{d.second}.{d.microsecond}"
     os.mkdir(dir)
@@ -97,7 +100,7 @@ def process_tarball(tarball_path, base_dir=tempfile.mkdtemp(), read_only=False, 
                         read_only=read_only, nested=nested, cloud_admin=cloud_admin)
 
     endpoint = Endpoint(keystone=keystone, mode="denbi_portal_compute_center",
-                        support_quotas=support_quota)
+                        support_quotas=support_quota, ssh_key_blocklist=ssh_key_blocklist)
 
     endpoint.import_data(dir + '/users.scim', dir + '/groups.scim')
     report.info("Finished processing %s" % tarball_path)
@@ -128,7 +131,8 @@ def upload():
                              cloud_admin=app.config.get('CLOUD_ADMIN', True),
                              base_dir=app.config.get('BASE_DIR', tempfile.mkdtemp()),
                              support_quota=app.config.get('SUPPORT_QUOTA', False),
-                             cleanup=app.config.get('CLEANUP', False))
+                             cleanup=app.config.get('CLEANUP', False),
+                             ssh_key_blocklist=app.config.get('SSH_KEY_BLOCKLIST', None))
 
     # if task fails with an exception, the thread pool catches the exception,
     # stores it, then re-raises it when we call the result() function.

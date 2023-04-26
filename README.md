@@ -98,7 +98,7 @@ Build docker container.
 
 ```docker build -t denbi/pka .```
 
-Create configuration file (`pka.cfg`), for example (with cloud admin credentials) :
+Create configuration file (`pka.cfg`), for example (with cloud admin credentials):
 
 ```
 OS_REGION_NAME="XXX"
@@ -130,9 +130,11 @@ BASE_DIR="/perun/upload/"
 LOG_DIR="/perun/log/"
 # clean up uploaded data
 CLEANUP=False
+# block import of potentially leaked user SSH keys
+SSH_KEY_BLOCKLIST = []
 ```
 
-and  run container:
+and run container:
 
 ```docker run -v $(pwd)/pka.cfg:/perun_propagation_sevice.cfg -v $(pwd)/perun/upload:/perun/upload -v $(pwd)/perun/log:/perun/log denbi/pka```
 

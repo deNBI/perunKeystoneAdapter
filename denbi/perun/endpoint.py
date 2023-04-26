@@ -82,7 +82,8 @@ class Endpoint(object):
                  support_ssh_key=True,
                  read_only=False,
                  logging_domain="denbi",
-                 report_domain="report"):
+                 report_domain="report",
+                 ssh_key_blocklist=None):
         '''
 
         :param keystone: initialized keystone object
@@ -95,6 +96,8 @@ class Endpoint(object):
         :param report_domain: domain where "update" logs are reported (default is "report")
         '''
 
+        if ssh_key_blocklist is None:
+            ssh_key_blocklist = []
         if keystone:
             if read_only and not isinstance(keystone, KeyStone):
                 raise Exception("Read-only flag is only functional with internal keystone library")
@@ -108,6 +111,7 @@ class Endpoint(object):
         self.support_elixir_name = bool(support_elixir_name)
         self.support_ssh_key = bool(support_ssh_key)
         self.read_only = read_only
+        self.ssh_key_blocklist = ssh_key_blocklist
         self.log = logging.getLogger(logging_domain)
         self.log2 = logging.getLogger(report_domain)
 
@@ -256,6 +260,10 @@ class Endpoint(object):
                         dpcc_user['sshPublicKey'] is not None and \
                         len(dpcc_user['sshPublicKey']) > 0:
                     ssh_key = str(dpcc_user['sshPublicKey'][0])
+                # block import of potentially leaked user SSH keys (matches substrings too)
+                if any(blocked_key in ssh_key for blocked_key in self.ssh_key_blocklist):
+                    self.log2.info(f"user [{perun_id},{elixir_id}]: ssh key blocked: {ssh_key}")
+                    ssh_key = None
 
                 # user already registered in keystone
                 if perun_id in user_map:
