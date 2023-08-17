@@ -9,23 +9,28 @@ The *Perun Keystone Adapter* is a library written in Python that parses data pro
  -  abstract keystone to simplify often used tasks (create/delete/update/list users and projects)
  -  parse SCIM or de.NBI portal compute center propagation data for users and projects
  -  modify Keystone according the propagated data:
- -  creates items (users or projects) in Keystone if they not exists but propagated
+ -  creates items (users or projects) in Keystone if they not exist but propagated
  -  modify items properties if they changed
- -  mark items as deleted and disable them in Keystone if they are not propagated any more
+ -  mark items as deleted and disable them in Keystone if they are not propagated anymore
  -  deleting (marked and disabled) items functionality is available but not integrated in the normal workflow.
- -  set/modify project quotas (needs a full openstack  installation like [DevStack](https://docs.openstack.org/devstack/latest/) for testing)
- -  compatible with python 2.7.x and python 3
+ -  set/modify project quotas (needs a full openstack  installation like [DevStack](https://docs.openstack.org/devstack/latest/) for testing) [_optional_]
+ -  create network (router, net and subnet) for new projects [_optional_]
+ -  compatible with python 3.6+
 
 ## Preparation
 
-Before installing Perun Keystone Adapter you must be sure that used openstack domain for propagation is empty *or*  all existing projects and users that also exists in perun must be tagged to avoid naming conflicts and the project names must have the same names as the groups in perun. By default everything created by the library is tagged as *perun_propagation*. This can be overwritten in the constructor of the KeyStone class.
+Before installing Perun Keystone Adapter you must be sure that used openstack domain for propagation is empty *or*  all 
+existing projects and users that also exists in perun must be tagged to avoid naming conflicts and the project names 
+must have the same names as the groups in perun. By default, everything created by the library is tagged as 
+*perun_propagation*. This can be overwritten in the constructor of the KeyStone class.
 
-As a help there are two scripts included in the assets directory of this repository that set a flag of your choice for a user and for a project.
+As a help there are two scripts included in the assets directory of this repository that set a flag of your choice for 
+a user and for a project.
 
 1. First install all necessary dependencies (maybe in your virtual environment) by running
 
    ```console
-   $ pip install -r requirements.txt
+   $ pip install -r requirements/default.txt
    ```
 
 2. The scripts expect that you sourced your OpenStack rc file:
@@ -49,7 +54,9 @@ As a help there are two scripts included in the assets directory of this reposit
    where
 
    * `user_id` and `project_id` are OpenStack specific IDs
-   * `flag_name` can be any value which is set for the `flag` attribute. If you do not modify the perunKeystoneAdapter, it expects `perun_propagation` as the value.
+   * `flag_name` can be any value which is set for the `flag` attribute. If you do not modify the perunKeystoneAdapter, 
+      it expects `perun_propagation` as the value.
+
 
 ## Installation
 
@@ -148,6 +155,64 @@ See [service script](denbi/scripts/perun_propagation_service.py) for an example 
 
 ## Development
 
+### DevStack
+
+For testing and development it is recommended to configure and use a [DevStack] (https://docs.openstack.org/devstack/latest/) 
+that fits your production environment.
+
+#### Example Setup
+The documentation describes the following  setup.  Depending on your environment you have adapted the following configuration
+steps.
+
+```text
+User/Notebook <--> Router <-- Internet --> Router <--> GW (129.70.51.103) <--> VM (192.168.20.55)
+```
+**Todo : replace with an image**
+
+
+- User has permission to configure iptables (notebook)
+- Gateway(GW)/Jumphost allows ssh access
+- VM ist NOT directly accessible
+
+#### Setup DevStack on a cloud instance
+
+**Depending on available resources setting up a DevStack instance can take up to 20 minutes.**
+
+##### Prerequisites
+
+- Virtual machine with a minimum of 8 GB RAM, 20 GB disk space and 4 cores.
+- SSH access 
+
+##### Steps
+
+1. Setup virtual machine with a supported OS (Ubuntu LTS releases seems to be work best for Devstack)
+2. Download DevStack using git  `$ git clone https://opendev.org/openstack/devstack`
+3. Change into DevStack directory: `$ cd devstack`
+3. Create minimal configuration file at root of the DevStack repo :
+   ```
+   $ cat > local.conf
+   [[local|localrc]]
+   ADMIN_PASSWORD=secret
+   DATABASE_PASSWORD=$ADMIN_PASSWORD
+   RABBIT_PASSWORD=$ADMIN_PASSWORD
+   SERVICE_PASSWORD=$ADMIN_PASSWORD
+   ```
+4. Start the installation process: ` $ ./start.sh`
+
+
+#### Use DevStack from your development environment.
+
+[Sshuttle](https://github.com/sshuttle/sshuttle) is a poor man's vpn solution to use DevStack from your development 
+environment.
+
+```bash
+$ pip install sshuttle
+$ sshuttle  -r 129.70.51.109 192.168.20.0/24
+```
+
+You can now use your browser to access DevStack ([http://192.168.20.55](http://192.168.20.55)) using previous defined credentials (admin,secret).
+
+
 ### Unit tests
 
 The library comes with a set of unit tests - a full functional keystone is required to perfom all tests.
@@ -155,8 +220,7 @@ The library comes with a set of unit tests - a full functional keystone is requi
 For testing the user/project management only a running keystone is enough. The `Makefile` included with 
 the project runs a docker container for providing a keystone server. 
 
-It is recommended to configure and use a [DevStack](https://docs.openstack.org/devstack/latest/) installation
-to test all functionalities.
+It is recommended to configure and use a [DevStack]
 
 In any case it is **not** recommended to use your production keystone/setup .
 
