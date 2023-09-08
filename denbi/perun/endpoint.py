@@ -75,11 +75,15 @@ class Endpoint(object):
         'denbiProjectNumberOfSnapshots': None,
         'denbiVolumeCounter': {'name': 'volumes', 'factor': 1}}
 
-    def __init__(self, keystone=None, mode="scim",
+    def __init__(self,
+                 keystone=None,
+                 mode="scim",
                  store_email=True,
                  support_quotas=True,
                  support_elixir_name=True,
                  support_ssh_key=True,
+                 support_router=False,
+                 support_network=False,
                  read_only=False,
                  logging_domain="denbi",
                  report_domain="report"):
@@ -88,8 +92,10 @@ class Endpoint(object):
         :param keystone: initialized keystone object
         :param mode: 'scim' or 'denbi_portal_compute_center'
         :param store_email : should an available email address be stored?
-        :param support_quotas : should quotas supported
+        :param support_quotas : should quotas supported ?
         :param support_elixir_name : should an available elixir_name be stored ?
+        :param support_router: should a router generated (for new projects)
+        :param support_network: should a network/subnetwork generated and attached to router (for new projects)
         :param read_only: test mode
         :param logging_domain: domain where "standard" logs are logged (default is "denbi")
         :param report_domain: domain where "update" logs are reported (default is "report")
@@ -102,11 +108,15 @@ class Endpoint(object):
         else:
             self.keystone = KeyStone(read_only=read_only)
 
+        self.neutron = self.keystone._neutron
+
         self.mode = str(mode)
         self.store_email = bool(store_email)
         self.support_quotas = bool(support_quotas)
         self.support_elixir_name = bool(support_elixir_name)
         self.support_ssh_key = bool(support_ssh_key)
+        self.support_router = bool(support_router)
+        self.support_network = bool(support_network)
         self.read_only = read_only
         self.log = logging.getLogger(logging_domain)
         self.log2 = logging.getLogger(report_domain)
@@ -164,7 +174,8 @@ class Endpoint(object):
                         # update user ...
                         self.keystone.users_update(perun_id, elixir_id=elixir_id, email=email, enabled=enabled)
                         # ... and log to update log
-                        self.log2.info(f"user [{perun_id},{elixir_id}]: update and {'enabled' if enabled else 'disabled'}")
+                        self.log2.info(
+                            f"user [{perun_id},{elixir_id}]: update and {'enabled' if enabled else 'disabled'}")
                 else:
                     # register user ...
                     self.keystone.users_create(elixir_id, perun_id, email=email, enabled=enabled)
@@ -215,7 +226,7 @@ class Endpoint(object):
                     # Create project ...
                     self.keystone.projects_create(perun_id, name=name, members=members)
                     # ... and log to update log
-                    self.log2.info(f"project [{ perun_id},{name}]: create with members {','.join(members)}")
+                    self.log2.info(f"project [{perun_id},{name}]: create with members {','.join(members)}")
 
                 project_ids.append(perun_id)
 
@@ -271,7 +282,8 @@ class Endpoint(object):
                         self.keystone.users_update(perun_id, elixir_id=elixir_id, elixir_name=elixir_name,
                                                    ssh_key=ssh_key, email=email, enabled=enabled)
                         # ... and log to update log
-                        self.log2.info(f"user [{perun_id},{elixir_id}]: update and {'enabled' if enabled else 'disabled'}")
+                        self.log2.info(
+                            f"user [{perun_id},{elixir_id}]: update and {'enabled' if enabled else 'disabled'}")
                 else:
                     # register user ...
                     self.keystone.users_create(elixir_id, perun_id, elixir_name=elixir_name, email=email,
@@ -333,7 +345,8 @@ class Endpoint(object):
                             self._set_quotas(project, dpcc_project)
                 else:
                     # create project ...
-                    project = self.keystone.projects_create(perun_id, name=name, description=description, members=members)
+                    project = self.keystone.projects_create(perun_id, name=name, description=description,
+                                                            members=members)
                     # ... and log to update logger
                     self.log2.info(f"project [{perun_id},{name}]: create with members {','.join(members)}")
 
@@ -343,6 +356,10 @@ class Endpoint(object):
                             self.log.info(f"project [{perun_id},{name}]: not setting quotas in  readonly mode.")
                         else:
                             self._set_quotas(project, dpcc_project)
+                    # create router
+                    if self.support_router:
+                        self._create_router(project, not (self.support_network))
+
                 project_ids.append(perun_id)
 
             else:
@@ -358,6 +375,14 @@ class Endpoint(object):
             self.log2.info(f"project [{id}]: deleted")
 
     def _set_quotas(self, project, project_definition):
+        '''
+        Set/adjust quota for given project
+
+
+        :param project:
+        :param project_definition:
+        :return:
+        '''
 
         manager = self.keystone.quota_factory.get_manager(project['id'])
 
@@ -399,3 +424,84 @@ class Endpoint(object):
                     except ValueError as error:
                         self.log.error(f"project [{project['perun_id']},{project['name']}]:"
                                        f" unable to check/set quota {denbi_quota_name}:{str(error)}")
+
+    def _create_router(self, project, router_only=False):
+        """
+        Creates a new router for a project, add a gateway and append optional a network/subnetwork
+
+        :param project:
+        :param router_only - creates only a router without attached network/subnet
+        :return:
+        """
+
+        # create router
+        _tmp_router = {'name': f"{project['name']}_router",
+                       'admin_state_up': True,
+                       'project_id': project['id'],
+                       'external_gateway_info': {
+                           'network_id': '16b19dcf-a1e1-4f59-8256-a45170042790'
+
+                       }}
+
+        tmp_router = self.keystone._neutron.create_router(body={'router': _tmp_router})
+
+        self.log2.info(f"project [{project['id']},{project['name']}]:"
+                       f"create router {tmp_router['router']['name']}")
+
+        if not (router_only):
+            # create network
+            _tmp_net = {'name': f"{project['name']}_net",
+                        'project_id': project['id'],
+                        'shared': False,
+                        'admin_state_up': True,
+                        'port_security_enabled': True,
+                        }
+
+            tmp_net = self.keystone._neutron.create_network(body={'network': _tmp_net})
+            #  create subnet
+            _tmp_subnet = {'name': f"{project['name']}_subnet",
+                           'enable_dhcp': True,
+                           'ip_version': 4,
+                           'network_id': tmp_net['network']['id'],
+                           'cidr': "192.168.192.0/24",
+                           'allocation_pools': [{'start': '192.168.192.10', 'end': '192.168.192.200'}],
+                           'project_id': project['id']}
+            tmp_subnet = self.keystone._neutron.create_subnet(body={'subnet': _tmp_subnet})
+            # attach subnet to router
+            self.keystone._neutron.add_interface_router(tmp_router['router']['id'],
+                                                        body={'subnet_id': tmp_subnet['subnet']['id']})
+
+            self.log2.info(f"project [{project['id']},{project['name']}]:"
+                           f"create network {tmp_net['network']['name']} with subnet {tmp_subnet['subnet']['name']}")
+
+    def _delete_routers(self, project_id):
+        """
+        Remove all routers and networks belonging associated to the given project.
+        :param project: map describing a project
+        :return:
+        """
+
+        router_list = self.neutron.list_routers(project_id=project_id)["routers"]
+        network_list = self.neutron.list_networks(project_id=project_id)["networks"]
+        subnet_list = self.neutron.list_subnets(project_id=project_id)["subnets"]
+        port_list = self.neutron.list_ports(device_owner='network:router_interface',
+                                            project_id=project_id)["ports"]
+
+        # remove interface from all routers
+        for port in port_list:
+            device_id = port["device_id"]
+            for router in router_list:
+                if router["id"] == port["device_id"]:
+                    self.neutron.remove_interface_router(router["id"], body={"port_id": port["id"]})
+
+        # delete router
+        for router in router_list:
+            self.neutron.delete_router(router["id"])
+
+        # delete subnet
+        for subnet in subnet_list:
+            self.neutron.delete_subnet(subnet["id"])
+
+        # delete network
+        for network in network_list:
+            self.neutron.delete_network(network["id"])

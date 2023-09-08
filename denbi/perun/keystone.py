@@ -22,6 +22,7 @@ from keystoneclient.v3 import client as keystone
 from keystoneauth1.exceptions import Unauthorized
 
 from novaclient import client as nova
+from neutronclient.v2_0 import client as neutron
 
 
 class KeyStone:
@@ -61,7 +62,7 @@ class KeyStone:
         :param read_only: do not make any changes to the keystone
         :param logging_domain: domain where "standard" logs are logged (default is "denbi")
         :param report_domain: domain where "update" logs are reported (default is "report")
-        :param nested: use nested projects instead of cloud/domain admin accesss
+        :param nested: use nested projects instead of cloud/domain admin acesss
         :param cloud_admin: credentials are cloud admin credentials
 
         """
@@ -176,6 +177,9 @@ class KeyStone:
 
         # initialize nova client (minimum needed API version is Train)
         self._nova = nova.Client(version='2.79', session=project_session)
+
+        # initialize neutron client
+        self._neutron = neutron.Client(session=project_session)
 
     @property
     def domain_keystone(self):

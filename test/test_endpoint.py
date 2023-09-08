@@ -14,6 +14,7 @@ import os
 import unittest
 import logging
 import test
+import uuid
 
 from denbi.perun.endpoint import Endpoint
 from denbi.perun.keystone import KeyStone
@@ -46,10 +47,77 @@ class TestEndpoint(unittest.TestCase):
 
         self.keystone = KeyStone(environ=None, default_role="user", create_default_role=True,
                                  target_domain_name='elixir', cloud_admin=True)
+        self.neutron = self.keystone._neutron
+
+    def __uuid(self):
+        return str(uuid.uuid4())
+
+    def test_create_router(self):
+        """ Test of a create_router."""
+
+        print("Run 'test_create_router")
+
+        # create endpoint
+        endpoint = Endpoint(keystone=self.keystone, mode="scim",
+                            support_quotas=False, support_router=True, support_network=True)
+
+        # create project manually
+        denbi_project = self.keystone.projects_create(self.__uuid())
+
+        # create router without network
+        endpoint._create_router(denbi_project, router_only=True)
+
+        # test if created project has one router
+        router_list = self.neutron.list_routers(project_id=denbi_project["id"])["routers"]
+        self.assertEqual(len(router_list), 1, "Expect exact one router.")
+
+        # and delete it afterwards
+        self.neutron.delete_router(router_list[0]['id'])
+
+        # create router with network
+        endpoint._create_router(denbi_project, router_only=False)
+
+        # test if created project has one router
+        router_list = self.neutron.list_routers(project_id=denbi_project["id"])["routers"]
+        self.assertEqual(len(router_list), 1, "Expect exact one router.")
+        router = router_list[0]
+
+        # test if created project has one network
+        network_list = self.neutron.list_networks(project_id=denbi_project["id"])["networks"]
+        self.assertEqual(len(network_list), 1, "Expect exact one network.")
+        network = network_list[0]
+
+        # test if created project has one subnet
+        subnet_list = self.neutron.list_subnets(project_id=denbi_project["id"])["subnets"]
+        self.assertEqual(len(subnet_list), 1, "Expect exact one subnet.")
+        subnet = subnet_list[0]
+
+        # test if found subnet is associated to found network
+        self.assertEqual(subnet["network_id"], network["id"],
+                          f"Expect subnet {subnet['id']} is associated to network {network['id']}.")
+
+        # test if pro
+        port_list = self.neutron.list_ports(device_owner='network:router_interface',
+                                            project_id=denbi_project['id'])["ports"]
+        self.assertEqual(len(port_list), 1, "Expect exact one router_interface.")
+        port = port_list[0]
+
+        self.assertEqual(port["device_id"], router["id"],
+                          f"Expect router_interface port {port['id']} is associated to router {router['id']}.")
+        self.assertEqual(port["fixed_ips"][0]["subnet_id"],subnet["id"],f"Expect ")
+
+
+        # cleanup
+        endpoint._delete_routers(denbi_project['perun_id'])
+        # tag previous created project as deleted
+        self.keystone.projects_delete(denbi_project['perun_id'])
+        # terminate previous marked project
+        self.keystone.projects_terminate(denbi_project['perun_id'])
 
     def test_import_scim(self):
         # initialize endpoint  with 'scim' mode
-        self.endpoint = Endpoint(keystone=self.keystone, mode="scim", support_quotas=False)
+        self.endpoint = Endpoint(keystone=self.keystone, mode="scim",
+                                 support_quotas=False, support_router=False, support_network=False)
 
         # import 1st test data set
         self.endpoint.import_data(os.path.join(TESTDIR, 'resources', 'scim', 'users.scim'),

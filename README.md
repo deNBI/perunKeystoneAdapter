@@ -210,7 +210,8 @@ $ pip install sshuttle
 $ sshuttle  -r 129.70.51.109 192.168.20.0/24
 ```
 
-You can now use your browser to access DevStack ([http://192.168.20.55](http://192.168.20.55)) using previous defined credentials (admin,secret).
+You can now use your browser to access DevStack ([http://192.168.20.55](http://192.168.20.55)) using previous defined
+credentials (admin,secret).
 
 
 ### Unit tests
