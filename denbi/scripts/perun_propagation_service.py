@@ -94,8 +94,6 @@ config_str_list.append(f"+{'-'*32}+{'-'*42}+")
 
 report.info('\n'.join(config_str_list))
 
-sys.exit(4)
-
 # create a FileHandler for logging
 log_ch = logging.FileHandler(app.config.get("LOG_DIR", ".") + "/pka.log")
 log_ch.setLevel(logging.INFO)
@@ -182,7 +180,7 @@ def upload():
                              default_role=app.config.get('DEFAULT_ROLE'),
                              nested=app.config.get('NESTED', False),
                              support_elixir_name=app.config.get('ELIXIR_NAME',False),
-                             support_quota=app.config.get('SUPPORT_QUOTA', False),
+                             support_quotas=app.config.get('SUPPORT_QUOTA', False),
                              support_router=app.config.get('SUPPORT_ROUTER', False),
                              external_network_id=app.config.get('EXTERNAL_NETWORK_ID'),
                              support_network=app.config.get('SUPPORT_NETWORK', False),
