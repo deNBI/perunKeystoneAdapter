@@ -12,6 +12,7 @@
 
 import json
 import logging
+import re
 
 from denbi.perun.keystone import KeyStone
 
@@ -25,6 +26,45 @@ def import_json(path):
     with open(path, 'r', encoding='utf-8') as json_file:
         json_obj = json.loads(json_file.read())
     return json_obj
+
+
+def validate_cidr(cidr):
+    """
+    Validates a CIDR (Classless Inter-Domain Routing) notation
+    :param cidr: value to be validated
+    :return: True or False
+    """
+
+    # Regular expression pattern to match a CIDR notation
+    cidr_pattern = r'^\d{1,3}(\.\d{1,3}){3}/\d{1,2}$'
+
+    # Check if the input matches the CIDR pattern
+    if not re.match(cidr_pattern, cidr):
+        return False
+
+    # Split the CIDR into its address and prefix parts
+    parts = cidr.split('/')
+    ip_address = parts[0]
+    prefix_length = int(parts[1])
+
+    # Validate the IP address
+    ip_parts = ip_address.split('.')
+    if len(ip_parts) != 4:
+        return False
+
+    for part in ip_parts:
+        try:
+            octet = int(part)
+            if octet < 0 or octet > 255:
+                return False
+        except ValueError:
+            return False
+
+    # Validate the prefix length
+    if prefix_length < 0 or prefix_length > 32:
+        return False
+
+    return True
 
 
 class Endpoint(object):
@@ -64,13 +104,6 @@ class Endpoint(object):
         # assume that all sites are using neutron...  not used by the portal
         'denbiNrOfFloatingIPs': None,
 
-        # these were present in the first quota code,
-        # but aren't registered with perun or set by the
-        # portal...
-        # 'denbiProjectNumberOfNetworks': { 'name' : 'network', 'factor' : 1 },
-        # 'denbiProjectNumberOfSubnets': { 'name' : 'subnet', 'factor' : 1 },
-        # 'denbiProjectNumberOfRouter': { 'name' : 'router', 'factor' : 1024 },
-
         # Not used by the portal ...
         'denbiProjectNumberOfSnapshots': None,
         'denbiVolumeCounter': {'name': 'volumes', 'factor': 1}}
@@ -84,6 +117,9 @@ class Endpoint(object):
                  support_ssh_key=True,
                  support_router=False,
                  support_network=False,
+                 support_default_ssh_sgrule=False,
+                 external_network_id="",
+                 network_cidr="192.168.33.0/24",
                  read_only=False,
                  logging_domain="denbi",
                  report_domain="report"):
@@ -96,6 +132,9 @@ class Endpoint(object):
         :param support_elixir_name : should an available elixir_name be stored ?
         :param support_router: should a router generated (for new projects)
         :param support_network: should a network/subnetwork generated and attached to router (for new projects)
+        :param support_default_ssh_sgrule: should a ssh sg rule created with defautl sg
+        :param external_network_id: neutron id of external network used
+        :param network_cidr: CIDR notation of the internal network to be created (
         :param read_only: test mode
         :param logging_domain: domain where "standard" logs are logged (default is "denbi")
         :param report_domain: domain where "update" logs are reported (default is "report")
@@ -117,9 +156,26 @@ class Endpoint(object):
         self.support_ssh_key = bool(support_ssh_key)
         self.support_router = bool(support_router)
         self.support_network = bool(support_network)
+        self.support_default_ssh_sgrule = bool(support_default_ssh_sgrule)
+        self.external_network_id = external_network_id
+        self.network_cidr = network_cidr
         self.read_only = read_only
         self.log = logging.getLogger(logging_domain)
         self.log2 = logging.getLogger(report_domain)
+
+        # check if CIDR mask
+        if not (validate_cidr(self.network_cidr)):
+            raise RuntimeError(f"Network CIDR '{self.network_cidr}' is invalid.")
+
+        # check if external_network_id is a valid id
+        if self.support_network:
+            if external_network_id:
+                if not (self.neutron.list_networks(id=external_network_id)['networks']):
+                    self.log.fatal(f"External network  '{external_network_id}' not found.")
+                    raise RuntimeError(f"External network  '{external_network_id}' not found.")
+            else:
+                self.log.fatal("Support_network option is set, but external_network_id is NOT set.")
+                raise RuntimeError("Support_network option is set, but external_network_id is NOT set.")
 
     def import_data(self, users_path, groups_path):
         '''
@@ -439,7 +495,7 @@ class Endpoint(object):
                        'admin_state_up': True,
                        'project_id': project['id'],
                        'external_gateway_info': {
-                           'network_id': '16b19dcf-a1e1-4f59-8256-a45170042790'
+                           'network_id': self.external_network_id
 
                        }}
 
@@ -505,3 +561,28 @@ class Endpoint(object):
         # delete network
         for network in network_list:
             self.neutron.delete_network(network["id"])
+
+        # delete security-groups
+        sg_list = self.neutron.list_security_groups(project_id=project_id)['security_groups']
+        for sg in sg_list:
+            self.neutron.delete_security_group(sg['id'])
+
+    def _add_ssh_sgrule(self, project_id):
+        """
+        Add a security group rule to allow ssh access from 0.0.0.0.
+        :param project_id: map describing project
+        :return:
+        """
+        default_sg = self.neutron.list_security_groups(project_id=project_id, name="default")["security_groups"]
+
+        if default_sg:
+            self.neutron.create_security_group_rule(body={'security_group_rule': {
+                                                            'security_group_id': default_sg[0]["id"],
+                                                            'ethertype': 'IPv4',
+                                                            'direction': 'ingress',
+                                                            'protocol': 'tcp',
+                                                            'port_range_min': 22,
+                                                            'port_range_max': 22,
+                                                            'remote_ip_prefix': '0.0.0.0/0',
+                                                            'description': 'Allow ssh access.'}
+                                                            })

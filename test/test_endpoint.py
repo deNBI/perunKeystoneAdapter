@@ -16,6 +16,8 @@ import logging
 import test
 import uuid
 
+import denbi.perun.endpoint
+
 from denbi.perun.endpoint import Endpoint
 from denbi.perun.keystone import KeyStone
 
@@ -49,17 +51,50 @@ class TestEndpoint(unittest.TestCase):
                                  target_domain_name='elixir', cloud_admin=True)
         self.neutron = self.keystone._neutron
 
+        # Get an external network
+        self.external_network_id = ''
+        for network in self.neutron.list_networks()['networks']:
+            if network['router:external']:
+                self.external_network_id = network['id']
+        if not self.external_network_id:
+            self.fail("No external network found (Search for 'router:external' = True ")
+
     def __uuid(self):
         return str(uuid.uuid4())
+
+    def test_validate_cidr(self):
+        print("Run 'validate_cidr'")
+        validate = denbi.perun.endpoint.validate_cidr
+        self.assertTrue(validate("192.168.33.0/24"))
+        self.assertTrue(validate("10.0.0.0/8"))
+        self.assertTrue(validate("0.0.0.0/0"))
+        self.assertFalse(validate("192.168.33/24"))
+        self.assertFalse(validate("192.168.33.0/33"))
+        self.assertFalse(validate("192.168.33.0"))
 
     def test_create_router(self):
         """ Test of a create_router."""
 
-        print("Run 'test_create_router")
+        print("Run 'test_create_router'")
 
-        # create endpoint
+        # create endpoint -> must fail, since no network_id is set
+        try:
+            Endpoint(keystone=self.keystone, mode="scim",
+                     support_quotas=False,
+                     support_router=True,
+                     support_network=True,
+                     support_default_ssh_sgrule=True)
+            self.fail("Since no network_id is set, an exception MUST be thrown.")
+        except Exception as e:
+            pass
+
+        # create endpoint -> should be successful
         endpoint = Endpoint(keystone=self.keystone, mode="scim",
-                            support_quotas=False, support_router=True, support_network=True)
+                            support_quotas=False,
+                            support_router=True,
+                            support_network=True,
+                            support_default_ssh_sgrule=True,
+                            external_network_id=self.external_network_id)
 
         # create project manually
         denbi_project = self.keystone.projects_create(self.__uuid())
@@ -76,6 +111,7 @@ class TestEndpoint(unittest.TestCase):
 
         # create router with network
         endpoint._create_router(denbi_project, router_only=False)
+        # creat
 
         # test if created project has one router
         router_list = self.neutron.list_routers(project_id=denbi_project["id"])["routers"]
@@ -94,7 +130,7 @@ class TestEndpoint(unittest.TestCase):
 
         # test if found subnet is associated to found network
         self.assertEqual(subnet["network_id"], network["id"],
-                          f"Expect subnet {subnet['id']} is associated to network {network['id']}.")
+                         f"Expect subnet {subnet['id']} is associated to network {network['id']}.")
 
         # test if pro
         port_list = self.neutron.list_ports(device_owner='network:router_interface',
@@ -103,18 +139,55 @@ class TestEndpoint(unittest.TestCase):
         port = port_list[0]
 
         self.assertEqual(port["device_id"], router["id"],
-                          f"Expect router_interface port {port['id']} is associated to router {router['id']}.")
-        self.assertEqual(port["fixed_ips"][0]["subnet_id"],subnet["id"],f"Expect ")
-
+                         f"Expect router_interface port {port['id']} is associated to router {router['id']}.")
+        self.assertEqual(port["fixed_ips"][0]["subnet_id"], subnet["id"], f"Expect ")
 
         # cleanup
         endpoint._delete_routers(denbi_project['perun_id'])
+
+        # tag previous created project as deleted
+        self.keystone.projects_delete(denbi_project['perun_id'])
+        # terminate previous marked project
+        self.keystone.projects_terminate(denbi_project['perun_id'])
+
+    def     test_add_ssh_sgrule(self):
+        print("Run 'test_add_ssh_sgrule'")
+
+        endpoint = Endpoint(keystone=self.keystone, mode="scim",
+                            support_quotas=False,
+                            support_router=True,
+                            support_network=True,
+                            support_default_ssh_sgrule=True,
+                            external_network_id=self.external_network_id)
+
+        # create project manually
+        denbi_project = self.keystone.projects_create(self.__uuid())
+
+
+
+        # create sg_rule
+        endpoint._add_ssh_sgrule(denbi_project["id"])
+
+        # check if default security contains ssh-rule
+        default_sg = self.neutron.list_security_groups(project_id=denbi_project["id"],name="default")["security_groups"]
+        self.assertEqual(len(default_sg),1,"Only one default sg expected.")
+
+        found = False
+        for rule in default_sg[0]['security_group_rules']:
+            if rule['description'] == 'Allow ssh access.':
+                found = True
+        self.assertTrue(found,"Expected default sg has a ssh rule set.")
+
+
+        # cleanup
         # tag previous created project as deleted
         self.keystone.projects_delete(denbi_project['perun_id'])
         # terminate previous marked project
         self.keystone.projects_terminate(denbi_project['perun_id'])
 
     def test_import_scim(self):
+        print("Run 'test_import_scim'")
+
         # initialize endpoint  with 'scim' mode
         self.endpoint = Endpoint(keystone=self.keystone, mode="scim",
                                  support_quotas=False, support_router=False, support_network=False)
@@ -229,6 +302,9 @@ class TestEndpoint(unittest.TestCase):
         (no support for email, elixir_name and ssh_key). Test just loads first test set and check
         first user.
         '''
+
+
+        print ("Run 'test_import_denbi_portal_compute_center_legacy'")
         self.endpoint = Endpoint(keystone=self.keystone,
                                  mode="denbi_portal_compute_center",
                                  store_email=False,
@@ -267,6 +343,8 @@ class TestEndpoint(unittest.TestCase):
         '''
         Initialize with 'denbi_portal_compute_center' mode
         '''
+
+        print("Run 'test_import_denbi_portal_compute_center'")
 
         self.endpoint = Endpoint(keystone=self.keystone,
                                  mode="denbi_portal_compute_center")
