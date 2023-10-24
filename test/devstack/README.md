@@ -1,4 +1,4 @@
-# Test environment
+# Development and test environment
 
 We need a full functional installation to test PerunKeystoneAdapter.
 [DevStack](https://docs.openstack.org/devstack/latest/) seems to be 

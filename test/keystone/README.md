@@ -1,11 +1,23 @@
-# Test environment
+# Simplified test and development environment
+
+## Deprecation Warning
+
+**Although you can still test against the [monasca/keystone](https://hub.docker.com/r/monasca/keystone/) container, 
+I would no longer recommend it. The Keystone version included is based on the OpenStack Mitaka release and is hopeless 
+outdated.  We recommend using [DevStack](../devstack/README.md).**
+
 
 ## Start and configure keystone from a docker container
-There are several inoffical container available at docker hub that provides a local keystone in a container. After some short investigations I decided to use the [monasca/keystone](https://hub.docker.com/r/monasca/keystone/) container. At the time of writing the container is based on Ubuntu 16.04 with the Mitaka keystone release installed. Starting of the container with a default setup is quite simple, just run the container as background process and expose the keystone specific network ports to the docker host.
+
+There are several unofficial container available at docker hub that provides a local keystone in a container. After 
+some short investigations I decided to use the [monasca/keystone](https://hub.docker.com/r/monasca/keystone/) container. 
+At the time of writing the container is based on Ubuntu 16.04 with the Mitaka keystone release installed. Starting of 
+the container with a default setup is quite simple, just run the container as background process and expose the keystone 
+specific network ports to the docker host.
 
 ```docker run -d -p 5000:5000 -p 35357:35357 monasca/keystone```
 
-### Default configuration:
+### Default configuration:
 
 | key          | value     |
 |--------------|-----------|
@@ -14,12 +26,15 @@ There are several inoffical container available at docker hub that provides a lo
 | password     | s3crt     |
 | region       | RegionOne |
 
-You can use the [keystone-openrc.sh](keystone-openrc.sh) file to set your shell environment to access the docker keystone container.
+You can use the [keystone-openrc.sh](keystone-openrc.sh) file to set your shell environment to access the docker 
+keystone container.
 
 ```$ source keystone-openrc.sh ```
 
 ### Clean up keystone
-It could be sometimes usefull to clean up your keystone test setup. A [small script](clean_keystone.sh) do the job perfectly.
+
+It could be sometimes usefully to clean up your keystone test setup. A [small script](clean_keystone.sh) do the job #
+perfectly.
 
 ```$ clean_keystone.sh```
 
