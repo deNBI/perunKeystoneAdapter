@@ -311,7 +311,7 @@ class Endpoint(object):
                 perun_id = str(dpcc_user['id'])
                 elixir_id = str(dpcc_user['login-namespace:elixir-persistent'])
                 elixir_name = None
-                if self.support_elixir_name and 'login-namespace:elixir' in  dpcc_user:
+                if self.support_elixir_name and 'login-namespace:elixir' in dpcc_user:
                     elixir_name = str(dpcc_user['login-namespace:elixir'])
                 enabled = str(dpcc_user['status']) == 'VALID'
                 email = None
@@ -545,7 +545,6 @@ class Endpoint(object):
 
         # remove interface from all routers
         for port in port_list:
-            device_id = port["device_id"]
             for router in router_list:
                 if router["id"] == port["device_id"]:
                     self.neutron.remove_interface_router(router["id"], body={"port_id": port["id"]})
@@ -577,12 +576,12 @@ class Endpoint(object):
 
         if default_sg:
             self.neutron.create_security_group_rule(body={'security_group_rule': {
-                                                            'security_group_id': default_sg[0]["id"],
-                                                            'ethertype': 'IPv4',
-                                                            'direction': 'ingress',
-                                                            'protocol': 'tcp',
-                                                            'port_range_min': 22,
-                                                            'port_range_max': 22,
-                                                            'remote_ip_prefix': '0.0.0.0/0',
-                                                            'description': 'Allow ssh access.'}
-                                                            })
+                                                          'security_group_id': default_sg[0]["id"],
+                                                          'ethertype': 'IPv4',
+                                                          'direction': 'ingress',
+                                                          'protocol': 'tcp',
+                                                          'port_range_min': 22,
+                                                          'port_range_max': 22,
+                                                          'remote_ip_prefix': '0.0.0.0/0',
+                                                          'description': 'Allow ssh access.'}
+                                                          })

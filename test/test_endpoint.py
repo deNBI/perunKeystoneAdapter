@@ -85,7 +85,7 @@ class TestEndpoint(unittest.TestCase):
                      support_network=True,
                      support_default_ssh_sgrule=True)
             self.fail("Since no network_id is set, an exception MUST be thrown.")
-        except Exception as e:
+        except Exception:
             pass
 
         # create endpoint -> should be successful
@@ -140,7 +140,8 @@ class TestEndpoint(unittest.TestCase):
 
         self.assertEqual(port["device_id"], router["id"],
                          f"Expect router_interface port {port['id']} is associated to router {router['id']}.")
-        self.assertEqual(port["fixed_ips"][0]["subnet_id"], subnet["id"], f"Expect ")
+        self.assertEqual(port["fixed_ips"][0]["subnet_id"], subnet["id"],
+                         f"Expect subnet {subnet['id']} is associated to router {router['id']}.")
 
         # cleanup
         endpoint._delete_routers(denbi_project['perun_id'])
@@ -150,7 +151,7 @@ class TestEndpoint(unittest.TestCase):
         # terminate previous marked project
         self.keystone.projects_terminate(denbi_project['perun_id'])
 
-    def     test_add_ssh_sgrule(self):
+    def test_add_ssh_sgrule(self):
         print("Run 'test_add_ssh_sgrule'")
 
         endpoint = Endpoint(keystone=self.keystone, mode="scim",
@@ -163,21 +164,18 @@ class TestEndpoint(unittest.TestCase):
         # create project manually
         denbi_project = self.keystone.projects_create(self.__uuid())
 
-
-
         # create sg_rule
         endpoint._add_ssh_sgrule(denbi_project["id"])
 
         # check if default security contains ssh-rule
-        default_sg = self.neutron.list_security_groups(project_id=denbi_project["id"],name="default")["security_groups"]
-        self.assertEqual(len(default_sg),1,"Only one default sg expected.")
+        default_sg = self.neutron.list_security_groups(project_id=denbi_project["id"], name="default")["security_groups"]
+        self.assertEqual(len(default_sg), 1, "Only one default sg expected.")
 
         found = False
         for rule in default_sg[0]['security_group_rules']:
             if rule['description'] == 'Allow ssh access.':
                 found = True
-        self.assertTrue(found,"Expected default sg has a ssh rule set.")
-
+        self.assertTrue(found, "Expected default sg has a ssh rule set.")
 
         # cleanup
         # tag previous created project as deleted
@@ -303,8 +301,7 @@ class TestEndpoint(unittest.TestCase):
         first user.
         '''
 
-
-        print ("Run 'test_import_denbi_portal_compute_center_legacy'")
+        print("Run 'test_import_denbi_portal_compute_center_legacy'")
         self.endpoint = Endpoint(keystone=self.keystone,
                                  mode="denbi_portal_compute_center",
                                  store_email=False,

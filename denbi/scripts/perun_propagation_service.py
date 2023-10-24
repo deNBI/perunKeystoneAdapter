@@ -25,7 +25,6 @@ import shutil
 import sys
 import tarfile
 import tempfile
-import sys
 
 from concurrent.futures import ThreadPoolExecutor
 

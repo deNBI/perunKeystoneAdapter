@@ -46,7 +46,6 @@ def process_tarball(tarball_path, read_only=False, target_domain_name='elixir',
     tar.extractall(path=directory)
     tar.close()
 
-
     # import into keystone
     keystone = KeyStone(default_role=default_role,
                         create_default_role=True,
@@ -78,7 +77,7 @@ def main():
                         help="Domain to create users and projects in, defaults to 'elixir'")
     parser.add_argument('--role', default='user',
                         help="Default role to assign to new users, defaults to 'user'")
-    parser.add_argument('--elixir_name',action="store_true", default=False,
+    parser.add_argument('--elixir_name', action="store_true", default=False,
                         help="Support Key 'login-namespace:elixir'. This information is normally not propagated by "
                              "default.")
     parser.add_argument("-v", "--verbose", dest="verbose_count",
@@ -103,13 +102,12 @@ def main():
 
     # Check and set dependencies
     if args.ssh_sgrule:
-        args.network=True
+        args.network = True
     if args.network:
-        args.router=True
+        args.router = True
     if args.router and not args.external_network_id:
         print("External network id is mandatory if router is set.")
         exit(1)
-
 
     process_tarball(args.tarball.name, read_only=args.read_only,
                     target_domain_name=args.domain,
