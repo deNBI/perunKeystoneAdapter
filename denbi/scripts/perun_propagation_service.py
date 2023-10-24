@@ -69,28 +69,28 @@ if not app.config.get('TARGET_DOMAIN_NAME', False):
 if not app.config.get('DEFAULT_ROLE', False):
     app.config['DEFAULT_ROLE'] = 'user'
 
-if app.config.get('SUPPORT_DEFAULT_SSH_SGRULE', False) and not app.config.get('SUPPORT_NETWORK',False):
+if app.config.get('SUPPORT_DEFAULT_SSH_SGRULE', False) and not app.config.get('SUPPORT_NETWORK', False):
     app.config['SUPPORT_NETWORK'] = True
 
-if app.config.get('SUPPORT_NETWORK', False) and not app.config.get('SUPPORT_ROUTER',False):
+if app.config.get('SUPPORT_NETWORK', False) and not app.config.get('SUPPORT_ROUTER', False):
     app.config['SUPPORT_ROUTER'] = True
 
-if app.config.get('SUPPORT_ROUTER', False) and not app.config.get('EXTERNAL_NETWORK_ID',False):
+if app.config.get('SUPPORT_ROUTER', False) and not app.config.get('EXTERNAL_NETWORK_ID', False):
     report.error("if 'SUPPORT_ROUTER' ist enabled, 'EXTERNAL_NETWORK_ID' must be set.")
     sys.exit(4)
 
-PKA_KEYS=('BASE_DIR','KEYSTONE_READ_ONLY','CLEANUP',
-          'TARGET_DOMAIN_NAME','DEFAULT_ROLE','NESTED',
-          'ELIXIR_NAME','SUPPORT_QUOTAS','SUPPORT_ROUTER',
-          'SUPPORT_NETWORK','SUPPORT_DEFAULT_SSH_SGRULE',
-          'EXTERNAL_NETWORK_ID','LOG_DIR')
+PKA_KEYS = ('BASE_DIR', 'KEYSTONE_READ_ONLY', 'CLEANUP',
+            'TARGET_DOMAIN_NAME', 'DEFAULT_ROLE', 'NESTED',
+            'ELIXIR_NAME', 'SUPPORT_QUOTAS', 'SUPPORT_ROUTER',
+            'SUPPORT_NETWORK', 'SUPPORT_DEFAULT_SSH_SGRULE',
+            'EXTERNAL_NETWORK_ID', 'LOG_DIR')
 
-config_str_list=[]
+config_str_list = []
 config_str_list.append("I'm using the following configuration:")
-config_str_list.append(f"+{'-'*32}+{'-'*42}+")
+config_str_list.append(f"+{'-' * 32}+{'-' * 42}+")
 for key in sorted(PKA_KEYS):
-    config_str_list.append(f"| PKA_{key:26} | {app.config.get(key,'False'):40} |")
-config_str_list.append(f"+{'-'*32}+{'-'*42}+")
+    config_str_list.append(f"| PKA_{key:26} | {app.config.get(key, 'False'):40} |")
+config_str_list.append(f"+{'-' * 32}+{'-' * 42}+")
 
 report.info('\n'.join(config_str_list))
 
@@ -106,6 +106,21 @@ denbi.addHandler(log_ch)
 
 # Create thread executor
 executor = ThreadPoolExecutor(max_workers=1)
+
+
+def strtobool(val):
+    """Convert a string representation of truth to true or false .
+    True values are 'y', 'yes', 't', 'true', 'on', and '1'; false values
+    are 'n', 'no', 'f', 'false', 'off', and '0'.  Raises ValueError if
+    'val' is anything else.
+    """
+    val = val.lower()
+    if val in ('y', 'yes', 't', 'true', 'on', '1'):
+        return True
+    elif val in ('n', 'no', 'f', 'false', 'off', '0'):
+        return False
+    else:
+        raise ValueError("invalid truth value %r" % (val,))
 
 
 def process_tarball(tarball_path,
@@ -174,17 +189,17 @@ def upload():
     result = executor.submit(process_tarball,
                              file.name,
                              base_dir=app.config.get('BASE_DIR'),
-                             read_only=app.config.get('KEYSTONE_READ_ONLY', False),
-                             cleanup=app.config.get('CLEANUP', False),
+                             read_only=strtobool(app.config.get('KEYSTONE_READ_ONLY', "False")),
+                             cleanup=strtobool(app.config.get('CLEANUP', "False")),
                              target_domain_name=app.config.get('TARGET_DOMAIN_NAME'),
                              default_role=app.config.get('DEFAULT_ROLE'),
-                             nested=app.config.get('NESTED', False),
-                             support_elixir_name=app.config.get('ELIXIR_NAME',False),
-                             support_quotas=app.config.get('SUPPORT_QUOTA', False),
-                             support_router=app.config.get('SUPPORT_ROUTER', False),
+                             nested=strtobool(app.config.get('NESTED', "False")),
+                             support_elixir_name=strtobool(app.config.get('ELIXIR_NAME', "False")),
+                             support_quotas=strtobool(app.config.get('SUPPORT_QUOTA', "False")),
+                             support_router=strtobool(app.config.get('SUPPORT_ROUTER', "False")),
                              external_network_id=app.config.get('EXTERNAL_NETWORK_ID'),
-                             support_network=app.config.get('SUPPORT_NETWORK', False),
-                             support_default_ssh_sgrule=app.config.get('SUPPORT_DEFAULT_SSH_SGRULE', False)
+                             support_network=strtobool(app.config.get('SUPPORT_NETWORK', "False")),
+                             support_default_ssh_sgrule=strtobool(app.config.get('SUPPORT_DEFAULT_SSH_SGRULE', "False"))
                              )
 
     # if task fails with an exception, the thread pool catches the exception,

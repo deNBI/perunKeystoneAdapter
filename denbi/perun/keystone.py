@@ -37,10 +37,17 @@ class KeyStone:
     denbi_project = ``{id: string, perun_id: string, enabled: boolean, members: [denbi_user]}``
     """
 
-    def __init__(self, environ=None, default_role="_member_",
-                 create_default_role=False, flag="perun_propagation",
-                 target_domain_name=None, read_only=False,
-                 logging_domain='denbi', report_domain='report', nested=False, cloud_admin=True):
+    def __init__(self,
+                 environ=None,
+                 default_role="_member_",
+                 create_default_role=False,
+                 flag="perun_propagation",
+                 target_domain_name=None,
+                 read_only=False,
+                 logging_domain='denbi',
+                 report_domain='report',
+                 nested=False,
+                 cloud_admin=True):
         """
         Create a new Openstack Keystone session reading clouds.yml in ~/.config/clouds.yaml
         or /etc/openstack or using the system environment.
@@ -303,6 +310,7 @@ class KeyStone:
 
         :return: a denbi_user hash {id: string, elixir_id: string, perun_id: string, email: string, enabled: boolean}
         """
+
         if not self.ro:
             os_user = self.keystone.users.create(name=str(elixir_id),                   # str
                                                  domain=str(self.target_domain_id),     # str

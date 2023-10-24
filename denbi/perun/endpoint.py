@@ -113,7 +113,7 @@ class Endpoint(object):
                  mode="scim",
                  store_email=True,
                  support_quotas=True,
-                 support_elixir_name=True,
+                 support_elixir_name=False,
                  support_ssh_key=True,
                  support_router=False,
                  support_network=False,
@@ -129,7 +129,7 @@ class Endpoint(object):
         :param mode: 'scim' or 'denbi_portal_compute_center'
         :param store_email : should an available email address be stored?
         :param support_quotas : should quotas supported ?
-        :param support_elixir_name : should an available elixir_name be stored ?
+        :param support_elixir_name : should an available elixir_name for user be stored, not used within de.NBI
         :param support_router: should a router generated (for new projects)
         :param support_network: should a network/subnetwork generated and attached to router (for new projects)
         :param support_default_ssh_sgrule: should a ssh sg rule created with defautl sg
@@ -311,7 +311,7 @@ class Endpoint(object):
                 perun_id = str(dpcc_user['id'])
                 elixir_id = str(dpcc_user['login-namespace:elixir-persistent'])
                 elixir_name = None
-                if self.support_elixir_name and str(dpcc_user['login-namespace:elixir']):
+                if self.support_elixir_name and 'login-namespace:elixir' in  dpcc_user:
                     elixir_name = str(dpcc_user['login-namespace:elixir'])
                 enabled = str(dpcc_user['status']) == 'VALID'
                 email = None
