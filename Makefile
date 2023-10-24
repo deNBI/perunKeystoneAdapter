@@ -46,10 +46,4 @@ test: ## Run tests without docker
 	-python -m unittest test.test_keystone.TestKeystone
 	-python -m unittest test.test_endpoint.TestEndpoint
 
-docs: ## Build documentation
-	rm -f docs/denbi.*.rst
-	sphinx-apidoc -o docs/ denbi/
-	cd docs && $(MAKE) html
-
-
 .PHONY: help lint test test_docker docs

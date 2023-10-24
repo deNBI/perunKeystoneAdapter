@@ -2,7 +2,12 @@
 
 # Perun Keystone Adapter
 
-The *Perun Keystone Adapter* is a library written in Python that parses data propagated by [Perun](https://perun.elixir-czech.cz) and modifies a connected [Openstack](https://www.openstack.org) [Keystone](https://docs.openstack.org/keystone/latest/).
+The *Perun Keystone Adapter* is a library written in Python that parses data propagated
+by [Perun](https://perun.elixir-czech.cz) and modifies a 
+connected [Openstack](https://www.openstack.org) [Keystone](https://docs.openstack.org/keystone/latest/).
+
+Additionally, the PKA offers the possibility to restrict created projects  quotas and create network stuff
+for new projects.
 
 ## Features
 
@@ -15,7 +20,8 @@ The *Perun Keystone Adapter* is a library written in Python that parses data pro
  -  deleting (marked and disabled) items functionality is available but not integrated in the normal workflow.
  -  set/modify project quotas (needs a full openstack  installation like [DevStack](https://docs.openstack.org/devstack/latest/) for testing) [_optional_]
  -  create network (router, net and subnet) for new projects [_optional_]
- -  compatible with python 3.6+
+ -  adjust default security group to support ssh access [_optional_]
+ -  compatible with python 3.8+
 
 ## Preparation
 
@@ -105,9 +111,11 @@ Build docker container.
 
 ```docker build -t denbi/pka .```
 
-Create configuration file (`pka.cfg`), for example (with cloud admin credentials) :
+Create configuration file (`pka.env`) :
 
 ```
+# OpenStack credentials
+# ---------------------
 OS_REGION_NAME="XXX"
 OS_PROJECT_DOMAIN_ID="XXX"
 OS_INTERFACE="public"
@@ -119,99 +127,54 @@ OS_PROJECT_NAME="admin"
 OS_PASSWORD="XXX"
 OS_IDENTITY_API_VERSION="3"
 
-# Domain to create users and projects in, defaults to 'elixir'
-TARGET_DOMAIN_NAME="elixir"
-# Decides if Cloud admin or domain admin should be used
-CLOUD_ADMIN=True
+# Perun Keystone Adapater settings
+# --------------------------------
+
+# Location for storing propagated data
+PKA_BASE_DIR=/pka
+# Location for storing logs, defaults to current working directory
+PKA_LOG_DIR=/log
 # Do not make any modifications to keystone
-KEYSTONE_READ_ONLY=False
+PKA_KEYSTONE_READ_ONLY=False
+# Domain to create users and projects in, defaults to 'elixir'
+PKA_TARGET_DOMAIN_NAME=elixir
 # Default role to assign to new users, defaults to 'user'
-DEFAULT_ROLE="member"
-# Use nested project instead of cloud/domain admin
-NESTED=False
+PKA_DEFAULT_ROLE=user
+PKA_DEFAULT_NESTED=False
+PKA_ELIXIR_NAME=False
 # Set quotas for projects
-SUPPORT_QUOTA=False
-# base dir for storing uploaded perun files
-BASE_DIR="/perun/upload/"
-# log dir
-LOG_DIR="/perun/log/"
-# clean up uploaded data
-CLEANUP=False
+PKA_SUPPORT_QUOTA=True
+# Create router for new projects
+PKA_SUPPORT_ROUTER=True
+# Create a default network/subnetwork for new projects
+PKA_SUPPORT_NETWORK=True
+# Create 
+PKA_EXTERNAL_NETWORK_ID=16b19dcf-a1e1-4f59-8256-a45170042790
+# Add ssh rule to default 
+PKA_SUPPORT_DEFAULT_SSH_SGRULE=True
 ```
 
 and  run container:
 
-```docker run -v $(pwd)/pka.cfg:/perun_propagation_sevice.cfg -v $(pwd)/perun/upload:/perun/upload -v $(pwd)/perun/log:/perun/log denbi/pka```
+```docker run --env-file pka.env -v $(pwd)/perun/upload:/pka -v $(pwd)/perun/log:/log denbi/pka```
 
-There are [additional deployment options available](https://flask.palletsprojects.com/en/1.1.x/deploying/) if you prefer to run WSGI applications with Apache, or other setups.
+There are [additional deployment options available](https://flask.palletsprojects.com/en/1.1.x/deploying/) 
+if you prefer to run WSGI applications with Apache, or other setups.
 
 ### Logging 
-The Library supports two different logger domains, which can be configured when instantiating the Keystone/Endpoint class (default "denbi" and "report").
-All changes concerning the Openstack database (project, identity and quotas) are logged to the logging domain, everything else 
-is logged to the report domain. The loggers are standard Python logger, therefore all possibilities of Python's logging API 
-are supported.
-See [service script](denbi/scripts/perun_propagation_service.py) for an example  how to configure logging. 
+The Library supports two different logger domains, which can be configured when instantiating the 
+Keystone/Endpoint class (default "denbi" and "report").
+All changes concerning the Openstack database (project, identity and quotas) are logged to the 
+logging domain, everything else is logged to the report domain. The loggers are standard Python
+logger, therefore all possibilities of Python's logging API are supported.
+See [service script](denbi/scripts/perun_propagation_service.py) for an example how to configure
+logging. 
 
 
 ## Development
 
-### DevStack
-
 For testing and development it is recommended to configure and use a [DevStack] (https://docs.openstack.org/devstack/latest/) 
-that fits your production environment.
-
-#### Example Setup
-The documentation describes the following  setup.  Depending on your environment you have adapted the following configuration
-steps.
-
-```text
-User/Notebook <--> Router <-- Internet --> Router <--> GW (129.70.51.103) <--> VM (192.168.20.55)
-```
-**Todo : replace with an image**
-
-
-- User has permission to configure iptables (notebook)
-- Gateway(GW)/Jumphost allows ssh access
-- VM ist NOT directly accessible
-
-#### Setup DevStack on a cloud instance
-
-**Depending on available resources setting up a DevStack instance can take up to 20 minutes.**
-
-##### Prerequisites
-
-- Virtual machine with a minimum of 8 GB RAM, 20 GB disk space and 4 cores.
-- SSH access 
-
-##### Steps
-
-1. Setup virtual machine with a supported OS (Ubuntu LTS releases seems to be work best for Devstack)
-2. Download DevStack using git  `$ git clone https://opendev.org/openstack/devstack`
-3. Change into DevStack directory: `$ cd devstack`
-3. Create minimal configuration file at root of the DevStack repo :
-   ```
-   $ cat > local.conf
-   [[local|localrc]]
-   ADMIN_PASSWORD=secret
-   DATABASE_PASSWORD=$ADMIN_PASSWORD
-   RABBIT_PASSWORD=$ADMIN_PASSWORD
-   SERVICE_PASSWORD=$ADMIN_PASSWORD
-   ```
-4. Start the installation process: ` $ ./start.sh`
-
-
-#### Use DevStack from your development environment.
-
-[Sshuttle](https://github.com/sshuttle/sshuttle) is a poor man's vpn solution to use DevStack from your development 
-environment.
-
-```bash
-$ pip install sshuttle
-$ sshuttle  -r 129.70.51.109 192.168.20.0/24
-```
-
-You can now use your browser to access DevStack ([http://192.168.20.55](http://192.168.20.55)) using previous defined
-credentials (admin,secret).
+that fits your production environment.(see [test/devstack/README.md]())
 
 
 ### Unit tests
@@ -221,9 +184,8 @@ The library comes with a set of unit tests - a full functional keystone is requi
 For testing the user/project management only a running keystone is enough. The `Makefile` included with 
 the project runs a docker container for providing a keystone server. 
 
-It is recommended to configure and use a [DevStack]
-
-In any case it is **not** recommended to use your production keystone/setup .
+It is recommended to configure and use a [DevStack]. In any case it is **not** recommended to use your 
+production keystone/setup .
 
 
 ### Linting
