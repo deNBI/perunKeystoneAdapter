@@ -240,7 +240,7 @@ class KeyStone:
                 clouds_yaml_file = '/etc/openstack/clouds.yaml'
 
             if clouds_yaml_file:
-                with (open('{}/.config/clouds.yaml'.format(os.environ['HOME']))) as stream:
+                with (open(clouds_yaml_file)) as stream:
                     try:
                         clouds_yaml = yaml.load(stream, Loader=yaml.FullLoader)
                         environ = {}

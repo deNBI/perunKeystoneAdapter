@@ -19,6 +19,7 @@ to implement the upload function in a thread. But the 'process_tarball'
 method shouldn't run parallel.
 """
 
+import json
 import logging
 import os
 import shutil
@@ -52,7 +53,17 @@ report.setLevel(logging.INFO)
 report.addHandler(report_ch)
 
 app = Flask(__name__)
-app.config.from_prefixed_env("PKA")
+
+# check if config file named 'pka.json' is found
+if os.path.isfile("/etc/pka.json"):
+    report.info(f"Load Configuration from file '/etc/pka.json'")
+    app.config.from_file(os.getcwd() + "/etc/pka.json", load=json.load)
+elif os.path.isfile(os.getcwd()+"/pka.json"):
+    report.info(f"Load Configuration from file '{os.getcwd()}/pka.json'")
+    app.config.from_file(os.getcwd() + "/pka.json", load=json.load)
+else:
+    report.info("Get Configuration from environment")
+    app.config.from_prefixed_env("PKA")
 
 report.info("Check CONFIG options.")
 
@@ -88,10 +99,33 @@ config_str_list = []
 config_str_list.append("I'm using the following configuration:")
 config_str_list.append(f"+{'-' * 32}+{'-' * 42}+")
 for key in sorted(PKA_KEYS):
-    config_str_list.append(f"| PKA_{key:26} | {app.config.get(key, 'False'):40} |")
+    config_str_list.append(f"| {key:30} | {app.config.get(key, 'False'):40} |")
 config_str_list.append(f"+{'-' * 32}+{'-' * 42}+")
 
 report.info('\n'.join(config_str_list))
+
+# if app.config contains Openstack specific variables (starting with OS_)
+# put them in an extra environment
+# check if minimum set of OS keys is provided.
+local_environment = {}
+
+necessary_keys = ["OS_AUTH_URL",
+                  "OS_USERNAME",
+                  "OS_USER_DOMAIN_NAME",
+                  "OS_PROJECT_NAME",
+                  "OS_PASSWORD"]
+for key in app.config.keys():
+    if key.startswith("OS_"):
+        local_environment[key] = app.config.get(key)
+        if key in necessary_keys:
+            necessary_keys.remove(key)
+
+if not local_environment:
+    local_environment = None
+else:
+    if necessary_keys:
+        report.error(f"{','.join(necessary_keys)} is/are mandatory and is/are missing in configuration or environment.")
+        sys.exit(4)
 
 # create a FileHandler for logging
 log_ch = logging.FileHandler(app.config.get("LOG_DIR", ".") + "/pka.log")
@@ -113,7 +147,7 @@ def strtobool(val):
     are 'n', 'no', 'f', 'false', 'off', and '0'.  Raises ValueError if
     'val' is anything else.
     """
-    val = val.lower()
+    val = str(val).lower()
     if val in ('y', 'yes', 't', 'true', 'on', '1'):
         return True
     elif val in ('n', 'no', 'f', 'false', 'off', '0'):
@@ -135,8 +169,9 @@ def process_tarball(tarball_path,
                     external_network_id='',
                     support_network=False,
                     support_default_ssh_sgrule=False):
-
-    """Process Perun tarball."""
+    """
+    Process Perun propagated tarball.
+    """
     d = datetime.today()
     dir = f"{base_dir}/{d.year}_{d.month}_{d.day}_{d.hour}:{d.minute}:{d.second}.{d.microsecond}"
     os.mkdir(dir)
@@ -153,7 +188,8 @@ def process_tarball(tarball_path,
                         create_default_role=True,
                         target_domain_name=target_domain_name,
                         read_only=read_only,
-                        nested=nested)
+                        nested=nested,
+                        environ=local_environment)
     endpoint = Endpoint(keystone=keystone,
                         mode="denbi_portal_compute_center",
                         support_elixir_name=support_elixir_name,
