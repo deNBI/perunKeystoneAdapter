@@ -93,7 +93,8 @@ PKA_KEYS = ('BASE_DIR', 'KEYSTONE_READ_ONLY', 'CLEANUP',
             'TARGET_DOMAIN_NAME', 'DEFAULT_ROLE', 'NESTED',
             'ELIXIR_NAME', 'SUPPORT_QUOTAS', 'SUPPORT_ROUTER',
             'SUPPORT_NETWORK', 'SUPPORT_DEFAULT_SSH_SGRULE',
-            'EXTERNAL_NETWORK_ID', 'LOG_DIR')
+            'EXTERNAL_NETWORK_ID', 'LOG_DIR',
+            'SSH_KEY_BLOCKLIST')
 
 config_str_list = []
 config_str_list.append("I'm using the following configuration:")
@@ -168,10 +169,13 @@ def process_tarball(tarball_path,
                     support_router=False,
                     external_network_id='',
                     support_network=False,
-                    support_default_ssh_sgrule=False):
+                    support_default_ssh_sgrule=False,
+                    ssh_key_blocklist=None):
     """
     Process Perun propagated tarball.
     """
+    if ssh_key_blocklist is None:
+        ssh_key_blocklist = []
     d = datetime.today()
     dir = f"{base_dir}/{d.year}_{d.month}_{d.day}_{d.hour}:{d.minute}:{d.second}.{d.microsecond}"
     os.mkdir(dir)
@@ -197,7 +201,8 @@ def process_tarball(tarball_path,
                         support_router=support_router,
                         external_network_id=external_network_id,
                         support_network=support_network,
-                        support_default_ssh_sgrule=support_default_ssh_sgrule
+                        support_default_ssh_sgrule=support_default_ssh_sgrule,
+                        ssh_key_blocklist=ssh_key_blocklist
                         )
     endpoint.import_data(dir + '/users.scim', dir + '/groups.scim')
     report.info("Finished processing %s" % tarball_path)
@@ -234,7 +239,8 @@ def upload():
                              support_router=strtobool(app.config.get('SUPPORT_ROUTER', "False")),
                              external_network_id=app.config.get('EXTERNAL_NETWORK_ID'),
                              support_network=strtobool(app.config.get('SUPPORT_NETWORK', "False")),
-                             support_default_ssh_sgrule=strtobool(app.config.get('SUPPORT_DEFAULT_SSH_SGRULE', "False"))
+                             support_default_ssh_sgrule=strtobool(app.config.get('SUPPORT_DEFAULT_SSH_SGRULE', "False")),
+                             ssh_blocklist=app.config.get('SSH_KEY_BLOCKLIST', None)
                              )
 
     # if task fails with an exception, the thread pool catches the exception,

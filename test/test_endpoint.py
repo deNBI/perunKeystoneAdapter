@@ -47,8 +47,11 @@ class TestEndpoint(unittest.TestCase):
         report = logging.getLogger(report_domain)
         report.setLevel(logging.INFO)
 
-        self.keystone = KeyStone(environ=None, default_role="user", create_default_role=True,
-                                 target_domain_name='elixir', cloud_admin=True)
+        self.keystone = KeyStone(environ=None,
+                                 default_role="user",
+                                 create_default_role=True,
+                                 target_domain_name='elixir',
+                                 cloud_admin=True)
         self.neutron = self.keystone._neutron
 
         # Get an external network
@@ -344,7 +347,8 @@ class TestEndpoint(unittest.TestCase):
         print("Run 'test_import_denbi_portal_compute_center'")
 
         self.endpoint = Endpoint(keystone=self.keystone,
-                                 mode="denbi_portal_compute_center")
+                                 mode="denbi_portal_compute_center",
+                                 support_elixir_name=True)
 
         # import 1st test data set
         self.endpoint.import_data(os.path.join(TESTDIR, 'resources', 'denbi_portal_compute_center', 'users.scim'),
@@ -497,6 +501,66 @@ class TestEndpoint(unittest.TestCase):
             self.keystone.projects_delete(perun_id)
             self.keystone.projects_terminate(perun_id)
 
+    def test_block_ssh_list(self):
+
+        print("Run 'test_block_ssh_list'")
+
+        self.endpoint = Endpoint(keystone=self.keystone,
+                                 mode="denbi_portal_compute_center",
+                                 support_elixir_name=True)
+
+        # import 1st test data set
+        self.endpoint.import_data(os.path.join(TESTDIR, 'resources', 'denbi_portal_compute_center', 'users.scim'),
+                                  os.path.join(TESTDIR, 'resources', 'denbi_portal_compute_center', 'groups.scim'))
+
+        after_import_users = self.keystone.users_map()
+
+        # user 2 - enabled
+        self.assertTrue('50001' in after_import_users)
+        test.test_user(self, after_import_users['50001'],
+                       perun_id='50001',
+                       elixir_id='b3d216a7-8696-451a-9cbf-b8d5e17a6ec2__@elixir-europe.org',
+                       elixir_name='user2',
+                       email='user2@donot.use',
+                       enabled=True,
+                       ssh_key="ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDAVHWAYM0dsLYsW9BRZYWHBgxlmWS1V58jaQLFpUOpS"
+                               "6lRajwoorLcSJu0HOEtNi0JV4K43Sq/zQQsYe49NBxNcwYxmO1mRtA2tuz+azB1AvPLtE4WQHz6W09wMp"
+                               "ZeRA28Njjclm+2kuHKDYGr6miWwtyPRQtYMipVWVcE7w/TAevn05uwbvTW5IeekR6QD1DXHarRzfWwPiH"
+                               "Y5QwN+6emKQqIeWENBitkWAAD3NLI5UP581kk3SlrJ8Rgx6OZ1BLOh3mt/l4dEjmjFKJLZITReLVDRnUd"
+                               "2EycKpwFRTnn9ToH5dYIn+e7kPHtW9uSpVL5dbsC323Iq/pfOj5zucPV/xhDMSS3HoQgaoAN0pySSuwvJ"
+                               "MoRBwSBcjXZ0+0TwMSkLUoe3s6gfPpOsiJECa2w0ZsHALgvutzqkQ+vpcBWiZhrCPOQBa4sjvaucHxl3e"
+                               "U/MjwjJieRQMycvLjle10A7j1OoHWHxWAkYtrSVeB4Qiw4x/aw0DsjFPonOKYM/Q3kI9fAC4G5YcYtgil"
+                               "Vg/CqHsPOUJr6OkdW2ERVU+Z8wblC6yqRyw4ZP5FFiJxwZu6PVwAJCcvT5AB/+V3Rx3db98N23C2fZLbK"
+                               "p87gAYbKNqtWJfzRAzS6ZJfXkb1u7a3kIY2gTA8lCAj6p/o66CgKqc5XnomOt+Hg1fFJOrvaHw== hxr@mk")
+
+
+        # import 1st test data set again (with enabled blocklist)
+        self.endpoint.ssh_key_blocklist = ['AAAAB3NzaC1yc2EAAAADAQABAA']
+        self.endpoint.import_data(os.path.join(TESTDIR, 'resources', 'denbi_portal_compute_center', 'users.scim'),
+                                  os.path.join(TESTDIR, 'resources', 'denbi_portal_compute_center', 'groups.scim'))
+
+        after_2nd_import_users = self.keystone.users_map()
+
+        # user 2 - enabled with ssh key blocked
+        self.assertTrue('50001' in after_2nd_import_users)
+        test.test_user(self, after_2nd_import_users['50001'],
+                       perun_id='50001',
+                       elixir_id='b3d216a7-8696-451a-9cbf-b8d5e17a6ec2__@elixir-europe.org',
+                       elixir_name='user2',
+                       email='user2@donot.use',
+                       enabled=True)
+
+
+        # clean up everything
+        ids = set(self.keystone.users_map())
+        for perun_id in ids:
+            self.keystone.users_delete(perun_id)
+            self.keystone.users_terminate(perun_id)
+
+        ids = set(self.keystone.projects_map())
+        for perun_id in ids:
+            self.keystone.projects_delete(perun_id)
+            self.keystone.projects_terminate(perun_id)
 
 if __name__ == '__main__':
     unittest.main()
