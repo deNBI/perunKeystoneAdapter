@@ -105,13 +105,91 @@ For running this in production it is easy to use `gunicorn` as follows:
 $ gunicorn --workers 1 --bind 127.0.0.1:5000 denbi.scripts.perun_propagation_service:app
 ```
 
+### Configuration
+
+The Perun Keystone Adapter can be configured in two different ways, by environment or by configuration file.
+
+#### ... by environment
+
+```
+# OpenStack credentials
+# ---------------------
+export OS_REGION_NAME="XXX"
+export OS_PROJECT_DOMAIN_ID="XXX"
+export OS_INTERFACE="public"
+export OS_AUTH_URL="https://XXX"
+export OS_USERNAME="admin"
+export OS_PROJECT_ID="XXX"
+export OS_USER_DOMAIN_NAME="Default"
+export OS_PROJECT_NAME="admin"
+export OS_PASSWORD="XXX"
+export OS_IDENTITY_API_VERSION="3"
+
+# Perun Keystone Adapater settings
+# --------------------------------
+
+# Location for storing propagated data
+export PKA_BASE_DIR=/pka
+# Location for storing logs, defaults to current working directory
+export PKA_LOG_DIR=/log
+# Do not make any modifications to keystone
+export PKA_KEYSTONE_READ_ONLY=False
+# Domain to create users and projects in, defaults to 'elixir'
+export PKA_TARGET_DOMAIN_NAME=elixir
+# Default role to assign to new users, defaults to 'user'
+export PKA_DEFAULT_ROLE=user
+export PKA_DEFAULT_NESTED=False
+export PKA_ELIXIR_NAME=False
+# Set quotas for projects
+export PKA_SUPPORT_QUOTA=True
+# Create router for new projects
+export PKA_SUPPORT_ROUTER=True
+# Create a default network/subnetwork for new projects
+export PKA_SUPPORT_NETWORK=True
+# Create
+export PKA_EXTERNAL_NETWORK_ID=16b19dcf-a1e1-4f59-8256-a45170042790
+# Add ssh rule to default
+export PKA_SUPPORT_DEFAULT_SSH_SGRULE=True
+```
+
+#### by configuration file
+PKA supports configuration files in JSON format. 
+An example configuration could look like this:
+
+```json
+{
+  "OS_REGION_NAME":"XXX",
+  "OS_PROJECT_DOMAIN_ID":"XXX",
+  "OS_INTERFACE":"public",
+  "OS_AUTH_URL":"https://XXXX",
+  "OS_USERNAME":"admin",
+  "OS_PROJECT_ID":"XXX",
+  "OS_USER_DOMAIN_NAME":"Default",
+  "OS_PROJECT_NAME":"admin",
+  "OS_PASSWORD":"XXX",
+  "OS_IDENTITY_API_VERSION":3,
+  "BASE_DIR":"/pka",
+  "LOG_DIR":"/log",
+  "KEYSTONE_READ_ONLY":false,
+  "TARGET_DOMAIN_NAME":"elixir",
+  "DEFAULT_ROLE":"user",
+  "NESTED":false,
+  "ELIXIR_NAME":false,
+  "SUPPORT_QUOTAS":true,
+  "SUPPORT_ROUTER":true,
+  "SUPPORT_NETWORK":true,
+  "EXTERNAL_NETWORK_ID":"16b19dcf-a1e1-4f59-8256-a45170042790",
+  "SUPPORT_DEFAULT_SSH_SGRULE":true,
+  "CLEANUP": false
+```
+
 ### Docker
 
 Build docker container.
 
 ```docker build -t denbi/pka .```
 
-Create configuration file (`pka.env`) :
+Create environment file (`pka.env`) :
 
 ```
 # OpenStack credentials
@@ -154,9 +232,18 @@ PKA_EXTERNAL_NETWORK_ID=16b19dcf-a1e1-4f59-8256-a45170042790
 PKA_SUPPORT_DEFAULT_SSH_SGRULE=True
 ```
 
-and  run container:
+and run the container:
 
-```docker run --env-file pka.env -v $(pwd)/perun/upload:/pka -v $(pwd)/perun/log:/log denbi/pka```
+```shell
+docker run --net host --env-file pka.env -v $(pwd)/perun/upload:/pka -v $(pwd)/perun/log:/log denbi/pka
+```
+
+
+Alternatively you can use a configuration file (pka.json) ...
+
+```shell
+docker run --net host -v $(pwd)/pka.json:/etc/pka.json -v $(pwd)/tmp/base:/pka -v $(pwd)/tmp/log:/log denbi/pka
+```
 
 There are [additional deployment options available](https://flask.palletsprojects.com/en/1.1.x/deploying/) 
 if you prefer to run WSGI applications with Apache, or other setups.
