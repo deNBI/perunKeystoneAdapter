@@ -87,7 +87,8 @@ class TestEndpoint(unittest.TestCase):
                      support_router=True,
                      support_network=True,
                      support_default_ssh_sgrule=True)
-            self.fail("Since no network_id is set, an exception MUST be thrown.")
+            self.fail("Since no external_network_id is set, an exception MUST be thrown.")
+
         except Exception:
             pass
 
@@ -114,7 +115,6 @@ class TestEndpoint(unittest.TestCase):
 
         # create router with network
         endpoint._create_router(denbi_project, router_only=False)
-        # creat
 
         # test if created project has one router
         router_list = self.neutron.list_routers(project_id=denbi_project["id"])["routers"]
@@ -135,7 +135,7 @@ class TestEndpoint(unittest.TestCase):
         self.assertEqual(subnet["network_id"], network["id"],
                          f"Expect subnet {subnet['id']} is associated to network {network['id']}.")
 
-        # test if pro
+        # test if port
         port_list = self.neutron.list_ports(device_owner='network:router_interface',
                                             project_id=denbi_project['id'])["ports"]
         self.assertEqual(len(port_list), 1, "Expect exact one router_interface.")

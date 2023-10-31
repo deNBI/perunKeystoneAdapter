@@ -57,13 +57,13 @@ def validate_cidr(cidr):
             octet = int(part)
             if octet < 0 or octet > 255:
                 return False
+
         except ValueError:
             return False
 
     # Validate the prefix length
     if prefix_length < 0 or prefix_length > 32:
         return False
-
     return True
 
 
@@ -135,7 +135,7 @@ class Endpoint(object):
         :param support_network: should a network/subnetwork generated and attached to router (for new projects)
         :param support_default_ssh_sgrule: should a ssh sg rule created with defautl sg
         :param external_network_id: neutron id of external network used
-        :param network_cidr: CIDR notation of the internal network to be created (
+        :param network_cidr: CIDR notation of the internal network to be created
         :param read_only: test mode
         :param logging_domain: domain where "standard" logs are logged (default is "denbi")
         :param report_domain: domain where "update" logs are reported (default is "report")
@@ -529,8 +529,7 @@ class Endpoint(object):
                            'enable_dhcp': True,
                            'ip_version': 4,
                            'network_id': tmp_net['network']['id'],
-                           'cidr': "192.168.192.0/24",
-                           'allocation_pools': [{'start': '192.168.192.10', 'end': '192.168.192.200'}],
+                           'cidr': self.network_cidr,
                            'project_id': project['id']}
             tmp_subnet = self.keystone._neutron.create_subnet(body={'subnet': _tmp_subnet})
             # attach subnet to router
