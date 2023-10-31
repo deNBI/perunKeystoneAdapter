@@ -158,29 +158,30 @@ An example configuration could look like this:
 
 ```json
 {
-  "OS_REGION_NAME":"XXX",
-  "OS_PROJECT_DOMAIN_ID":"XXX",
-  "OS_INTERFACE":"public",
-  "OS_AUTH_URL":"https://XXXX",
-  "OS_USERNAME":"admin",
-  "OS_PROJECT_ID":"XXX",
-  "OS_USER_DOMAIN_NAME":"Default",
-  "OS_PROJECT_NAME":"admin",
-  "OS_PASSWORD":"XXX",
-  "OS_IDENTITY_API_VERSION":3,
-  "BASE_DIR":"/pka",
-  "LOG_DIR":"/log",
-  "KEYSTONE_READ_ONLY":false,
-  "TARGET_DOMAIN_NAME":"elixir",
-  "DEFAULT_ROLE":"user",
-  "NESTED":false,
-  "ELIXIR_NAME":false,
-  "SUPPORT_QUOTAS":true,
-  "SUPPORT_ROUTER":true,
-  "SUPPORT_NETWORK":true,
-  "EXTERNAL_NETWORK_ID":"16b19dcf-a1e1-4f59-8256-a45170042790",
-  "SUPPORT_DEFAULT_SSH_SGRULE":true,
-  "CLEANUP": false
+   "OS_REGION_NAME": "XXX",
+   "OS_PROJECT_DOMAIN_ID": "XXX",
+   "OS_INTERFACE": "public",
+   "OS_AUTH_URL": "https://XXXX",
+   "OS_USERNAME": "admin",
+   "OS_PROJECT_ID": "XXX",
+   "OS_USER_DOMAIN_NAME": "Default",
+   "OS_PROJECT_NAME": "admin",
+   "OS_PASSWORD": "XXX",
+   "OS_IDENTITY_API_VERSION": 3,
+   "BASE_DIR": "/pka",
+   "LOG_DIR": "/log",
+   "KEYSTONE_READ_ONLY": false,
+   "TARGET_DOMAIN_NAME": "elixir",
+   "DEFAULT_ROLE": "user",
+   "NESTED": false,
+   "ELIXIR_NAME": false,
+   "SUPPORT_QUOTAS": true,
+   "SUPPORT_ROUTER": true,
+   "SUPPORT_NETWORK": true,
+   "EXTERNAL_NETWORK_ID": "16b19dcf-a1e1-4f59-8256-a45170042790",
+   "SUPPORT_DEFAULT_SSH_SGRULE": true,
+   "CLEANUP": false
+}
 ```
 
 ### Docker
