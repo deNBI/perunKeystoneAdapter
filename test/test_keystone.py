@@ -238,7 +238,7 @@ class TestKeystone(unittest.TestCase):
         self.ks.projects_terminate(denbi_project['perun_id'])
 
     def test_all(self):
-        """Test a typically scenario.
+        """Test a typical scenario.
         - create two project (a, b)
         - create three users (a, b, c)
           - users (a,b) are members of project a
