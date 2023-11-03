@@ -69,7 +69,7 @@ class KeyStone:
         :param read_only: do not make any changes to the keystone
         :param logging_domain: domain where "standard" logs are logged (default is "denbi")
         :param report_domain: domain where "update" logs are reported (default is "report")
-        :param nested: use nested projects instead of cloud/domain admin acesss
+        :param nested: use nested projects instead of cloud/domain admin access
         :param cloud_admin: credentials are cloud admin credentials
 
         """
