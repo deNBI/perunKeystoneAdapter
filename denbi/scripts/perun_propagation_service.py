@@ -103,7 +103,7 @@ config_str_list = []
 config_str_list.append("I'm using the following configuration:")
 config_str_list.append(f"+{'-' * 32}+{'-' * 42}+")
 for key in sorted(PKA_KEYS):
-    config_str_list.append(f"| {key:30} | {app.config.get(key, 'False'):40} |")
+    config_str_list.append(f"| {key:30} | {str(app.config.get(key, 'False')):40} |")
 config_str_list.append(f"+{'-' * 32}+{'-' * 42}+")
 
 report.info('\n'.join(config_str_list))
