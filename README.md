@@ -260,14 +260,6 @@ See [service script](denbi/scripts/perun_propagation_service.py) for an example 
 logging. 
 
 
-### Logging 
-The Library supports two different logger domains, which can be configured when instantiating the Keystone/Endpoint class (default "denbi" and "report").
-All changes concerning the Openstack database (project, identity and quotas) are logged to the report domain, everything else 
-is logged to the logger domain. The logger are standard Python logger, therefore all possibilities of Python's logging API 
-are supported.
-See [service script](denbi/scripts/perun_propagation_service.py) for an example  how to configure logging. 
-
-
 ## Development
 
 For testing and development it is recommended to configure and use a [DevStack] (https://docs.openstack.org/devstack/latest/) 

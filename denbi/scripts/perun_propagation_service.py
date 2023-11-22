@@ -87,10 +87,10 @@ if app.config.get('SUPPORT_NETWORK', False) and not app.config.get('SUPPORT_ROUT
 
 if app.config.get('SUPPORT_ROUTER', False) and not app.config.get('EXTERNAL_NETWORK_ID', False):
     report.error("if 'SUPPORT_ROUTER' is enabled, 'EXTERNAL_NETWORK_ID' must be set.")
-    
-    if not app.config.get('SSH_KEY_BLOCKLIST', False):
-    app.config['SSH_KEY_BLOCKLIST'] = []
     sys.exit(4)
+    
+if not app.config.get('SSH_KEY_BLOCKLIST', False):
+    app.config['SSH_KEY_BLOCKLIST'] = []
 
 PKA_KEYS = ('BASE_DIR', 'KEYSTONE_READ_ONLY', 'CLEANUP',
             'TARGET_DOMAIN_NAME', 'DEFAULT_ROLE', 'NESTED',
