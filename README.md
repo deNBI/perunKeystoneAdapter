@@ -180,6 +180,7 @@ An example configuration could look like this:
    "SUPPORT_NETWORK": true,
    "EXTERNAL_NETWORK_ID": "16b19dcf-a1e1-4f59-8256-a45170042790",
    "SUPPORT_DEFAULT_SSH_SGRULE": true,
+   "SSH_KEY_BLOCKLIST": [],
    "CLEANUP": false
 }
 ```
