@@ -243,7 +243,7 @@ def upload():
                              external_network_id=app.config.get('EXTERNAL_NETWORK_ID'),
                              support_network=strtobool(app.config.get('SUPPORT_NETWORK', "False")),
                              support_default_ssh_sgrule=strtobool(app.config.get('SUPPORT_DEFAULT_SSH_SGRULE', "False")),
-                             ssh_blocklist=app.config.get('SSH_KEY_BLOCKLIST', None)
+                             ssh_key_blocklist=app.config.get('SSH_KEY_BLOCKLIST', None)
                              )
 
     # if task fails with an exception, the thread pool catches the exception,
