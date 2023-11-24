@@ -701,9 +701,14 @@ class KeyStone:
                 # include_subtree is necessary since the default policies either
                 # allow domain role assignment querie
                 for role in self.keystone.role_assignments.list(project=os_project.id, include_subtree=True):
-                    if role.user['id'] in self.__user_id2perun_id__:
+                    # if the specified target domain only receives data via the Perun Keystone Adapter
+                    # then only user roles should be in the role assignment list.
+
+                    if hasattr(role,"user") and role.user['id'] in self.__user_id2perun_id__:
                         self.log.debug('Found user %s as member in project %s', role.user['id'], os_project.name)
                         denbi_project['members'].append(self.__user_id2perun_id__[role.user['id']])
+                    else:
+                        self.log.warning("Role assignment list contains a non user role assignment!")
 
         return self.denbi_project_map
 
