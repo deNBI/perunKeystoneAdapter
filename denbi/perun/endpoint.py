@@ -425,6 +425,9 @@ class Endpoint(object):
                     # create router
                     if self.support_router:
                         self._create_router(project, not (self.support_network))
+                    # adjust default security group
+                    if self.support_default_ssh_sgrule:
+                        self._add_ssh_sgrule(project["id"])
 
                 project_ids.append(perun_id)
 
