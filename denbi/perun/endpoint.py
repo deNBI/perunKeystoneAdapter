@@ -399,7 +399,7 @@ class Endpoint(object):
                             project['name'] != name or \
                             'description' in project and project['description'] != description:
                         # Update project ...
-                        self.keystone.projects_update(perun_id, members)
+                        self.keystone.projects_update(perun_id, members=members, name=name, description=description)
                         # ... and log to update logger
                         self.log2.info(f"project [{perun_id},{name}]: update with {','.join(members)}")
 
