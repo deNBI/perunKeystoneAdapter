@@ -12,6 +12,7 @@
 
 import json
 import logging
+import re
 
 from denbi.perun.keystone import KeyStone
 
@@ -25,6 +26,45 @@ def import_json(path):
     with open(path, 'r', encoding='utf-8') as json_file:
         json_obj = json.loads(json_file.read())
     return json_obj
+
+
+def validate_cidr(cidr):
+    """
+    Validates a CIDR (Classless Inter-Domain Routing) notation
+    :param cidr: value to be validated
+    :return: True or False
+    """
+
+    # Regular expression pattern to match a CIDR notation
+    cidr_pattern = r'^\d{1,3}(\.\d{1,3}){3}/\d{1,2}$'
+
+    # Check if the input matches the CIDR pattern
+    if not re.match(cidr_pattern, cidr):
+        return False
+
+    # Split the CIDR into its address and prefix parts
+    parts = cidr.split('/')
+    ip_address = parts[0]
+    prefix_length = int(parts[1])
+
+    # Validate the IP address
+    ip_parts = ip_address.split('.')
+    if len(ip_parts) != 4:
+        return False
+
+    for part in ip_parts:
+        try:
+            octet = int(part)
+            if octet < 0 or octet > 255:
+                return False
+
+        except ValueError:
+            return False
+
+    # Validate the prefix length
+    if prefix_length < 0 or prefix_length > 32:
+        return False
+    return True
 
 
 class Endpoint(object):
@@ -64,36 +104,46 @@ class Endpoint(object):
         # assume that all sites are using neutron...  not used by the portal
         'denbiNrOfFloatingIPs': None,
 
-        # these were present in the first quota code,
-        # but aren't registered with perun or set by the
-        # portal...
-        # 'denbiProjectNumberOfNetworks': { 'name' : 'network', 'factor' : 1 },
-        # 'denbiProjectNumberOfSubnets': { 'name' : 'subnet', 'factor' : 1 },
-        # 'denbiProjectNumberOfRouter': { 'name' : 'router', 'factor' : 1024 },
-
         # Not used by the portal ...
         'denbiProjectNumberOfSnapshots': None,
         'denbiVolumeCounter': {'name': 'volumes', 'factor': 1}}
 
-    def __init__(self, keystone=None, mode="scim",
+    def __init__(self,
+                 keystone=None,
+                 mode="scim",
                  store_email=True,
                  support_quotas=True,
-                 support_elixir_name=True,
+                 support_elixir_name=False,
                  support_ssh_key=True,
+                 support_router=False,
+                 support_network=False,
+                 support_default_ssh_sgrule=False,
+                 external_network_id="",
+                 network_cidr="192.168.33.0/24",
                  read_only=False,
                  logging_domain="denbi",
-                 report_domain="report"):
+                 report_domain="report",
+                 ssh_key_blocklist=None):
         '''
 
         :param keystone: initialized keystone object
         :param mode: 'scim' or 'denbi_portal_compute_center'
         :param store_email : should an available email address be stored?
-        :param support_quotas : should quotas supported
-        :param support_elixir_name : should an available elixir_name be stored ?
+        :param support_quotas : should quotas supported ?
+        :param support_elixir_name : should an available elixir_name for user be stored, not used within de.NBI
+        :param support_router: should a router generated (for new projects)
+        :param support_network: should a network/subnetwork generated and attached to router (for new projects)
+        :param support_default_ssh_sgrule: should a ssh sg rule created with defautl sg
+        :param external_network_id: neutron id of external network used
+        :param network_cidr: CIDR notation of the internal network to be created
         :param read_only: test mode
         :param logging_domain: domain where "standard" logs are logged (default is "denbi")
         :param report_domain: domain where "update" logs are reported (default is "report")
+        :param ssh_key_blocklist: list of blocked (=leaked) ssh_keys (
         '''
+
+        if ssh_key_blocklist is None:
+            ssh_key_blocklist = []
 
         if keystone:
             if read_only and not isinstance(keystone, KeyStone):
@@ -102,14 +152,36 @@ class Endpoint(object):
         else:
             self.keystone = KeyStone(read_only=read_only)
 
+        self.neutron = self.keystone._neutron
+
         self.mode = str(mode)
         self.store_email = bool(store_email)
         self.support_quotas = bool(support_quotas)
         self.support_elixir_name = bool(support_elixir_name)
         self.support_ssh_key = bool(support_ssh_key)
+        self.support_router = bool(support_router)
+        self.support_network = bool(support_network)
+        self.support_default_ssh_sgrule = bool(support_default_ssh_sgrule)
+        self.external_network_id = external_network_id
+        self.network_cidr = network_cidr
         self.read_only = read_only
+        self.ssh_key_blocklist = ssh_key_blocklist
         self.log = logging.getLogger(logging_domain)
         self.log2 = logging.getLogger(report_domain)
+
+        # check if CIDR mask
+        if not (validate_cidr(self.network_cidr)):
+            raise RuntimeError(f"Network CIDR '{self.network_cidr}' is invalid.")
+
+        # check if external_network_id is a valid id
+        if self.support_network:
+            if external_network_id:
+                if not (self.neutron.list_networks(id=external_network_id)['networks']):
+                    self.log.fatal(f"External network  '{external_network_id}' not found.")
+                    raise RuntimeError(f"External network  '{external_network_id}' not found.")
+            else:
+                self.log.fatal("Support_network option is set, but external_network_id is NOT set.")
+                raise RuntimeError("Support_network option is set, but external_network_id is NOT set.")
 
     def import_data(self, users_path, groups_path):
         '''
@@ -164,7 +236,8 @@ class Endpoint(object):
                         # update user ...
                         self.keystone.users_update(perun_id, elixir_id=elixir_id, email=email, enabled=enabled)
                         # ... and log to update log
-                        self.log2.info(f"user [{perun_id},{elixir_id}]: update and {'enabled' if enabled else 'disabled'}")
+                        self.log2.info(
+                            f"user [{perun_id},{elixir_id}]: update and {'enabled' if enabled else 'disabled'}")
                 else:
                     # register user ...
                     self.keystone.users_create(elixir_id, perun_id, email=email, enabled=enabled)
@@ -215,7 +288,7 @@ class Endpoint(object):
                     # Create project ...
                     self.keystone.projects_create(perun_id, name=name, members=members)
                     # ... and log to update log
-                    self.log2.info(f"project [{ perun_id},{name}]: create with members {','.join(members)}")
+                    self.log2.info(f"project [{perun_id},{name}]: create with members {','.join(members)}")
 
                 project_ids.append(perun_id)
 
@@ -244,7 +317,7 @@ class Endpoint(object):
                 perun_id = str(dpcc_user['id'])
                 elixir_id = str(dpcc_user['login-namespace:elixir-persistent'])
                 elixir_name = None
-                if self.support_elixir_name and str(dpcc_user['login-namespace:elixir']):
+                if self.support_elixir_name and 'login-namespace:elixir' in dpcc_user:
                     elixir_name = str(dpcc_user['login-namespace:elixir'])
                 enabled = str(dpcc_user['status']) == 'VALID'
                 email = None
@@ -256,6 +329,10 @@ class Endpoint(object):
                         dpcc_user['sshPublicKey'] is not None and \
                         len(dpcc_user['sshPublicKey']) > 0:
                     ssh_key = str(dpcc_user['sshPublicKey'][0])
+                    # block import of potentially leaked user SSH keys (matches substrings too)
+                    if any(blocked_key in ssh_key for blocked_key in self.ssh_key_blocklist):
+                        self.log2.info(f"user [{perun_id},{elixir_id}]: ssh key blocked: {ssh_key}")
+                        ssh_key = None
 
                 # user already registered in keystone
                 if perun_id in user_map:
@@ -271,7 +348,8 @@ class Endpoint(object):
                         self.keystone.users_update(perun_id, elixir_id=elixir_id, elixir_name=elixir_name,
                                                    ssh_key=ssh_key, email=email, enabled=enabled)
                         # ... and log to update log
-                        self.log2.info(f"user [{perun_id},{elixir_id}]: update and {'enabled' if enabled else 'disabled'}")
+                        self.log2.info(
+                            f"user [{perun_id},{elixir_id}]: update and {'enabled' if enabled else 'disabled'}")
                 else:
                     # register user ...
                     self.keystone.users_create(elixir_id, perun_id, elixir_name=elixir_name, email=email,
@@ -321,7 +399,7 @@ class Endpoint(object):
                             project['name'] != name or \
                             'description' in project and project['description'] != description:
                         # Update project ...
-                        self.keystone.projects_update(perun_id, members)
+                        self.keystone.projects_update(perun_id, members=members, name=name, description=description)
                         # ... and log to update logger
                         self.log2.info(f"project [{perun_id},{name}]: update with {','.join(members)}")
 
@@ -333,7 +411,8 @@ class Endpoint(object):
                             self._set_quotas(project, dpcc_project)
                 else:
                     # create project ...
-                    project = self.keystone.projects_create(perun_id, name=name, description=description, members=members)
+                    project = self.keystone.projects_create(perun_id, name=name, description=description,
+                                                            members=members)
                     # ... and log to update logger
                     self.log2.info(f"project [{perun_id},{name}]: create with members {','.join(members)}")
 
@@ -343,6 +422,13 @@ class Endpoint(object):
                             self.log.info(f"project [{perun_id},{name}]: not setting quotas in  readonly mode.")
                         else:
                             self._set_quotas(project, dpcc_project)
+                    # create router
+                    if self.support_router:
+                        self._create_router(project, not (self.support_network))
+                    # adjust default security group
+                    if self.support_default_ssh_sgrule:
+                        self._add_ssh_sgrule(project["id"])
+
                 project_ids.append(perun_id)
 
             else:
@@ -358,6 +444,14 @@ class Endpoint(object):
             self.log2.info(f"project [{id}]: deleted")
 
     def _set_quotas(self, project, project_definition):
+        '''
+        Set/adjust quota for given project
+
+
+        :param project:
+        :param project_definition:
+        :return:
+        '''
 
         manager = self.keystone.quota_factory.get_manager(project['id'])
 
@@ -399,3 +493,107 @@ class Endpoint(object):
                     except ValueError as error:
                         self.log.error(f"project [{project['perun_id']},{project['name']}]:"
                                        f" unable to check/set quota {denbi_quota_name}:{str(error)}")
+
+    def _create_router(self, project, router_only=False):
+        """
+        Creates a new router for a project, add a gateway and append optional a network/subnetwork
+
+        :param project:
+        :param router_only - creates only a router without attached network/subnet
+        :return:
+        """
+
+        # create router
+        _tmp_router = {'name': f"{project['name']}_router",
+                       'admin_state_up': True,
+                       'project_id': project['id'],
+                       'external_gateway_info': {
+                           'network_id': self.external_network_id
+
+                       }}
+
+        tmp_router = self.keystone._neutron.create_router(body={'router': _tmp_router})
+
+        self.log2.info(f"project [{project['id']},{project['name']}]:"
+                       f"create router {tmp_router['router']['name']}")
+
+        if not (router_only):
+            # create network
+            _tmp_net = {'name': f"{project['name']}_net",
+                        'project_id': project['id'],
+                        'shared': False,
+                        'admin_state_up': True,
+                        'port_security_enabled': True,
+                        }
+
+            tmp_net = self.keystone._neutron.create_network(body={'network': _tmp_net})
+            #  create subnet
+            _tmp_subnet = {'name': f"{project['name']}_subnet",
+                           'enable_dhcp': True,
+                           'ip_version': 4,
+                           'network_id': tmp_net['network']['id'],
+                           'cidr': self.network_cidr,
+                           'project_id': project['id']}
+            tmp_subnet = self.keystone._neutron.create_subnet(body={'subnet': _tmp_subnet})
+            # attach subnet to router
+            self.keystone._neutron.add_interface_router(tmp_router['router']['id'],
+                                                        body={'subnet_id': tmp_subnet['subnet']['id']})
+
+            self.log2.info(f"project [{project['id']},{project['name']}]:"
+                           f"create network {tmp_net['network']['name']} with subnet {tmp_subnet['subnet']['name']}")
+
+    def _delete_routers(self, project_id):
+        """
+        Remove all routers and networks belonging associated to the given project.
+        :param project: map describing a project
+        :return:
+        """
+
+        router_list = self.neutron.list_routers(project_id=project_id)["routers"]
+        network_list = self.neutron.list_networks(project_id=project_id)["networks"]
+        subnet_list = self.neutron.list_subnets(project_id=project_id)["subnets"]
+        port_list = self.neutron.list_ports(device_owner='network:router_interface',
+                                            project_id=project_id)["ports"]
+
+        # remove interface from all routers
+        for port in port_list:
+            for router in router_list:
+                if router["id"] == port["device_id"]:
+                    self.neutron.remove_interface_router(router["id"], body={"port_id": port["id"]})
+
+        # delete router
+        for router in router_list:
+            self.neutron.delete_router(router["id"])
+
+        # delete subnet
+        for subnet in subnet_list:
+            self.neutron.delete_subnet(subnet["id"])
+
+        # delete network
+        for network in network_list:
+            self.neutron.delete_network(network["id"])
+
+        # delete security-groups
+        sg_list = self.neutron.list_security_groups(project_id=project_id)['security_groups']
+        for sg in sg_list:
+            self.neutron.delete_security_group(sg['id'])
+
+    def _add_ssh_sgrule(self, project_id):
+        """
+        Add a security group rule to allow ssh access from 0.0.0.0.
+        :param project_id: map describing project
+        :return:
+        """
+        default_sg = self.neutron.list_security_groups(project_id=project_id, name="default")["security_groups"]
+
+        if default_sg:
+            self.neutron.create_security_group_rule(body={'security_group_rule': {
+                                                          'security_group_id': default_sg[0]["id"],
+                                                          'ethertype': 'IPv4',
+                                                          'direction': 'ingress',
+                                                          'protocol': 'tcp',
+                                                          'port_range_min': 22,
+                                                          'port_range_max': 22,
+                                                          'remote_ip_prefix': '0.0.0.0/0',
+                                                          'description': 'Allow ssh access.'}
+                                                          })

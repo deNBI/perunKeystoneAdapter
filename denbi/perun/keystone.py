@@ -22,6 +22,7 @@ from keystoneclient.v3 import client as keystone
 from keystoneauth1.exceptions import Unauthorized
 
 from novaclient import client as nova
+from neutronclient.v2_0 import client as neutron
 
 
 class KeyStone:
@@ -36,10 +37,17 @@ class KeyStone:
     denbi_project = ``{id: string, perun_id: string, enabled: boolean, members: [denbi_user]}``
     """
 
-    def __init__(self, environ=None, default_role="_member_",
-                 create_default_role=False, flag="perun_propagation",
-                 target_domain_name=None, read_only=False,
-                 logging_domain='denbi', report_domain='report', nested=False, cloud_admin=True):
+    def __init__(self,
+                 environ=None,
+                 default_role="_member_",
+                 create_default_role=False,
+                 flag="perun_propagation",
+                 target_domain_name=None,
+                 read_only=False,
+                 logging_domain='denbi',
+                 report_domain='report',
+                 nested=False,
+                 cloud_admin=True):
         """
         Create a new Openstack Keystone session reading clouds.yml in ~/.config/clouds.yaml
         or /etc/openstack or using the system environment.
@@ -61,7 +69,7 @@ class KeyStone:
         :param read_only: do not make any changes to the keystone
         :param logging_domain: domain where "standard" logs are logged (default is "denbi")
         :param report_domain: domain where "update" logs are reported (default is "report")
-        :param nested: use nested projects instead of cloud/domain admin accesss
+        :param nested: use nested projects instead of cloud/domain admin access
         :param cloud_admin: credentials are cloud admin credentials
 
         """
@@ -149,7 +157,7 @@ class KeyStone:
                 break
 
         # create it if wished
-        if not(self.default_role_id):
+        if not self.default_role_id:
             if create_default_role:
                 if not self.ro:
                     role = self.domain_keystone.roles.create(self.default_role)
@@ -176,6 +184,9 @@ class KeyStone:
 
         # initialize nova client (minimum needed API version is Train)
         self._nova = nova.Client(version='2.79', session=project_session)
+
+        # initialize neutron client
+        self._neutron = neutron.Client(session=project_session)
 
     @property
     def domain_keystone(self):
@@ -229,7 +240,7 @@ class KeyStone:
                 clouds_yaml_file = '/etc/openstack/clouds.yaml'
 
             if clouds_yaml_file:
-                with (open('{}/.config/clouds.yaml'.format(os.environ['HOME']))) as stream:
+                with (open(clouds_yaml_file)) as stream:
                     try:
                         clouds_yaml = yaml.load(stream, Loader=yaml.FullLoader)
                         environ = {}
@@ -299,6 +310,7 @@ class KeyStone:
 
         :return: a denbi_user hash {id: string, elixir_id: string, perun_id: string, email: string, enabled: boolean}
         """
+
         if not self.ro:
             os_user = self.keystone.users.create(name=str(elixir_id),                   # str
                                                  domain=str(self.target_domain_id),     # str
@@ -385,7 +397,7 @@ class KeyStone:
             self.log2.debug(f"User [{denbi_user['perun_id']},{denbi_user['elixir_id']}] terminated.")
 
             # remove entry from map
-            del(self.denbi_user_map[perun_id])
+            del (self.denbi_user_map[perun_id])
         else:
             raise ValueError(f"User with perun_id {perun_id} not found in user_map.")
 
@@ -651,7 +663,7 @@ class KeyStone:
                 self.log2.info("project [%s,%s]: terminate", denbi_project['perun_id'], denbi_project['name'])
 
                 # delete project from project map
-                del(self.denbi_project_map[denbi_project['perun_id']])
+                del (self.denbi_project_map[denbi_project['perun_id']])
 
             else:
                 raise ValueError('Project with perun_id %s must be tagged as deleted before terminate!' % perun_id)
@@ -689,9 +701,14 @@ class KeyStone:
                 # include_subtree is necessary since the default policies either
                 # allow domain role assignment querie
                 for role in self.keystone.role_assignments.list(project=os_project.id, include_subtree=True):
-                    if role.user['id'] in self.__user_id2perun_id__:
+                    # if the specified target domain only receives data via the Perun Keystone Adapter
+                    # then only user roles should be in the role assignment list.
+
+                    if hasattr(role,"user") and role.user['id'] in self.__user_id2perun_id__:
                         self.log.debug('Found user %s as member in project %s', role.user['id'], os_project.name)
                         denbi_project['members'].append(self.__user_id2perun_id__[role.user['id']])
+                    else:
+                        self.log.warning("Role assignment list contains a non user role assignment!")
 
         return self.denbi_project_map
 
@@ -708,10 +725,10 @@ class KeyStone:
         user_id = str(user_id)
 
         # check if project/user exists
-        if not(project_id in self.denbi_project_map):
+        if not (project_id in self.denbi_project_map):
             raise ValueError('A project with perun_id: %s does not exists!' % project_id)
 
-        if not(user_id in self.denbi_user_map):
+        if not (user_id in self.denbi_user_map):
             raise ValueError('A user with perun_id: %s does not exists!' % user_id)
 
         # get keystone id for user and project
@@ -738,10 +755,10 @@ class KeyStone:
         project_id = str(project_id)
         user_id = str(user_id)
         # check if project/user exists
-        if not(project_id in self.denbi_project_map):
+        if not (project_id in self.denbi_project_map):
             raise ValueError('A project with perun_id: %s does not exists!' % project_id)
 
-        if not(user_id in self.denbi_user_map):
+        if not (user_id in self.denbi_user_map):
             raise ValueError('A user with perun_id: %s does not exists!' % user_id)
 
         # get keystone id for user and project
