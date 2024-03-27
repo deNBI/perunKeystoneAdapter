@@ -411,13 +411,27 @@ class TestEndpoint(unittest.TestCase):
         self.assertTrue("9999" in after_import_projects)
         test.test_project(self, after_import_projects['9999'],
                           perun_id='9999',
-                          members=['50000', '50001', '50002'])
+                          members=['50000', '50001', '50002'],
+                          quotas={
+                              'instances': 10,
+                              'cores' : 20,
+                              'ram' : 40*1024,
+                              'volumes': 1,
+                              'gigabytes': 1
+                          })
 
         # project 2
         self.assertTrue("10000" in after_import_projects)
         test.test_project(self, after_import_projects['10000'],
                           perun_id='10000',
-                          members=['50003'])
+                          members=['50003'],
+                          quotas={
+                              'instances': 2,
+                              'cores' : 28,
+                              'ram' : 64*1024,
+                              'volumes': 5,
+                              'gigabytes': 50
+                          })
 
         # import 2nd test data set, which should update the 1st data-set
         self.endpoint.import_data(os.path.join(TESTDIR, 'resources', 'denbi_portal_compute_center', 'users_2nd.scim'),
@@ -476,7 +490,14 @@ class TestEndpoint(unittest.TestCase):
         self.assertTrue('9999' in after_import_projects)
         test.test_project(self, after_import_projects['9999'],
                           perun_id='9999',
-                          members=['50000', '50002'])
+                          members=['50000', '50002'],
+                          quotas={
+                              'instances': 12,
+                              'cores' : 24,
+                              'ram' : 48*1024,
+                              'volumes': 2,
+                              'gigabytes': 20
+                          })
 
         # project 2 - deleted
         self.assertTrue('10000' in after_import_projects)

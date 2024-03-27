@@ -13,7 +13,7 @@ def test_user(test, denbiuser, perun_id=None, elixir_id=None, elixir_name=None, 
         test.assertEqual(denbiuser['enabled'], enabled)
 
 
-def test_project(test, denbiproject, perun_id=None, members=[], enabled=True, deleted=False):
+def test_project(test, denbiproject, perun_id=None, members=[], quotas={}, enabled=True, deleted=False):
     """ Test if denbi project object conforms with the given values."""
     test.assertEqual(denbiproject['perun_id'], perun_id)
     # if project is deleted we do not have to check anything else
@@ -23,3 +23,6 @@ def test_project(test, denbiproject, perun_id=None, members=[], enabled=True, de
     else:
         test.assertSetEqual(set(denbiproject['members']), set(members))
         test.assertEqual(denbiproject['enabled'], enabled)
+        for quota_name in quotas.keys():
+            test.assertEqual(denbiproject['quotas'][quota_name], quotas[quota_name])
+            # print(f"check for {quota_name}")
