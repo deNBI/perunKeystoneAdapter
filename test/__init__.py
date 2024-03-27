@@ -1,7 +1,7 @@
 def test_user(test, denbiuser, perun_id=None, elixir_id=None, elixir_name=None, email=None, enabled=True, ssh_key=None, deleted=False):
     """ Test if an given denbi user object conforms with the given values."""
     test.assertEqual(denbiuser['perun_id'], perun_id)
-    # if an user is deleted we do not have to check anything else:
+    # if user is deleted we do not have to check anything else:
     if deleted:
         test.assertEqual(denbiuser['enabled'], False)
         test.assertEqual(denbiuser['deleted'], True)
@@ -14,9 +14,9 @@ def test_user(test, denbiuser, perun_id=None, elixir_id=None, elixir_name=None, 
 
 
 def test_project(test, denbiproject, perun_id=None, members=[], enabled=True, deleted=False):
-    """ Test if an given denbi project object conforms with the given values."""
+    """ Test if denbi project object conforms with the given values."""
     test.assertEqual(denbiproject['perun_id'], perun_id)
-    # if an project is deleted we do not have to check anything else
+    # if project is deleted we do not have to check anything else
     if deleted:
         test.assertEqual(denbiproject['enabled'], False)
         test.assertEqual(denbiproject['scratched'], True)
