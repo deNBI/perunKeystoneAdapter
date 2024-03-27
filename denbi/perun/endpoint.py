@@ -82,31 +82,19 @@ class Endpoint(object):
     # - a factor factorize the de.NBI quota value (1 - no factorize - in most cases)
     # - some de.NBI quotas are deprecated, but may still be in use in older projects
     DENBI_OPENSTACK_QUOTA_MAPPING = {
-        # denbiProjectDiskSpace is the old. deprecated name
-        'denbiProjectDiskSpace': None,
-        'denbiVolumeLimit': {'name': 'gigabytes', 'factor': 1},
 
-        # this is a deprecated setting without a real
-        # openstack equivalent...
-        'denbiProjectRamPerVm': None,
+        'denbiProjectNumberOfVms': {'name': 'instances', 'factor': 1},
+        'denbiRAMLimit': {'name': 'ram', 'factor': 1024},
+        'denbiCoresLimit': {'name': 'cores', 'factor': 1},
+
+        'denbiVolumeLimit': {'name': 'gigabytes', 'factor': 1},
+        'denbiVolumeCounter': {'name': 'volumes', 'factor': 1},
 
         # custom denbi quotas to control access to object
         # storage and fpga/gpu hardware. no implementation yet
         'denbiProjectObjectStorage': None,
-        'denbiProjectSpecialPurposeHardware': None,
-
-        'denbiProjectNumberOfVms': {'name': 'instances', 'factor': 1},
-        'denbiRAMLimit': {'name': 'ram', 'factor': 1024},
-        # old and new quota for vCPUs
-        'denbiProjectNumberOfCpus': None,
-        'denbiCoresLimit': {'name': 'cores', 'factor': 1},
-
-        # assume that all sites are using neutron...  not used by the portal
-        'denbiNrOfFloatingIPs': None,
-
-        # Not used by the portal ...
-        'denbiProjectNumberOfSnapshots': None,
-        'denbiVolumeCounter': {'name': 'volumes', 'factor': 1}}
+        'denbiProjectSpecialPurposeHardware': None
+    }
 
     def __init__(self,
                  keystone=None,
