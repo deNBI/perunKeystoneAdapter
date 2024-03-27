@@ -33,7 +33,7 @@
           "denbiVolumeCounter" : 1,
           "denbiProjectObjectStorage" : 0,
           "id" : 9999,
-          "denbiProjectLifetime" : 48,
+          "denbiProjectLifetime" : 48
      },
      {
            "denbiProjectInstitute" : null,
@@ -57,6 +57,6 @@
            "denbiVolumeCounter" : 5,
            "denbiProjectObjectStorage" : 100,
            "id" : 10000,
-           "denbiProjectLifetime" : 8,
+           "denbiProjectLifetime" : 8
      }
 ]
