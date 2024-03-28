@@ -690,7 +690,8 @@ class KeyStone:
                     'description': os_project.description,  #
                     'enabled': bool(os_project.enabled),  # bool
                     'scratched': bool(os_project.scratched),  # bool
-                    'members': []
+                    'members': [],
+                    'quotas' : {}
                 }
                 # create entry in maps
                 self.__project_id2perun_id__[denbi_project['id']] = denbi_project['perun_id']
@@ -699,7 +700,7 @@ class KeyStone:
                 # get all assigned roles for this project
                 # this call should be possible with domain admin right
                 # include_subtree is necessary since the default policies either
-                # allow domain role assignment querie
+                # allow domain role assignment query
                 for role in self.keystone.role_assignments.list(project=os_project.id, include_subtree=True):
                     # if the specified target domain only receives data via the Perun Keystone Adapter
                     # then only user roles should be in the role assignment list.
@@ -709,6 +710,10 @@ class KeyStone:
                         denbi_project['members'].append(self.__user_id2perun_id__[role.user['id']])
                     else:
                         self.log.warning("Role assignment list contains a non user role assignment!")
+                # add quotas supported by Quota-Manager to current denbi_project
+                project_quota_manager = self._quota_factory.get_manager(os_project.id)
+                for quota_key in project_quota_manager.QUOTA_MAPPING.keys():
+                    denbi_project['quotas'][quota_key] = project_quota_manager.get_current_quota(quota_key)
 
         return self.denbi_project_map
 

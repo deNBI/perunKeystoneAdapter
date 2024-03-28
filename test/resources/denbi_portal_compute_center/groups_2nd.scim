@@ -1,10 +1,8 @@
 [
      {
           "denbiProjectInstitute" : null,
-          "denbiProjectObjectStorage" : null,
           "denbiProjectStatus" : null,
           "name" : "Test Projekt",
-          "denbiProjectRamPerVm" : 8,
           "description" : "---",
           "denbiDirectAccess" : null,
           "denbiProjectMembers" : [
@@ -22,19 +20,19 @@
              }
           ],
           "parentGroupId" : null,
-          "denbiProjectNumberOfVms" : 10,
-          "denbiProjectDiskSpace" : null,
-          "denbiProjectNumberOfCpus" : 80,
+          "denbiProjectNumberOfVms" : 12,
+          "denbiCoresLimit" : 24,
+          "denbiRAMLimit": 48,
+          "denbiVolumeLimit" : 20,
+          "denbiVolumeCounter" : 2,
+          "denbiProjectObjectStorage" : 0,
           "id" : 9999,
-          "denbiProjectLifetime" : null,
-          "denbiProjectSpecialPurposeHardware" : null
+          "denbiProjectLifetime" : 48
      },
      {
            "denbiProjectInstitute" : null,
-           "denbiProjectObjectStorage" : null,
            "denbiProjectStatus" : null,
            "name" : "Test Projekt 3",
-           "denbiProjectRamPerVm" : 512,
            "description" : "---",
            "denbiDirectAccess" : null,
            "denbiProjectMembers" : [
@@ -45,12 +43,14 @@
                  "preferredMail" : "user4@donot.use"
               }
            ],
-           "parentGroupId" : null,
-           "denbiProjectNumberOfVms" : 2,
-           "denbiProjectDiskSpace" : null,
-           "denbiProjectNumberOfCpus" : 96,
-           "id" : 10001,
-           "denbiProjectLifetime" : null,
-           "denbiProjectSpecialPurposeHardware" : null
+          "parentGroupId" : null,
+          "denbiProjectNumberOfVms" : 5,
+          "denbiCoresLimit" : 10,
+          "denbiRAMLimit": 10,
+          "denbiVolumeLimit" : 0,
+          "denbiVolumeCounter" : 0,
+          "denbiProjectObjectStorage" : 0,
+          "id" : 10001,
+          "denbiProjectLifetime" : 1
      }
 ]

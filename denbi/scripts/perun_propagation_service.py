@@ -73,6 +73,12 @@ if not app.config.get('BASE_DIR', False):
 if not app.config.get('LOG_DIR', False):
     app.config['LOG_DIR'] = "."
 
+if not app.config.get('LOG_LEVEL', False):
+    app.config['LOG_LEVEL'] = "INFO"
+elif app.config.get('LOG_LEVEL') not in ("ERROR","WARNING","INFO","DEBUG"):
+    report.error(f"Unsupported LOG_LEVEL '{app.config.get('LOG_LEVEL')}', must be one of ERROR, WARNING, INFO or DEBUG")
+    sys.exit(4)
+
 if not app.config.get('TARGET_DOMAIN_NAME', False):
     app.config['TARGET_DOMAIN_NAME'] = 'elixir'
 
@@ -96,7 +102,7 @@ PKA_KEYS = ('BASE_DIR', 'KEYSTONE_READ_ONLY', 'CLEANUP',
             'TARGET_DOMAIN_NAME', 'DEFAULT_ROLE', 'NESTED',
             'ELIXIR_NAME', 'SUPPORT_QUOTAS', 'SUPPORT_ROUTER',
             'SUPPORT_NETWORK', 'SUPPORT_DEFAULT_SSH_SGRULE',
-            'EXTERNAL_NETWORK_ID', 'LOG_DIR',
+            'EXTERNAL_NETWORK_ID', 'LOG_DIR', 'LOG_LEVEL',
             'SSH_KEY_BLOCKLIST')
 
 config_str_list = []
@@ -133,13 +139,16 @@ else:
 
 # create a FileHandler for logging
 log_ch = logging.FileHandler(app.config.get("LOG_DIR", ".") + "/pka.log")
-log_ch.setLevel(logging.INFO)
+log_ch.setLevel(app.config.get("LOG_LEVEL"))
 log_ch.setFormatter(fmt)
 
 # configure 'denbi' logger
 denbi = logging.getLogger('denbi')
-denbi.setLevel(logging.INFO)
+denbi.setLevel(app.config.get("LOG_LEVEL"))
 denbi.addHandler(log_ch)
+
+# adjust 'report' logger Log Level according to pka configuration
+report.setLevel(app.config.get("LOG_LEVEL"))
 
 # Create thread executor
 executor = ThreadPoolExecutor(max_workers=1)
@@ -238,7 +247,7 @@ def upload():
                              default_role=app.config.get('DEFAULT_ROLE'),
                              nested=strtobool(app.config.get('NESTED', "False")),
                              support_elixir_name=strtobool(app.config.get('ELIXIR_NAME', "False")),
-                             support_quotas=strtobool(app.config.get('SUPPORT_QUOTA', "False")),
+                             support_quotas=strtobool(app.config.get('SUPPORT_QUOTAS', "False")),
                              support_router=strtobool(app.config.get('SUPPORT_ROUTER', "False")),
                              external_network_id=app.config.get('EXTERNAL_NETWORK_ID'),
                              support_network=strtobool(app.config.get('SUPPORT_NETWORK', "False")),
