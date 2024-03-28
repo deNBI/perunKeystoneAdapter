@@ -333,7 +333,6 @@ class Endpoint(object):
                             and user['enabled'] == bool(enabled)
                             and user['ssh_key'] == str(ssh_key)):
 
-                        self.log.debug("JK - update user")
                         # update user
                         self.keystone.users_update(perun_id, elixir_id=elixir_id, elixir_name=elixir_name,
                                                    ssh_key=ssh_key, email=email, enabled=enabled)
