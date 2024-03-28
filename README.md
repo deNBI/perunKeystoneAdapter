@@ -78,8 +78,12 @@ pip install git+https://github.com/deNBI/perunKeystoneAdapter@0.1.1
 
 ### Commandline client
 
-The perun propagation service transfers a zipped tar file containing a users and groups file in scim format.
-The following script unzips and untars the propagated information and adds it to the keystone database. Keystone is addressed by environment variables (sourcing the openstack rc file) or directly by passing an environemt map (not used in the example). The Openstack user needs at least permission to modify entries in Keystone
+The perun propagation service transfers a zipped tar file containing a users and groups file
+in scim format. The following script unzips and untars the propagated information and adds
+it to the keystone database. Keystone is addressed by environment variables 
+(sourcing the openstack rc file) or directly by passing an environemt map
+(not used in the example). The Openstack user needs at least permission to modify entries
+in Keystone.
 
 ```console
 $ perun_propagation perun_upload.tar.gz
@@ -87,7 +91,9 @@ $ perun_propagation perun_upload.tar.gz
 
 ### WSGI script
 
-The python module also contains a built-in server version of the `perun_propagation` script. The script uses [flask](http://flask.pocoo.org/) to provide an upload function and run library functions in a separate thread. It can be simply tested starting the flask built-in webserver.
+The python module also contains a built-in server version of the `perun_propagation` script.
+The script uses [flask](http://flask.pocoo.org/) to provide an upload function and run library
+functions in a separate thread. It can be simply tested starting the flask built-in webserver.
 
 ```console
 $ perun_propagation_service
@@ -132,6 +138,8 @@ export OS_IDENTITY_API_VERSION="3"
 export PKA_BASE_DIR=/pka
 # Location for storing logs, defaults to current working directory
 export PKA_LOG_DIR=/log
+# Log level, must be one of ERROR, WARNING, INFO, DEBUG, defaults to INFO
+export PKA_LOG_LEVEL=INFO
 # Do not make any modifications to keystone
 export PKA_KEYSTONE_READ_ONLY=False
 # Domain to create users and projects in, defaults to 'elixir'
@@ -170,6 +178,7 @@ An example configuration could look like this:
    "OS_IDENTITY_API_VERSION": 3,
    "BASE_DIR": "/pka",
    "LOG_DIR": "/log",
+   "LOG_LEVEL": "INFO",
    "KEYSTONE_READ_ONLY": false,
    "TARGET_DOMAIN_NAME": "elixir",
    "DEFAULT_ROLE": "user",
