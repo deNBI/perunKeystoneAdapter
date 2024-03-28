@@ -327,11 +327,13 @@ class Endpoint(object):
                     # check if user data changed
                     user = user_map[perun_id]
                     if not (user['perun_id'] == perun_id
-                            and user['elixir_id'] == elixir_id
-                            and user['elixir_name'] == elixir_name
-                            and user['email'] == email
-                            and user['enabled'] == enabled
-                            and user['ssh_key'] == ssh_key):
+                            and user['elixir_id'] == str(elixir_id)
+                            and user['elixir_name'] == str(elixir_name)
+                            and user['email'] == str(email)
+                            and user['enabled'] == bool(enabled)
+                            and user['ssh_key'] == str(ssh_key)):
+
+                        self.log.debug("JK - update user")
                         # update user
                         self.keystone.users_update(perun_id, elixir_id=elixir_id, elixir_name=elixir_name,
                                                    ssh_key=ssh_key, email=email, enabled=enabled)
@@ -462,7 +464,7 @@ class Endpoint(object):
 
                         current = manager.get_current_quota(os_quota['name'])
                         self.log.debug(f"project [{project['perun_id']},{project['name']}]:"
-                                       f" comparing %s vs %s", project['perun_id'], project['name'], current, value)
+                                       f"comparing {current} vs {value}")
                         if manager.check_value(os_quota['name'], value):
                             if manager.get_current_quota(os_quota['name']) != value:
                                 if self.read_only:
