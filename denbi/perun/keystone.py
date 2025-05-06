@@ -710,7 +710,7 @@ class KeyStone:
                         if hasattr(role,"role") and role.role['id'] == self.default_role_id:
                             denbi_project['members'].append(self.__user_id2perun_id__[role.user['id']])
                         else:
-                            self.log.warning(f"Ignoring role '{role.id}' because pka only manages the default role '{self.default_role_id}'!")
+                            self.log.warning(f"Ignoring role '{role.role['id']}' because pka only manages the default role '{self.default_role_id}'!")
                     else:
                         self.log.warning("Role assignment list contains a non user role assignment!")
                 # add quotas supported by Quota-Manager to current denbi_project
