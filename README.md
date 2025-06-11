@@ -13,6 +13,7 @@ for new projects.
 
  -  abstract keystone to simplify often used tasks (create/delete/update/list users and projects)
  -  parse SCIM or de.NBI portal compute center propagation data for users and projects
+ -  supports both LifeScience properties and Elixir properties (setting legacy mode)
  -  modify Keystone according the propagated data:
  -  creates items (users or projects) in Keystone if they not exist but propagated
  -  modify items properties if they changed
@@ -148,6 +149,7 @@ export PKA_TARGET_DOMAIN_NAME=elixir
 export PKA_DEFAULT_ROLE=user
 export PKA_DEFAULT_NESTED=False
 export PKA_ELIXIR_NAME=False
+export PKA_ELIXIR_LEGACY=False
 # Set quotas for projects
 export PKA_SUPPORT_QUOTA=True
 # Create router for new projects
@@ -184,6 +186,7 @@ An example configuration could look like this:
    "DEFAULT_ROLE": "user",
    "NESTED": false,
    "ELIXIR_NAME": false,
+   "ELIXIR_LEGACY": false,
    "SUPPORT_QUOTAS": true,
    "SUPPORT_ROUTER": true,
    "SUPPORT_NETWORK": true,
@@ -231,6 +234,7 @@ PKA_TARGET_DOMAIN_NAME=elixir
 PKA_DEFAULT_ROLE=user
 PKA_DEFAULT_NESTED=False
 PKA_ELIXIR_NAME=False
+PKA_ELIXIR_LEGACY=False
 # Set quotas for projects
 PKA_SUPPORT_QUOTA=True
 # Create router for new projects
