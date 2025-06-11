@@ -13,7 +13,7 @@ for new projects.
 
  -  abstract keystone to simplify often used tasks (create/delete/update/list users and projects)
  -  parse SCIM or de.NBI portal compute center propagation data for users and projects
- -  supports both LifeScience properties and Elixir properties (setting legacy mode)
+ -  supports both LifeScience properties and Elixir properties (setting legacy mode) - see #60
  -  modify Keystone according the propagated data:
  -  creates items (users or projects) in Keystone if they not exist but propagated
  -  modify items properties if they changed
