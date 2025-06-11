@@ -30,6 +30,7 @@ logging.basicConfig(level=logging.WARN)
 def process_tarball(tarball_path, read_only=False, target_domain_name='elixir',
                     default_role='user', nested=False,
                     support_elixir_name=False,
+                    support_elixir_legacy=False,
                     support_quotas=False,
                     support_router=False,
                     external_network_id='',
@@ -55,6 +56,7 @@ def process_tarball(tarball_path, read_only=False, target_domain_name='elixir',
     endpoint = Endpoint(keystone=keystone,
                         mode="denbi_portal_compute_center",
                         support_elixir_name=support_elixir_name,
+                        support_elixir_legacy=support_elixir_legacy,
                         support_quotas=support_quotas,
                         support_router=support_router,
                         external_network_id=external_network_id,
@@ -78,8 +80,12 @@ def main():
     parser.add_argument('--role', default='user',
                         help="Default role to assign to new users, defaults to 'user'")
     parser.add_argument('--elixir_name', action="store_true", default=False,
-                        help="Support Key 'login-namespace:elixir'. This information is normally not propagated by "
-                             "default.")
+                        help="Support Key 'login-namespace:lifescienceid-username or legacy 'login-namespace:elixir'." \
+                        "This information is normally not propagated by default.")
+    parser.add_argument('--elixir_legacy', action="store_true", default=False,
+                        help="Use legacy Elixir identity 'login-namespace:elixir-persistent' " \
+                        "instead of LifeScience identity 'login-namespace:lifescienceid-persistent'. " \
+                        "This option will be removed when LifeScience discontiniued support for legacy elixir intentity.")
     parser.add_argument("-v", "--verbose", dest="verbose_count",
                         action="count", default=0, help="increases log verbosity for each occurrence.")
     parser.add_argument("--nested", action="store_true", default=False,
@@ -116,7 +122,9 @@ def main():
                     support_router=args.router,
                     external_network_id=args.external_network_id,
                     support_network=args.network,
-                    support_default_ssh_sgrule=args.ssh_sgrule)
+                    support_default_ssh_sgrule=args.ssh_sgrule,
+                    support_elixir_name=args.elixir_name,
+                    support_elixir_legacy=args.elixir_legacy)
 
 
 if __name__ == '__main__':

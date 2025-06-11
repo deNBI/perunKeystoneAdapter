@@ -1,7 +1,10 @@
-perun
+pka
+tmp
 
 .idea
 **/*.pyc
+
+.vscode
 
 # Created by https://www.gitignore.io/api/python
 
