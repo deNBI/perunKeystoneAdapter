@@ -299,6 +299,15 @@ class Endpoint(object):
         # get current user_map from keystone
         user_map = self.keystone.users_map()
 
+
+        for uid in user_map:
+            if self.support_elixir_legacy:
+                if user_map[uid]["elixir_name"].endswith("@lifescience-ri.eu"):
+                    raise Exception("Run PKA in legacy mode, but users elixir_name already ends with '@lifescience-ri.eu'")
+            else:    
+                if user_map[uid]["elixir_name"].endswith("@elixir-europe.org"):
+                    raise Exception("Found users with elixir_name ends with legacy '@elixir-europe.org'")
+
         user_ids = []
 
         # convert denbi_portal_compute_center json to keystone compatible hash
