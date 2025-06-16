@@ -583,48 +583,5 @@ class TestEndpoint(unittest.TestCase):
             self.keystone.projects_delete(perun_id)
             self.keystone.projects_terminate(perun_id)
 
-    def test_legacy_identity_check(self):
-        
-        print("Run 'test_legacy_identity_check'")
-        
-        # create endpoint with legacy support ...
-        self.endpoint = Endpoint(keystone=self.keystone,
-                                 mode="denbi_portal_compute_center",
-                                 support_elixir_name=True,
-                                 support_elixir_legacy=True)
-        
-        # .. and import legacy elixir-europe.org identities
-        self.endpoint.import_data(os.path.join(TESTDIR, 'resources', 'denbi_portal_compute_center', 'users_legacy.scim'),
-                                  os.path.join(TESTDIR, 'resources', 'denbi_portal_compute_center', 'groups_legacy.scim'))
-        
-
-        # create another endpoint without legacy support ...
-        self.endpoint = Endpoint(keystone=self.keystone,
-                                 mode="denbi_portal_compute_center",
-                                 support_elixir_name=True,
-                                 support_elixir_legacy=False)
-
-        # ... and import of LifeScience identities should fail due to existing elixir-europe.org identities in the database
-
-        try:
-            self.endpoint.import_data(os.path.join(TESTDIR, 'resources', 'denbi_portal_compute_center', 'users_legacy.scim'),
-                                      os.path.join(TESTDIR, 'resources', 'denbi_portal_compute_center', 'groups_legacy.scim'))
-            self.fail()
-        except Exception as e:
-            print(f"Expected Exception '{str(e)}' was thrown.")
-
-            # clean up everything
-            ids = set(self.keystone.users_map())
-            for perun_id in ids:
-                self.keystone.users_delete(perun_id)
-                self.keystone.users_terminate(perun_id)
-
-            ids = set(self.keystone.projects_map())
-            for perun_id in ids:
-                self.keystone.projects_delete(perun_id)
-                self.keystone.projects_terminate(perun_id)
-
-
-
 if __name__ == '__main__':
     unittest.main()
