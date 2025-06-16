@@ -611,7 +611,7 @@ class TestEndpoint(unittest.TestCase):
                                       os.path.join(TESTDIR, 'resources', 'denbi_portal_compute_center', 'groups_legacy.scim'))
             self.fail()
         except Exception as e:
-            print(f"Expected Exception {e} was thrown.")
+            print(f"Expected Exception '{str(e)}' was thrown.")
 
             # clean up everything
             ids = set(self.keystone.users_map())
