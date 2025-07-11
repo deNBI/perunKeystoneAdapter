@@ -49,7 +49,7 @@ class TestKeystone(unittest.TestCase):
         print("Run 'test_user_create_list_delete'")
 
         perun_id = self.__uuid()
-        elixir_id = perun_id + "@lifescience-ri.eu"
+        elixir_id = perun_id + "@elixir-europe.org"
         elixir_name = "juser"
         ssh_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIIBXwgYwPBMDEkSN5opn0mFu488iqtxJBgV5H3yctRi jkrueger@jkrueger-ThinkPad-T14s-Gen-1"
         email = elixir_name + "@no-mail.nix"
@@ -258,11 +258,11 @@ class TestKeystone(unittest.TestCase):
 
         # create three user
         id = self.__uuid()
-        user_a = self.ks.users_create(id, id + "@lifescience-ri.eu")
+        user_a = self.ks.users_create(id, id + "@elixir-europe.org")
         id = self.__uuid()
-        user_b = self.ks.users_create(id, id + "@lifescience-ri.eu")
+        user_b = self.ks.users_create(id, id + "@elixir-europe.org")
         id = self.__uuid()
-        user_c = self.ks.users_create(id, id + "@lifescience-ri.eu")
+        user_c = self.ks.users_create(id, id + "@elixir-europe.org")
 
         # append user a, b to project a
         self.ks.projects_append_user(project_a['perun_id'], user_a['perun_id'])

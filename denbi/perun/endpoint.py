@@ -102,6 +102,7 @@ class Endpoint(object):
                  store_email=True,
                  support_quotas=True,
                  support_elixir_name=False,
+                 support_elixir_legacy=False,
                  support_ssh_key=True,
                  support_router=False,
                  support_network=False,
@@ -119,6 +120,7 @@ class Endpoint(object):
         :param store_email : should an available email address be stored?
         :param support_quotas : should quotas supported ?
         :param support_elixir_name : should an available elixir_name for user be stored, not used within de.NBI
+        :param support_elixir_legacy : use legacy "login-namespace:elixir-persistent" attribute instead of "login-namespace:lifescienceid-persistent" 
         :param support_router: should a router generated (for new projects)
         :param support_network: should a network/subnetwork generated and attached to router (for new projects)
         :param support_default_ssh_sgrule: should a ssh sg rule created with defautl sg
@@ -146,6 +148,7 @@ class Endpoint(object):
         self.store_email = bool(store_email)
         self.support_quotas = bool(support_quotas)
         self.support_elixir_name = bool(support_elixir_name)
+        self.support_elixir_legacy = bool(support_elixir_legacy)
         self.support_ssh_key = bool(support_ssh_key)
         self.support_router = bool(support_router)
         self.support_network = bool(support_network)
@@ -301,11 +304,20 @@ class Endpoint(object):
         # convert denbi_portal_compute_center json to keystone compatible hash
         for dpcc_user in json_obj:
             # check for mandatory fields (id, login, status)
-            if 'id' in dpcc_user and 'login-namespace:elixir-persistent' in dpcc_user and 'status' in dpcc_user:
+            # support lifescienceid AND (legacy) elixir attributes, lifescienceid is preferred
+            if 'id' in dpcc_user and 'status' in dpcc_user and \
+                'login-namespace:lifescienceid-persistent' in dpcc_user \
+                or ('login-namespace:elixir-persistent' in dpcc_user and self.support_elixir_legacy):
                 perun_id = str(dpcc_user['id'])
-                elixir_id = str(dpcc_user['login-namespace:elixir-persistent'])
+                if self.support_elixir_legacy:
+                    elixir_id = str(dpcc_user['login-namespace:elixir-persistent'])
+                else:
+                    elixir_id = str(dpcc_user['login-namespace:lifescienceid-persistent'])
                 elixir_name = None
-                if self.support_elixir_name and 'login-namespace:elixir' in dpcc_user:
+                # check for elixir name 
+                if self.support_elixir_name and 'login-namespace:lifescienceid-username' in dpcc_user:
+                    elixir_name = str(dpcc_user['login-namespace:lifescienceid-username'])
+                elif self.support_elixir_name and self.support_elixir_legacy and 'login-namespace:elixir' in dpcc_user:
                     elixir_name = str(dpcc_user['login-namespace:elixir'])
                 enabled = str(dpcc_user['status']) == 'VALID'
                 email = None
