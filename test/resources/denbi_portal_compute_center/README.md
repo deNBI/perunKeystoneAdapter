@@ -6,15 +6,15 @@ A project has many characteristics.
 
 ###  Members
 
-Elixir user who are assigned to the project.
+LifeSciences user who are assigned to the project.
 
 ```
 "denbiProjectMembers" : [
          {
-            "id" : <ELIXIR-ID>
-            "login-namespace:elixir" : "<ELIXIR USER NAME>"
-            "login-namespace:elixir-persistent" : "UNIQUE ELIXIR USER ID",
-            "preferredMail" : "<ELIXIR USER MAIL>"
+            "id" : <ID>
+            "login-namespace:lifescienceid-username" : "<LIFESCIENCE USER NAME>"
+            "login-namespace:lifescienceid-persistent" : "<UNIQUE LIFESCIENCE USER ID>",
+            "preferredMail" : "<USER MAIL>"
          },
          ...
       ],
