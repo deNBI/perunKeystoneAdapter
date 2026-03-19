@@ -1,4 +1,4 @@
-FROM python:3.10-alpine
+FROM python:3.14-alpine
 
 RUN apk add --no-cache build-base musl-dev gcc linux-headers libffi-dev openssl-dev
 
