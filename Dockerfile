@@ -1,5 +1,6 @@
 FROM python:3.14-alpine
 
+RUN apk upgrade --no-cache
 RUN apk add --no-cache build-base musl-dev gcc linux-headers libffi-dev openssl-dev
 
 RUN mkdir -p /perun/upload
